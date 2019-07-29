@@ -33,7 +33,7 @@ func init() {
 	LoggerFactory.nullLogger = newNullLogger()
 
 	// Loop through all the logs in the config and create specific loggers and add them to the map
-	for _, target := range Config.App.StreamLoggers {
+	for _, target := range Config.App.Loggers.StreamLoggers {
 
 		logger := newStreamLogger(
 			target.Name,

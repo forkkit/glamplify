@@ -2,18 +2,37 @@ app:
     name: "service-name"
     version: 1.0
   
-    streamloggers:
-        -   name: default
-            level: warn
-            output: stderr
-            formatter: text
-            fullTimestamp: true
+    loggers:
+        streamloggers:
+            -   name: "default"
+                level: "warn"
+                output: "stderr"
+                formatter: "text"
+                fullTimestamp: true
 
-        -   name: json
-            level: info
-            output: stderr
-            formatter: json
-            fullTimestamp: true
+            -   name: "json-info"
+                level: "info"
+                output: "stderr"
+                formatter: "json"
+                fullTimestamp: true
 
+        slackloggers:
+            -   name: "slack-text-example"
+                level: "warn"
+                formatter: "text"
+                fullTimestamp: true
+                url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+                channel: "#slack-test"
+                emoji: ":ghost:"
 
+        splunkLoggers:
+            -   name: "splunk-json-example"
+                level: "warn"
+                formatter: "text"
+                fullTimestamp: true
+                url: "https://splunk/path"
+                token: "#####"
+                source: "source-location"
+                sourceType: "source-type"
+                index: "splunk-index"
 
