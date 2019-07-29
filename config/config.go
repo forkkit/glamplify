@@ -11,13 +11,13 @@ type Configuration struct {
 
 // ApplicationConfiguration contains the 'app:' elements of the yml config file
 type ApplicationConfiguration struct {
-	Name    string                `yaml:"name"`
-	Version float32               `yaml:"version"`
-	Loggers []LoggerConfiguration `yaml:"loggers"`
+	Name          string                      `yaml:"name"`
+	Version       float32                     `yaml:"version"`
+	StreamLoggers []StreamLoggerConfiguration `yaml:"streamloggers"`
 }
 
 // LoggerConfiguration contains the 'loggers:' elements of of the yml config file
-type LoggerConfiguration struct {
+type StreamLoggerConfiguration struct {
 	Name          string `yaml:"name"`
 	Level         string `yaml:"level"`
 	Output        string `yaml:"output"`
@@ -58,12 +58,12 @@ func createDefaultConfig() Configuration {
 		Name:    "service-name",
 		Version: 1.0,
 	}
-	config.App.Loggers = make([]LoggerConfiguration, 1)
-	config.App.Loggers[0].Name = "default"
-	config.App.Loggers[0].Level = "warn"
-	config.App.Loggers[0].Output = "stderr"
-	config.App.Loggers[0].Formatter = "text"
-	config.App.Loggers[0].FullTimestamp = true
+	config.App.StreamLoggers = make([]StreamLoggerConfiguration, 1)
+	config.App.StreamLoggers[0].Name = "default"
+	config.App.StreamLoggers[0].Level = "warn"
+	config.App.StreamLoggers[0].Output = "stderr"
+	config.App.StreamLoggers[0].Formatter = "text"
+	config.App.StreamLoggers[0].FullTimestamp = true
 
 	return config
 }

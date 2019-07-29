@@ -2,7 +2,7 @@ app:
     name: "service-name"
     version: 1.0
   
-    loggers:
+    streamloggers:
         -   name: default
             level: warn
             output: stderr
