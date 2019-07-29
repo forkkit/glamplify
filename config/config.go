@@ -4,19 +4,19 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Configuration todo...
+// Configuration corrosponds to the yml config file format
 type Configuration struct {
 	App ApplicationConfiguration `yaml:"app"`
 }
 
-// ApplicationConfiguration todo
+// ApplicationConfiguration contains the 'app:' elements of the yml config file
 type ApplicationConfiguration struct {
 	Name    string                `yaml:"name"`
 	Version float32               `yaml:"version"`
 	Loggers []LoggerConfiguration `yaml:"loggers"`
 }
 
-// LoggerConfiguration todo
+// LoggerConfiguration contains the 'loggers:' elements of of the yml config file
 type LoggerConfiguration struct {
 	Name          string `yaml:"name"`
 	Level         string `yaml:"level"`
@@ -25,7 +25,8 @@ type LoggerConfiguration struct {
 	FullTimestamp bool   `yaml:"fullTimestamp"`
 }
 
-// Config todo
+// Config contains the current configuration as per config.yml, or if missing
+// by the default configuration values (in code)
 var Config *Configuration
 
 func init() {
@@ -36,7 +37,11 @@ func loadConfig() *Configuration {
 	config := createDefaultConfig()
 
 	viper.SetConfigName("config")
+
+	// Todo - better way to work out where the config.yml file is?
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
+	viper.AddConfigPath("../config")
 
 	err := viper.ReadInConfig()
 	if err != nil {

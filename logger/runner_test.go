@@ -2,7 +2,6 @@ package logger
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -11,27 +10,29 @@ import (
 // TestRunner todo...
 func TestDefaultWarn(t *testing.T) {
 
-	var memBuffer bytes.Buffer
-
 	logger := LoggerFactory.Get("default")
-	logger.SetOutput(&memBuffer)
+
+	hook := newMemHook()
+	logger.AddHook(hook)
 
 	logger.Warn("test")
 
-	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "msg=test"), "Logger was: '%s'. Expected: 'test'", msg)
+	assert.Assert(t, hook.calls == 1, "Hooks calls was: %d. Expected: 1", hook.calls)
+	msg := hook.memBuffer.String()
+	assert.Assert(t, msg == "test", "Logger was: '%s'. Expected: 'test'", msg)
 }
 
 func TestDefaultDebug(t *testing.T) {
 
-	var memBuffer bytes.Buffer
-
 	logger := LoggerFactory.Get("default")
-	logger.SetOutput(&memBuffer)
+
+	hook := newMemHook()
+	logger.AddHook(hook)
 
 	logger.Debug("test")
 
-	msg := memBuffer.String()
+	assert.Assert(t, hook.calls == 0, "Hooks calls was: %d. Expected: 0", hook.calls)
+	msg := hook.memBuffer.String()
 	assert.Assert(t, msg == "", "Logger was: '%s'. Expected: ''", msg)
 }
 
@@ -42,4 +43,28 @@ func TestNullLogger(t *testing.T) {
 
 	assert.Assert(t, logger != nil, "Logger was nil")
 	assert.Assert(t, logger.(*nullLogger) != nil, "Not NullLogger")
+}
+
+type memHook struct {
+	memBuffer *bytes.Buffer
+	levels    []LogLevel
+	calls     int
+}
+
+func newMemHook() *memHook {
+	return &memHook{
+		memBuffer: &bytes.Buffer{},
+		levels:    AllLogLevels,
+		calls:     0,
+	}
+}
+
+func (h *memHook) Fire(entry *LogEntry) {
+	// Write entry.Message to memBuffer
+	h.memBuffer.WriteString(entry.Message)
+	h.calls++
+}
+
+func (h *memHook) Levels() []LogLevel {
+	return h.levels
 }

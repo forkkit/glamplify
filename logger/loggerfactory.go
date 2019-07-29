@@ -4,16 +4,16 @@ import (
 	. "github.com/cultureamp/gamplify/config"
 )
 
-// LogFactory todo
+// LogFactory contains all the registered loggers
 type LogFactory struct {
 	loggers    map[string]ILogger
 	nullLogger ILogger
 }
 
-// LoggerFactory todo...
+// LoggerFactory to retrieve registered loggers
 var LoggerFactory *LogFactory
 
-// Get todo...
+// Get a registered logger by name
 func (factory *LogFactory) Get(loggerName string) ILogger {
 
 	logger, ok := factory.loggers[loggerName]
