@@ -1,0 +1,19 @@
+app:
+    name: "service-name"
+    version: 1.0
+  
+    loggers:
+        -   name: default
+            level: warn
+            output: stderr
+            formatter: text
+            fullTimestamp: true
+
+        -   name: json
+            level: info
+            output: stderr
+            formatter: json
+            fullTimestamp: true
+
+
+
