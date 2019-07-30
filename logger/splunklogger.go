@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"sync"
 
+	splunk "github.com/Franco-Poveda/logrus-splunk-hook"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 )
 
 type splunkLogger struct {
@@ -91,7 +91,7 @@ func (logger *splunkLogger) AddHook(hook ILoggerHook) {
 	}
 }
 
-func (logger *splunkLogger) Fire(entry *log.Entry) error {
+func (logger *splunkLogger) Fire(entry *logrus.Entry) error {
 	logEntry := convertEntryToLogEntry(entry)
 
 	logger.lock.Lock()
@@ -104,8 +104,8 @@ func (logger *splunkLogger) Fire(entry *log.Entry) error {
 	return nil
 }
 
-func (logger *splunkLogger) Levels() []log.Level {
-	return log.AllLevels
+func (logger *splunkLogger) Levels() []logrus.Level {
+	return logrus.AllLevels
 }
 
 func newSplunkLogger(name string, formatter string, fullTimestamp bool, url string, token string, source string, sourceType string, index string, level string) ILogger {
@@ -124,19 +124,20 @@ func newSplunkLogger(name string, formatter string, fullTimestamp bool, url stri
 	logger.logrus.AddHook(logger)
 
 	// TODO
-	//	h := lrhook.New(cfg, url)
-	//	logger.logrus.AddHook(h)
+	client := &splunk.Client{} // <- !!!!
+	h := splunk.NewHook(client, logrus.AllLevels)
+	logger.logrus.AddHook(h)
 
 	return logger
 }
 
-func configureNewSplunkLogger(formatter string, fullTimestamp bool, level string) *log.Logger {
-	logger := log.New()
+func configureNewSplunkLogger(formatter string, fullTimestamp bool, level string) *logrus.Logger {
+	logger := logrus.New()
 
 	if formatter == "json" {
-		logger.SetFormatter(&log.JSONFormatter{})
+		logger.SetFormatter(&logrus.JSONFormatter{})
 	} else {
-		logger.SetFormatter(&log.TextFormatter{
+		logger.SetFormatter(&logrus.TextFormatter{
 			DisableColors: true,
 			FullTimestamp: fullTimestamp,
 		})
@@ -147,17 +148,17 @@ func configureNewSplunkLogger(formatter string, fullTimestamp bool, level string
 
 	switch level {
 	case "debug":
-		logger.SetLevel(log.DebugLevel)
+		logger.SetLevel(logrus.DebugLevel)
 	case "info":
-		logger.SetLevel(log.InfoLevel)
+		logger.SetLevel(logrus.InfoLevel)
 	case "warn":
-		logger.SetLevel(log.WarnLevel)
+		logger.SetLevel(logrus.WarnLevel)
 	case "error":
-		logger.SetLevel(log.ErrorLevel)
+		logger.SetLevel(logrus.ErrorLevel)
 	case "fatal":
-		logger.SetLevel(log.FatalLevel)
+		logger.SetLevel(logrus.FatalLevel)
 	default:
-		logger.SetLevel(log.PanicLevel)
+		logger.SetLevel(logrus.PanicLevel)
 	}
 
 	return logger
