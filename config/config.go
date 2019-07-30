@@ -111,13 +111,13 @@ func createDefaultConfig() Configuration {
 		Version: 1.0,
 	}
 	config.App.Loggers = LoggerConfiguration{}
-	/*
-		config.App.Loggers.Rules = make([]RuleConfiguration, 1)
-		config.App.Loggers.Rules[0].Name = "default"
-		config.App.Loggers.Rules[0].Level = "warn"
-		config.App.Loggers.Rules[0].RuleTargets = make([]RuleTargetConfiguration, 1)
-		config.App.Loggers.Rules[0].RuleTargets[0].Target = "stderr-text"
-	*/
+
+	config.App.Loggers.Rules = make([]RuleConfiguration, 1)
+	config.App.Loggers.Rules[0].Name = "default"
+	config.App.Loggers.Rules[0].Level = "warn"
+	config.App.Loggers.Rules[0].WriteTo = make([]RuleTargetConfiguration, 1)
+	config.App.Loggers.Rules[0].WriteTo[0].Target = "stderr-text"
+
 	config.App.Loggers.Targets.Stream = make([]StreamTargetConfiguration, 1)
 	config.App.Loggers.Targets.Stream[0].Name = "default"
 	config.App.Loggers.Targets.Stream[0].Output = "stderr"
