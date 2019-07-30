@@ -56,7 +56,7 @@ type SlackTargetConfiguration struct {
 	FullTimestamp bool   `yaml:"fullTimestamp"`
 	URL           string `yaml:"url"`
 	Channel       string `yaml:"channel"`
-	Emoji         bool   `yaml:"emoji"`
+	Emoji         string `yaml:"emoji"`
 }
 
 // SplunkTargetConfiguration contains the 'slack:' elements in the config file

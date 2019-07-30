@@ -1,7 +1,7 @@
 package logger
 
 import (
-	. "github.com/cultureamp/gamplify/config"
+	conf "github.com/cultureamp/gamplify/config"
 )
 
 // LogFactory contains all the registered loggers
@@ -33,10 +33,10 @@ func init() {
 	LoggerFactory.nullLogger = newNullLogger()
 
 	// convert targets to map's
-	streamMap, slackMap, splunkMap := convertTargetsToMaps(Config.App.Loggers.Targets.Stream, Config.App.Loggers.Targets.Slack, Config.App.Loggers.Targets.Splunk)
+	streamMap, slackMap, splunkMap := convertTargetsToMaps(conf.Config.App.Loggers.Targets.Stream, conf.Config.App.Loggers.Targets.Slack, conf.Config.App.Loggers.Targets.Splunk)
 
 	// Loop through all the Rules in the config and create specific loggers and add them to the LoggerFactory
-	for _, rule := range Config.App.Loggers.Rules {
+	for _, rule := range conf.Config.App.Loggers.Rules {
 
 		for _, writeTo := range rule.WriteTo {
 			// For each writeTo, find the target that matches (ignore non-matches) and create logger
@@ -56,26 +56,26 @@ func init() {
 	}
 }
 
-func convertTargetsToMaps(streamTargets []StreamTargetConfiguration, slackTargets []SlackTargetConfiguration, splunkTargets []SplunkTargetConfiguration) (map[string]StreamTargetConfiguration, map[string]SlackTargetConfiguration, map[string]SplunkTargetConfiguration) {
-	streamMap := make(map[string]StreamTargetConfiguration)
-	for _, stream := range Config.App.Loggers.Targets.Stream {
+func convertTargetsToMaps(streamTargets []conf.StreamTargetConfiguration, slackTargets []conf.SlackTargetConfiguration, splunkTargets []conf.SplunkTargetConfiguration) (map[string]conf.StreamTargetConfiguration, map[string]conf.SlackTargetConfiguration, map[string]conf.SplunkTargetConfiguration) {
+	streamMap := make(map[string]conf.StreamTargetConfiguration)
+	for _, stream := range conf.Config.App.Loggers.Targets.Stream {
 		streamMap[stream.Name] = stream
 	}
 
-	slackMap := make(map[string]SlackTargetConfiguration)
-	for _, slack := range Config.App.Loggers.Targets.Slack {
+	slackMap := make(map[string]conf.SlackTargetConfiguration)
+	for _, slack := range conf.Config.App.Loggers.Targets.Slack {
 		slackMap[slack.Name] = slack
 	}
 
-	splunkMap := make(map[string]SplunkTargetConfiguration)
-	for _, splunk := range Config.App.Loggers.Targets.Splunk {
+	splunkMap := make(map[string]conf.SplunkTargetConfiguration)
+	for _, splunk := range conf.Config.App.Loggers.Targets.Splunk {
 		splunkMap[splunk.Name] = splunk
 	}
 
 	return streamMap, slackMap, splunkMap
 }
 
-func createStreamLogger(streamMap map[string]StreamTargetConfiguration, rule RuleConfiguration, writeTo RuleTargetConfiguration) bool {
+func createStreamLogger(streamMap map[string]conf.StreamTargetConfiguration, rule conf.RuleConfiguration, writeTo conf.RuleTargetConfiguration) bool {
 
 	stream, ok := streamMap[writeTo.Target]
 	if ok {
@@ -92,23 +92,26 @@ func createStreamLogger(streamMap map[string]StreamTargetConfiguration, rule Rul
 	return ok
 }
 
-func createSlackLogger(slackMap map[string]SlackTargetConfiguration, rule RuleConfiguration, writeTo RuleTargetConfiguration) bool {
+func createSlackLogger(slackMap map[string]conf.SlackTargetConfiguration, rule conf.RuleConfiguration, writeTo conf.RuleTargetConfiguration) bool {
 
-	_, ok := slackMap[writeTo.Target]
+	slack, ok := slackMap[writeTo.Target]
 	if ok {
-		/*
-			logger := newSlackLogger(
-				rule.Name,
-				....
-			)
-			LoggerFactory.loggers[rule.Name] = logger
-		*/
+		logger := newSlackLogger(
+			rule.Name,
+			slack.Formatter,
+			slack.FullTimestamp,
+			slack.URL,
+			slack.Channel,
+			slack.Emoji,
+			rule.Level,
+		)
+		LoggerFactory.loggers[rule.Name] = logger
 	}
 
 	return ok
 }
 
-func createSplunkLogger(splunkMap map[string]SplunkTargetConfiguration, rule RuleConfiguration, writeTo RuleTargetConfiguration) bool {
+func createSplunkLogger(splunkMap map[string]conf.SplunkTargetConfiguration, rule conf.RuleConfiguration, writeTo conf.RuleTargetConfiguration) bool {
 
 	_, ok := splunkMap[writeTo.Target]
 	if ok {

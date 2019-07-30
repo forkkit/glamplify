@@ -4,12 +4,12 @@ import (
 	"os"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type streamLogger struct {
 	name   string
-	logrus *log.Logger
+	logrus *logrus.Logger
 	hooks  map[LogLevel][]ILoggerHook
 	lock   sync.Mutex
 }
@@ -84,7 +84,7 @@ func (logger *streamLogger) AddHook(hook ILoggerHook) {
 	}
 }
 
-func (logger *streamLogger) Fire(entry *log.Entry) error {
+func (logger *streamLogger) Fire(entry *logrus.Entry) error {
 	logEntry := convertEntryToLogEntry(entry)
 
 	logger.lock.Lock()
@@ -97,37 +97,15 @@ func (logger *streamLogger) Fire(entry *log.Entry) error {
 	return nil
 }
 
-func (logger *streamLogger) Levels() []log.Level {
-	return log.AllLevels
-}
-
-func convertEntryToLogEntry(entry *log.Entry) *LogEntry {
-	logEntry := &LogEntry{
-		Time:    entry.Time,
-		Level:   (LogLevel)(entry.Level),
-		Caller:  entry.Caller,
-		Message: entry.Message,
-	}
-
-	logEntry.Fields = convertDataToLogData(entry.Data)
-
-	return logEntry
-}
-
-func convertDataToLogData(fields log.Fields) LogFields {
-
-	logFields := make(LogFields)
-	for k, v := range fields {
-		logFields[k] = v
-	}
-	return logFields
+func (logger *streamLogger) Levels() []logrus.Level {
+	return logrus.AllLevels
 }
 
 func newStreamLogger(name string, formatter string, fullTimestamp bool, output string, level string) ILogger {
 
 	logger := &streamLogger{
 		name:   name,
-		logrus: configureNewLogger(formatter, fullTimestamp, output, level),
+		logrus: configureNewStreamLogger(formatter, fullTimestamp, output, level),
 	}
 
 	logger.hooks = make(map[LogLevel][]ILoggerHook)
@@ -135,13 +113,13 @@ func newStreamLogger(name string, formatter string, fullTimestamp bool, output s
 	return logger
 }
 
-func configureNewLogger(formatter string, fullTimestamp bool, output string, level string) *log.Logger {
-	logger := log.New()
+func configureNewStreamLogger(formatter string, fullTimestamp bool, output string, level string) *logrus.Logger {
+	logger := logrus.New()
 
 	if formatter == "json" {
-		logger.SetFormatter(&log.JSONFormatter{})
+		logger.SetFormatter(&logrus.JSONFormatter{})
 	} else {
-		logger.SetFormatter(&log.TextFormatter{
+		logger.SetFormatter(&logrus.TextFormatter{
 			DisableColors: true,
 			FullTimestamp: fullTimestamp,
 		})
@@ -155,17 +133,17 @@ func configureNewLogger(formatter string, fullTimestamp bool, output string, lev
 
 	switch level {
 	case "debug":
-		logger.SetLevel(log.DebugLevel)
+		logger.SetLevel(logrus.DebugLevel)
 	case "info":
-		logger.SetLevel(log.InfoLevel)
+		logger.SetLevel(logrus.InfoLevel)
 	case "warn":
-		logger.SetLevel(log.WarnLevel)
+		logger.SetLevel(logrus.WarnLevel)
 	case "error":
-		logger.SetLevel(log.ErrorLevel)
+		logger.SetLevel(logrus.ErrorLevel)
 	case "fatal":
-		logger.SetLevel(log.FatalLevel)
+		logger.SetLevel(logrus.FatalLevel)
 	default:
-		logger.SetLevel(log.PanicLevel)
+		logger.SetLevel(logrus.PanicLevel)
 	}
 
 	return logger
