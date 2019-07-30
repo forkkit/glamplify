@@ -3,36 +3,51 @@ app:
     version: 1.0
   
     loggers:
-        streamloggers:
+        rules:
             -   name: "default"
                 level: "warn"
-                output: "stderr"
-                formatter: "text"
-                fullTimestamp: true
+                writeto:
+                    -   target: "stderr-text"
 
-            -   name: "json-info"
+            -   name: "detailed"
+                level: "debug"
+                writeto:
+                    -   target: "stderr-text"
+
+            -   name: "public"
                 level: "info"
-                output: "stderr"
-                formatter: "json"
-                fullTimestamp: true
+                writeto:
+                    -   target: "stderr-text"
+                    -   target: "splunk-json"
+                    -   target: "slack-text"
 
-        slackloggers:
-            -   name: "slack-text-example"
-                level: "warn"
-                formatter: "text"
-                fullTimestamp: true
-                url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
-                channel: "#slack-test"
-                emoji: ":ghost:"
+        targets:
+            stream:
+                -   name: "stderr-text"
+                    output: "stderr"
+                    formatter: "text"
+                    fullTimestamp: true
 
-        splunkLoggers:
-            -   name: "splunk-json-example"
-                level: "warn"
-                formatter: "text"
-                fullTimestamp: true
-                url: "https://splunk/path"
-                token: "#####"
-                source: "source-location"
-                sourceType: "source-type"
-                index: "splunk-index"
+                -   name: "json-info"
+                    output: "stderr"
+                    formatter: "json"
+                    fullTimestamp: true
+
+            slack:
+                -   name: "slack-text"
+                    formatter: "text"
+                    fullTimestamp: true
+                    url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+                    channel: "#slack-test"
+                    emoji: ":ghost:"
+
+            splunk:
+                -   name: "splunk-json"
+                    formatter: "text"
+                    fullTimestamp: true
+                    url: "https://splunk/path"
+                    token: "#####"
+                    source: "source-location"
+                    sourceType: "source-type"
+                    index: "splunk-index"
 

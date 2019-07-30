@@ -33,16 +33,36 @@ func init() {
 	LoggerFactory.nullLogger = newNullLogger()
 
 	// Loop through all the logs in the config and create specific loggers and add them to the map
-	for _, target := range Config.App.Loggers.StreamLoggers {
+	/*
+		for _, _ = range Config.App.Loggers.Rules {
 
-		logger := newStreamLogger(
-			target.Name,
-			target.Formatter,
-			target.FullTimestamp,
-			target.Output,
-			target.Level,
-		)
+		}
+	*/
 
-		LoggerFactory.loggers[target.Name] = logger
+	for _, _ = range Config.App.Loggers.Targets.Stream {
+
 	}
+
+	for _, _ = range Config.App.Loggers.Targets.Slack {
+
+	}
+
+	for _, _ = range Config.App.Loggers.Targets.Splunk {
+
+	}
+
+	/*
+		for _, target := range Config.App.Loggers.Targets.StreamTargets {
+
+			logger := newStreamLogger(
+				target.Name,
+				target.Formatter,
+				target.FullTimestamp,
+				target.Output,
+				target.Level,
+			)
+
+			LoggerFactory.loggers[target.Name] = logger
+		}
+	*/
 }
