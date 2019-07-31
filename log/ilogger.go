@@ -1,10 +1,10 @@
 package log
 
 // LogLevel todo
-type LogLevel uint32
+type Level uint32
 
 // LogFields Fields type, used to pass to `WithFields`.
-type LogFields map[string]interface{}
+type Fields map[string]interface{}
 
 // ILogger interface that all loggers much support
 type ILogger interface {
@@ -36,33 +36,30 @@ type ILogger interface {
 	Panicf(format string, args ...interface{})
 
 	// Debug logs debug level logging
-	DebugWithFields(fields LogFields, args ...interface{})
+	DebugWithFields(fields Fields, args ...interface{})
 	// Info logs info level logging
-	InfoWithFields(fields LogFields, args ...interface{})
+	InfoWithFields(fields Fields, args ...interface{})
 	// Warn logs warn level logging
-	WarnWithFields(fields LogFields, args ...interface{})
+	WarnWithFields(fields Fields, args ...interface{})
 	// Error logs error level logging
-	ErrorWithFields(fields LogFields, args ...interface{})
+	ErrorWithFields(fields Fields, args ...interface{})
 	// Fatal logs fatal level logging then the process will exit with status set to 1
-	FatalWithFields(fields LogFields, args ...interface{})
+	FatalWithFields(fields Fields, args ...interface{})
 	// Panic logs panic level logging hen prints the stack trace and starts terminating the process unless recover is called.
-	PanicWithFields(ields LogFields, args ...interface{})
+	PanicWithFields(fields Fields, args ...interface{})
 
 	// Debugf logs formatted debug level logging
-	DebugfWithFields(ields LogFields, format string, args ...interface{})
+	DebugfWithFields(fields Fields, format string, args ...interface{})
 	// Infof logs formatted info level logging
-	InfofWithFields(ields LogFields, format string, args ...interface{})
+	InfofWithFields(fields Fields, format string, args ...interface{})
 	// Warnf logs formatted warn level logging
-	WarnfWithFields(ields LogFields, format string, args ...interface{})
+	WarnfWithFields(fields Fields, format string, args ...interface{})
 	// Errorf logs formatted error level logging
-	ErrorfWithFields(ields LogFields, format string, args ...interface{})
+	ErrorfWithFields(fields Fields, format string, args ...interface{})
 	// Fatalf logs formatted fatal level logging then the process will exit with status set to 1
-	FatalfWithFields(ields LogFields, format string, args ...interface{})
+	FatalfWithFields(fields Fields, format string, args ...interface{})
 	// Panicf logs formatted panic level logging then prints the stack trace and starts terminating the process unless recover is called
-	PanicfWithFields(ields LogFields, format string, args ...interface{})
-
-	WithField(key string, value interface{}) LogFields
-	WithError(err error) LogFields
+	PanicfWithFields(ields Fields, format string, args ...interface{})
 
 	// SetOutput sets the output of the logger to the io.Writer
 	AddHook(hook ILoggerHook)

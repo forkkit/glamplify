@@ -78,83 +78,75 @@ func (log *logger) Panicf(format string, args ...interface{}) {
 }
 
 // Debug logs debug level logging
-func (log *logger) DebugWithFields(fields LogFields, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) DebugWithFields(fields Fields, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Debug(args...)
 }
 
 // Info logs info level logging
-func (log *logger) InfoWithFields(fields LogFields, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) InfoWithFields(fields Fields, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Info(args...)
 }
 
 // Warn logs warn level logging
-func (log *logger) WarnWithFields(fields LogFields, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) WarnWithFields(fields Fields, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Warn(args...)
 }
 
 // Error logs error level logging
-func (log *logger) ErrorWithFields(fields LogFields, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) ErrorWithFields(fields Fields, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Error(args...)
 }
 
 // Fatal logs fatal level logging then the process will exit with status set to 1
-func (log *logger) FatalWithFields(fields LogFields, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) FatalWithFields(fields Fields, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Fatal(args...)
 }
 
 // Panic logs panic level logging hen prints the stack trace and call panic checking whether recover is called.
-func (log *logger) PanicWithFields(fields LogFields, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) PanicWithFields(fields Fields, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Panic(args...)
 }
 
 // Debugf logs formatted debug level logging
-func (log *logger) DebugfWithFields(fields LogFields, format string, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) DebugfWithFields(fields Fields, format string, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Debugf(format, args...)
 }
 
 // Infof logs formatted info level logging
-func (log *logger) InfofWithFields(fields LogFields, format string, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) InfofWithFields(fields Fields, format string, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Infof(format, args...)
 }
 
 // Warnf logs formatted warn level logging
-func (log *logger) WarnfWithFields(fields LogFields, format string, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) WarnfWithFields(fields Fields, format string, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Warnf(format, args...)
 }
 
 // Errorf logs formatted error level logging
-func (log *logger) ErrorfWithFields(fields LogFields, format string, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) ErrorfWithFields(fields Fields, format string, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Errorf(format, args...)
 }
 
 // Fatalf logs formatted fatal level logging then the process will exit with status set to 1
-func (log *logger) FatalfWithFields(fields LogFields, format string, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) FatalfWithFields(fields Fields, format string, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Fatalf(format, args...)
 }
 
 // Panicf logs formatted panic level logging then prints the stack trace and starts terminating the process unless recover is called
-func (log *logger) PanicfWithFields(fields LogFields, format string, args ...interface{}) {
-	f := convertLogFieldsToFields(fields)
+func (log *logger) PanicfWithFields(fields Fields, format string, args ...interface{}) {
+	f := convertFieldsToLogrus(fields)
 	log.logrus.WithFields(f).Panicf(format, args...)
-}
-
-func (log *logger) WithField(key string, value interface{}) LogFields {
-	return LogFields{key: value}
-}
-
-func (log *logger) WithError(err error) LogFields {
-	return LogFields{"error": err}
 }
 
 func (log *logger) AddHook(hook ILoggerHook) {
@@ -165,7 +157,7 @@ func (log *logger) AddHook(hook ILoggerHook) {
 }
 
 func (log *logger) Fire(entry *logrus.Entry) error {
-	logEntry := convertEntryToLogEntry(entry)
+	logEntry := convertEntry(entry)
 
 	log.hlock.Lock()
 	defer log.hlock.Unlock()
@@ -224,32 +216,31 @@ func newLogrusLogger(level string) *logrus.Logger {
 }
 
 // Common logging routines
-func convertEntryToLogEntry(entry *logrus.Entry) *LogEntry {
-	logEntry := &LogEntry{
+func convertEntry(entry *logrus.Entry) *Entry {
+	e := &Entry{
 		Time:    entry.Time,
-		Level:   (LogLevel)(entry.Level),
+		Level:   (Level)(entry.Level),
 		Caller:  entry.Caller,
 		Message: entry.Message,
 	}
 
-	logEntry.Fields = convertFieldsToLogFields(entry.Data)
-
-	return logEntry
+	e.Fields = convertFieldsFromLogrus(entry.Data)
+	return e
 }
 
-func convertFieldsToLogFields(fields logrus.Fields) LogFields {
+func convertFieldsFromLogrus(fields logrus.Fields) Fields {
 
-	logFields := make(LogFields)
+	Fields := make(Fields)
 	for k, v := range fields {
-		logFields[k] = v
+		Fields[k] = v
 	}
-	return logFields
+	return Fields
 }
 
-func convertLogFieldsToFields(logFields LogFields) logrus.Fields {
+func convertFieldsToLogrus(Fields Fields) logrus.Fields {
 	fields := make(logrus.Fields)
 
-	for k, v := range logFields {
+	for k, v := range Fields {
 		fields[k] = v
 	}
 

@@ -5,16 +5,16 @@ import (
 )
 
 // Factory contains all the registered loggers
-type Factory struct {
+type LoggerFactory struct {
 	loggers    map[string]ILogger
 	nullLogger ILogger
 }
 
 // LoggerFactory to retrieve registered loggers
-var LoggerFactory *Factory
+var Factory *LoggerFactory
 
 // Get a registered logger by name
-func (factory *Factory) Get(loggerName string) ILogger {
+func (factory *LoggerFactory) Get(loggerName string) ILogger {
 
 	logger, ok := factory.loggers[loggerName]
 	if !ok {
@@ -26,14 +26,14 @@ func (factory *Factory) Get(loggerName string) ILogger {
 
 func init() {
 
-	LoggerFactory = &Factory{}
-	LoggerFactory.loggers = make(map[string]ILogger)
+	Factory = &LoggerFactory{}
+	Factory.loggers = make(map[string]ILogger)
 
 	// Create the default, NullLogger
-	LoggerFactory.nullLogger = newNullLogger()
+	Factory.nullLogger = newNullLogger()
 
 	for _, logConfig := range config.Settings.App.Loggers {
 		logger := newLogger(logConfig.Name, logConfig.Level)
-		LoggerFactory.loggers[logConfig.Name] = logger
+		Factory.loggers[logConfig.Name] = logger
 	}
 }
