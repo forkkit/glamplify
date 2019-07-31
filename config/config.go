@@ -12,7 +12,7 @@ type Configuration struct {
 // ApplicationConfiguration contains the 'app:' elements of the yml config file
 type ApplicationConfiguration struct {
 	Name    string                `yaml:"name"`
-	Version float32               `yaml:"version"`
+	Version float64               `yaml:"version"`
 	Loggers []LoggerConfiguration `yaml:"loggers"`
 }
 
@@ -22,48 +22,55 @@ type LoggerConfiguration struct {
 	Level string `yaml:"level"`
 }
 
-// Config contains the current configuration as per config.yml, or if missing
-// by the default configuration values (in code)
-var Settings *Configuration
-
-func init() {
-	Settings = loadConfig()
+// Load todo
+func Load() *Configuration {
+	return LoadFrom("config")
 }
 
-func loadConfig() *Configuration {
+// LoadFrom todo...
+func LoadFrom(configName string) *Configuration {
 
-	viper.SetConfigName("config")
+	viper.SetDefault("appname", "service-name")
+	viper.SetDefault("version", 1.0)
+	viper.SetDefault("logname", "default")
+	viper.SetDefault("loglevel", "warn")
+
+	viper.SetEnvPrefix("CONFIG")
+	viper.AutomaticEnv()
+
+	viper.SetConfigName(configName)
 
 	// Todo - better way to work out where the config.yml file is?
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("../")
 	viper.AddConfigPath("../config")
+	viper.AddConfigPath("./config")
 
-	config := Configuration{}
+	config := &Configuration{}
 	err := viper.ReadInConfig()
 	if err != nil {
 		config = createDefaultConfig()
-		return &config
+		return config
 	}
 
-	_ = viper.Unmarshal(&config)
+	_ = viper.Unmarshal(config)
 	if err != nil {
 		config = createDefaultConfig()
-		return &config
+		return config
 	}
-	return &config
+	return config
 }
 
-func createDefaultConfig() Configuration {
-	config := Configuration{}
+func createDefaultConfig() *Configuration {
+	config := &Configuration{}
 
 	config.App = ApplicationConfiguration{
-		Name:    "service-name",
-		Version: 1.0,
+		Name:    viper.GetString("appname"),
+		Version: viper.GetFloat64("version"),
 	}
 	config.App.Loggers = make([]LoggerConfiguration, 1)
-	config.App.Loggers[0].Name = "default"
-	config.App.Loggers[0].Level = "warn"
+	config.App.Loggers[0].Name = viper.GetString("logname")
+	config.App.Loggers[0].Level = viper.GetString("loglevel")
 
 	return config
 }

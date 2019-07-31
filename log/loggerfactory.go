@@ -4,13 +4,13 @@ import (
 	"github.com/cultureamp/glamplify/config"
 )
 
-// Factory contains all the registered loggers
+// LoggerFactory contains all the registered loggers
 type LoggerFactory struct {
 	loggers    map[string]ILogger
 	nullLogger ILogger
 }
 
-// LoggerFactory to retrieve registered loggers
+// Factory to retrieve registered loggers
 var Factory *LoggerFactory
 
 // Get a registered logger by name
@@ -32,7 +32,8 @@ func init() {
 	// Create the default, NullLogger
 	Factory.nullLogger = newNullLogger()
 
-	for _, logConfig := range config.Settings.App.Loggers {
+	settings := config.Load()
+	for _, logConfig := range settings.App.Loggers {
 		logger := newLogger(logConfig.Name, logConfig.Level)
 		Factory.loggers[logConfig.Name] = logger
 	}
