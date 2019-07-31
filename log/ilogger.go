@@ -1,9 +1,9 @@
 package log
 
-// LogLevel todo
+// Level type
 type Level uint32
 
-// LogFields Fields type, used to pass to `WithFields`.
+// Fields type, used to pass to `WithFields`.
 type Fields map[string]interface{}
 
 // ILogger interface that all loggers much support
@@ -59,7 +59,7 @@ type ILogger interface {
 	// Fatalf logs formatted fatal level logging then the process will exit with status set to 1
 	FatalfWithFields(fields Fields, format string, args ...interface{})
 	// Panicf logs formatted panic level logging then prints the stack trace and starts terminating the process unless recover is called
-	PanicfWithFields(ields Fields, format string, args ...interface{})
+	PanicfWithFields(fields Fields, format string, args ...interface{})
 
 	// SetOutput sets the output of the logger to the io.Writer
 	AddHook(hook ILoggerHook)
