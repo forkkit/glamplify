@@ -24,11 +24,15 @@ type LoggerConfiguration struct {
 
 // Load todo
 func Load() *Configuration {
-	return LoadFrom("config")
+	// Todo - better way to work out where the config.yml file is?
+	return LoadFrom(
+		[]string{".", "../", "../config", "./config"},
+		"config",
+	)
 }
 
 // LoadFrom todo...
-func LoadFrom(configName string) *Configuration {
+func LoadFrom(paths []string, configName string) *Configuration {
 
 	viper.SetDefault("appname", "service-name")
 	viper.SetDefault("version", 1.0)
@@ -40,11 +44,9 @@ func LoadFrom(configName string) *Configuration {
 
 	viper.SetConfigName(configName)
 
-	// Todo - better way to work out where the config.yml file is?
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("../")
-	viper.AddConfigPath("../config")
-	viper.AddConfigPath("./config")
+	for _, path := range paths {
+		viper.AddConfigPath(path)
+	}
 
 	config := &Configuration{}
 	err := viper.ReadInConfig()

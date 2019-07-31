@@ -10,11 +10,37 @@ go get github.com/cultureamp/glamplify
 
 ## Usage
 
+### Config
 ```
 package main
 
 import (
-  log "github.com/cultureamp/glamplify/log"
+  "github.com/cultureamp/glamplify/config"
+)
+
+func main() {
+
+    // settings will contain configuration data as read in from the config file.
+    settings := config.Load()
+
+    // If you want to look for a config file from a specific location use
+    settings = config.LoadFrom([]string{"${HOME}/settings"}, "config")
+}
+```
+If no config.yml or config.json can be found, or if it is corrupted, then a config will be created by checking these ENV variables.
+
+- CONFIG_APPNAME (default: "service-name")
+- CONFIG_VERSION (default: 1.0)
+- CONFIG_LOGNAME (default: "default")
+- CONFIG_LOGLEVEL (default: "warn")
+
+### Logging
+
+```
+package main
+
+import (
+"github.com/cultureamp/glamplify/log"
 )
 
 func main() {

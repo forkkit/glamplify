@@ -31,7 +31,7 @@ func TestGet(t *testing.T) {
 	os.Setenv("CONFIG_LOGNAME", "test")
 	os.Setenv("CONFIG_LOGLEVEL", "fatal")
 
-	settings = config.LoadFrom("filename_that_does_not_exist")
+	settings = config.LoadFrom([]string{","}, "filename_that_does_not_exist")
 	assert.Assert(t, settings.App.Name == "dummy-micro-service")
 	assert.Assert(t, settings.App.Version == 2.5)
 	assert.Assert(t, settings.App.Loggers[0].Name == "test")
