@@ -23,8 +23,13 @@ func main() {
     // settings will contain configuration data as read in from the config file.
     settings := config.Load()
 
-    // If you want to look for a config file from a specific location use
+    // Or if you want to look for a config file from a specific location use
     settings = config.LoadFrom([]string{"${HOME}/settings"}, "config")
+
+    // Then you can use
+    if settings.App.Version > 2.0 {
+        // to do
+    }
 }
 ```
 If no config.yml or config.json can be found, or if it is corrupted, then a config will be created by checking these ENV variables.
