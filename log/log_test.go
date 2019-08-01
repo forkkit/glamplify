@@ -10,7 +10,7 @@ import (
 
 func TestDefaultWarn_Success(t *testing.T) {
 
-	logger := log.Factory.Get("default")
+	logger := log.Get()
 
 	hook := newMemHook()
 	logger.AddHook(hook)
@@ -24,7 +24,7 @@ func TestDefaultWarn_Success(t *testing.T) {
 
 func TestDefaultWarnf_Success(t *testing.T) {
 
-	logger := log.Factory.Get("default")
+	logger := log.Get()
 
 	hook := newMemHook()
 	logger.AddHook(hook)
@@ -38,7 +38,7 @@ func TestDefaultWarnf_Success(t *testing.T) {
 
 func TestDefaultWarnWithFields_Success(t *testing.T) {
 
-	logger := log.Factory.Get("default")
+	logger := log.Get()
 
 	hook := newMemHook()
 	logger.AddHook(hook)
@@ -72,7 +72,7 @@ func TestDefaultWarnWithFields_Success(t *testing.T) {
 
 func TestDefaultDebug_NotCalled(t *testing.T) {
 
-	logger := log.Factory.Get("default")
+	logger := log.Get()
 
 	hook := newMemHook()
 	logger.AddHook(hook)
@@ -85,7 +85,7 @@ func TestDefaultDebug_NotCalled(t *testing.T) {
 }
 
 func TestNullLogger_DoesNothing(t *testing.T) {
-	logger := log.Factory.Get("something_that_does_not_exist")
+	logger := log.GetFor("something_that_does_not_exist")
 
 	logger.Debug("test")
 

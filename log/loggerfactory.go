@@ -1,6 +1,8 @@
 package log
 
 import (
+	"sync"
+
 	"github.com/cultureamp/glamplify/config"
 )
 
@@ -11,10 +13,21 @@ type LoggerFactory struct {
 }
 
 // Factory to retrieve registered loggers
-var Factory *LoggerFactory
+var (
+	factory *LoggerFactory
+	once    sync.Once
+)
 
-// Get a registered logger by name
-func (factory *LoggerFactory) Get(loggerName string) ILogger {
+// Get the default logger, or if not set the nullLogger
+func Get() ILogger {
+	return GetFor("default")
+}
+
+// GetFor retrieves a registered logger by name
+func GetFor(loggerName string) ILogger {
+	once.Do(func() {
+		factory = newFactory()
+	})
 
 	logger, ok := factory.loggers[loggerName]
 	if !ok {
@@ -24,17 +37,19 @@ func (factory *LoggerFactory) Get(loggerName string) ILogger {
 	return logger
 }
 
-func init() {
+func newFactory() *LoggerFactory {
 
-	Factory = &LoggerFactory{}
-	Factory.loggers = make(map[string]ILogger)
+	f := &LoggerFactory{}
+	f.loggers = make(map[string]ILogger)
 
 	// Create the default, NullLogger
-	Factory.nullLogger = newNullLogger()
+	f.nullLogger = newNullLogger()
 
 	settings := config.Load()
 	for _, logConfig := range settings.App.Loggers {
 		logger := newLogger(logConfig.Name, logConfig.Level)
-		Factory.loggers[logConfig.Name] = logger
+		f.loggers[logConfig.Name] = logger
 	}
+
+	return f
 }
