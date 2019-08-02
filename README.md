@@ -53,19 +53,24 @@ func main() {
     // Get the logger
     logger := log.New()
 
-    // Emit debug trace with optional fields
+    // Emit debug trace
+    // All messages must be static strings (as per Culture Amp Sensibile Default)
+    logger.Debug("Something happened")
+
+    // Emit debug trace with fields
+    // Fields can contain any type of variables
     logger.Debug("Something happened", log.Fields{
 		"aString": "hello",
 		"aInt":    123,
 		"aFloat":  42.48,
 	})
 
-    // Emit info trace with formatting
+    // Emit normal logging (can add optional fields if required)
     logger.Print("Executing main")
 
-    // Emit Error with strutured fields
+    // Emit Error (can add optional fields if required)
     err := errors.New("Main program stopped unexpectedly",
-    logger.Error(err, logger.Fields{"cpu": "amd"})
+    logger.Error(err)
 }
 
 ```
