@@ -2,9 +2,4 @@ app:
     name: "service-name"
     version: 1.0
   
-    loggers:
-            -   name: "default"
-                level: "warn"
-
-            -   name: "detailed"
-                level: "debug"
+    
