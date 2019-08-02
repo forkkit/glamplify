@@ -15,7 +15,7 @@ go get github.com/cultureamp/glamplify
 package main
 
 import (
-  "github.com/cultureamp/glamplify/config"
+    "github.com/cultureamp/glamplify/config"
 )
 
 func main() {
@@ -36,8 +36,6 @@ If no config.yml or config.json can be found, or if it is corrupted, then a conf
 
 - CONFIG_APPNAME (default: "service-name")
 - CONFIG_VERSION (default: 1.0)
-- CONFIG_LOGNAME (default: "default")
-- CONFIG_LOGLEVEL (default: "warn")
 
 ### Logging
 
@@ -45,33 +43,29 @@ If no config.yml or config.json can be found, or if it is corrupted, then a conf
 package main
 
 import (
-"github.com/cultureamp/glamplify/log"
+    "errors"
+
+    "github.com/cultureamp/glamplify/log"
 )
 
 func main() {
 
-    // Get default logger
-    logger := LoggerFactory.Get("default")
+    // Get the logger
+    logger := log.New()
 
-    // Emit debug trace
-    logger.Debug("Something happened")
+    // Emit debug trace with optional fields
+    logger.Debug("Something happened", log.Fields{
+		"aString": "hello",
+		"aInt":    123,
+		"aFloat":  42.48,
+	})
 
     // Emit info trace with formatting
-    logger.Infof("Executing %s...", "main")
+    logger.Print("Executing main")
 
-    // Emit Warning with strutured fields
-    logger.WarnWithFields(
-        logger.Fields{"cpu": "amd"},
-        "Wrong CPU type, expect slow execution times"
-    )
-
-    // Emit Warning with strutured fields
-    program := "example.exe"
-    logger.ErrorfWithFields(
-        logger.Fields{"cpu": "amd"},
-        "Main program %s stopped unexpectedly",
-        program
-    )
+    // Emit Error with strutured fields
+    err := errors.New("Main program stopped unexpectedly",
+    logger.Error(err, logger.Fields{"cpu": "amd"})
 }
 
 ```
