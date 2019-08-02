@@ -11,15 +11,8 @@ type Configuration struct {
 
 // ApplicationConfiguration contains the 'app:' elements of the yml config file
 type ApplicationConfiguration struct {
-	Name    string                `yaml:"name"`
-	Version float64               `yaml:"version"`
-	Loggers []LoggerConfiguration `yaml:"loggers"`
-}
-
-// LoggerConfiguration contains the 'streamloggers:' elements in the config file
-type LoggerConfiguration struct {
-	Name  string `yaml:"name"`
-	Level string `yaml:"level"`
+	Name    string  `yaml:"name"`
+	Version float64 `yaml:"version"`
 }
 
 // Load todo
@@ -70,9 +63,6 @@ func createDefaultConfig() *Configuration {
 		Name:    viper.GetString("appname"),
 		Version: viper.GetFloat64("version"),
 	}
-	config.App.Loggers = make([]LoggerConfiguration, 1)
-	config.App.Loggers[0].Name = viper.GetString("logname")
-	config.App.Loggers[0].Level = viper.GetString("loglevel")
 
 	return config
 }
