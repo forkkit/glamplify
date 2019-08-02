@@ -23,7 +23,7 @@ func TestDebug_Success(t *testing.T) {
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "details"), "Logger was: '%s'. Expected: 'details'", msg)
-	assert.Assert(t, strings.Contains(msg, "level=\"DEBUG\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
+	assert.Assert(t, strings.Contains(msg, "level=\"debug\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, !strings.Contains(msg, "string=\"hello\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, !strings.Contains(msg, "int=\"123\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, !strings.Contains(msg, "float=\"42.48\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
@@ -45,7 +45,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "details"), "Logger was: '%s'. Expected: 'details'", msg)
-	assert.Assert(t, strings.Contains(msg, "level=\"DEBUG\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
+	assert.Assert(t, strings.Contains(msg, "level=\"debug\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "string=\"hello\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "int=\"123\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "float=\"42.48\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
@@ -101,7 +101,7 @@ func TestError_Success(t *testing.T) {
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "error"), "Logger was: '%s'. Expected: 'error'", msg)
-	assert.Assert(t, strings.Contains(msg, "level=\"ERROR\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
+	assert.Assert(t, strings.Contains(msg, "level=\"error\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, !strings.Contains(msg, "string=\"hello\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, !strings.Contains(msg, "int=\"123\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, !strings.Contains(msg, "float=\"42.48\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
@@ -123,7 +123,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "error"), "Logger was: '%s'. Expected: 'error'", msg)
-	assert.Assert(t, strings.Contains(msg, "level=\"ERROR\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
+	assert.Assert(t, strings.Contains(msg, "level=\"error\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "string=\"hello\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "int=\"123\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "float=\"42.48\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)

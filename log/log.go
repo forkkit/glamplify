@@ -35,7 +35,7 @@ func New(configure ...func(*log.Logger)) *FieldLogger {
 // Debug todo...
 func (logger FieldLogger) Debug(message string, fields ...Fields) {
 	meta := Fields{
-		"level": "DEBUG",
+		"level": "debug",
 		"time":  time.Now().Format(time.RFC3339),
 	}
 
@@ -56,7 +56,7 @@ func (logger FieldLogger) Print(message string, fields ...Fields) {
 // Error todo...
 func (logger FieldLogger) Error(err error, fields ...Fields) {
 	meta := Fields{
-		"level": "ERROR",
+		"level": "error",
 		"time":  time.Now().Format(time.RFC3339),
 	}
 
