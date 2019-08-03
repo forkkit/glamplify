@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	stdlog "log"
+	"os"
 	"strings"
 	"testing"
 
@@ -127,4 +128,30 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assert.Assert(t, strings.Contains(msg, "string=\"hello\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "int=\"123\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
 	assert.Assert(t, strings.Contains(msg, "float=\"42.48\""), "Logger was: '%s'. Expected: 'level=\"DEBUG\"'", msg)
+}
+
+func TestLogSomeRealMessages(t *testing.T) {
+
+	config := func(stdlogger *stdlog.Logger) {
+		stdlogger.SetOutput(os.Stderr)
+	}
+	logger := log.New(config)
+
+	// You should see these printed out, all correctly formatted.
+	logger.Debug("details", log.Fields{
+		"string": "hello",
+		"int":    123,
+		"float":  42.48,
+	})
+
+	logger.Print("info", log.Fields{
+		"string": "hello",
+		"int":    123,
+		"float":  42.48,
+	})
+	logger.Error(errors.New("error"), log.Fields{
+		"string": "hello",
+		"int":    123,
+		"float":  42.48,
+	})
 }

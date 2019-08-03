@@ -4,23 +4,30 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// Fields type, used to pass to `WithFields`.
+// RFC3339Milli is the standard RFC3339 format with added milliseconds
+const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
+
+// Fields type, used to pass to Debug, Print and Error.
 type Fields map[string]interface{}
 
-// FieldLogger todo...
+// FieldLogger wraps the standard library logger and add structured fields as quoted key value pairs
 type FieldLogger struct {
 	stdLogger *log.Logger
 }
 
-// New todo...
-// https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
-func New(configure ...func(*log.Logger)) *FieldLogger {
+// So that you don't even need to create a new logger
+var internal = New()
+
+// New creates a new FieldLogger. The optional configure func lets you set values on the underlying standard logger.
+// eg. SetOutput
+func New(configure ...func(*log.Logger)) *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldLogger{}
 	logger.stdLogger = log.New(os.Stdout, "", 0)
@@ -32,32 +39,86 @@ func New(configure ...func(*log.Logger)) *FieldLogger {
 	return logger
 }
 
-// Debug todo...
+// Debug writes a debug message with optional fields to the underlying standard logger.
+// Useful for adding detailed tracing that you don't normally want to appear, but turned on
+// when hunting down incorrect behaviour.
+// All field values will be automatically quoted (keys will not be).
+// Debug adds fields {level="debug", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "fields message"
+// Use lower-case keys and values if possible.
+func Debug(message string, fields ...Fields) {
+	internal.Debug(message, fields...)
+}
+
+// Debug writes a debug message with optional fields to the underlying standard logger.
+// Useful for adding detailed tracing that you don't normally want to appear, but turned on
+// when hunting down incorrect behaviour.
+// All field values will be automatically quoted (keys will not be).
+// Debug adds fields {level="debug", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "fields message"
+// Use lower-case keys and values if possible.
 func (logger FieldLogger) Debug(message string, fields ...Fields) {
 	meta := Fields{
-		"level": "debug",
-		"time":  time.Now().Format(time.RFC3339),
+		"level":   "debug",
+		"host":    hostName(),
+		"pid":     processID(),
+		"process": processName(),
+		"time":    timeNow(),
 	}
 
 	str := combine(meta, message, fields...)
 	logger.stdLogger.Print(str)
 }
 
-// Print todo...
+// Print writes a message with optional fields to the underlying standard logger.
+// Useful to normal tracing that should be captured during standard operating behaviour.
+// All field values will be automatically quoted (keys will not be).
+// Debug adds fields {time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "fields message"
+// Use lower-case keys and values if possible.
+func Print(message string, fields ...Fields) {
+	internal.Print(message, fields...)
+}
+
+// Print writes a message with optional fields to the underlying standard logger.
+// Useful to normal tracing that should be captured during standard operating behaviour.
+// All field values will be automatically quoted (keys will not be).
+// Debug adds fields {time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "fields message"
+// Use lower-case keys and values if possible.
 func (logger FieldLogger) Print(message string, fields ...Fields) {
 	meta := Fields{
-		"time": time.Now().Format(time.RFC3339),
+		"host": hostName(),
+		"time": timeNow(),
 	}
 
 	str := combine(meta, message, fields...)
 	logger.stdLogger.Print(str)
 }
 
-// Error todo...
+// Error writes a error message with optional fields to the underlying standard logger.
+// Useful to trace errors should be captured always.
+// All field values will be automatically quoted (keys will not be).
+// Debug adds fields {level="error", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "fields message"
+// Use lower-case keys and values if possible.
+func Error(err error, fields ...Fields) {
+	internal.Error(err, fields...)
+}
+
+// Error writes a error message with optional fields to the underlying standard logger.
+// Useful to trace errors should be captured always.
+// All field values will be automatically quoted (keys will not be).
+// Debug adds fields {level="error", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "fields message"
+// Use lower-case keys and values if possible.
 func (logger FieldLogger) Error(err error, fields ...Fields) {
 	meta := Fields{
-		"level": "error",
-		"time":  time.Now().Format(time.RFC3339),
+		"level":   "error",
+		"host":    hostName(),
+		"pid":     processID(),
+		"process": processName(),
+		"time":    timeNow(),
 	}
 
 	str := combine(meta, err.Error(), fields...)
@@ -66,23 +127,25 @@ func (logger FieldLogger) Error(err error, fields ...Fields) {
 
 func combine(meta Fields, message string, fields ...Fields) string {
 
-	var str strings.Builder
+	var str []string
 
-	_, pre := serialize(meta)
-	str.WriteString(pre)
+	count, pre := serialize(meta)
+	if count > 0 {
+		str = append(str, pre)
+	}
 
 	for _, f := range fields {
 		count, post := serialize(f)
 		if count > 0 {
-			str.WriteString(" ")
-			str.WriteString(post)
+			str = append(str, post)
 		}
 	}
 
-	str.WriteString(" ")
-	str.WriteString(message)
+	if len(message) > 0 {
+		str = append(str, message)
+	}
 
-	return str.String()
+	return strings.Join(str, " ")
 }
 
 func serialize(fields Fields) (int, string) {
@@ -93,4 +156,31 @@ func serialize(fields Fields) (int, string) {
 	}
 	sort.Strings(pairs)
 	return len(pairs), strings.Join(pairs, " ")
+}
+
+func timeNow() string {
+	//return time.Now().Format(time.RFC3339)
+	return time.Now().Format(RFC3339Milli)
+}
+
+func hostName() string {
+	name, err := os.Hostname()
+	if err != nil {
+		name = "<unknown>"
+	}
+
+	return name
+}
+
+func processName() string {
+	name := os.Args[0]
+	if len(name) > 0 {
+		name = filepath.Base(name)
+	}
+
+	return name
+}
+
+func processID() int {
+	return os.Getpid()
 }
