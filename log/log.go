@@ -88,7 +88,6 @@ func Print(message string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Print(message string, fields ...Fields) {
 	meta := Fields{
-		"host": hostName(),
 		"time": timeNow(),
 	}
 
