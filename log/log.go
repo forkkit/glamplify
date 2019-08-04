@@ -68,14 +68,15 @@ func Debug(message string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Debug(message string, fields ...Fields) {
 	meta := Fields{
-		"level":   "debug",
-		"host":    hostName(),
-		"pid":     processID(),
-		"process": processName(),
-		"time":    timeNow(logger.timeFormat),
+		"severity": "DEBUG",
+		"host":     hostName(),
+		"pid":      processID(),
+		"process":  processName(),
+		"time":     timeNow(logger.timeFormat),
+		"msg":      message,
 	}
 
-	str := combine(meta, message, fields...)
+	str := combine(meta, fields...)
 	logger.stdLogger.Print(str)
 }
 
@@ -97,10 +98,12 @@ func Print(message string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Print(message string, fields ...Fields) {
 	meta := Fields{
-		"time": timeNow(logger.timeFormat),
+		"severity": "INFO",
+		"time":     timeNow(logger.timeFormat),
+		"msg":      message,
 	}
 
-	str := combine(meta, message, fields...)
+	str := combine(meta, fields...)
 	logger.stdLogger.Print(str)
 }
 
@@ -122,18 +125,19 @@ func Error(err error, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Error(err error, fields ...Fields) {
 	meta := Fields{
-		"level":   "error",
-		"host":    hostName(),
-		"pid":     processID(),
-		"process": processName(),
-		"time":    timeNow(logger.timeFormat),
+		"severity": "ERROR",
+		"host":     hostName(),
+		"pid":      processID(),
+		"process":  processName(),
+		"time":     timeNow(logger.timeFormat),
+		"error":    err.Error(),
 	}
 
-	str := combine(meta, err.Error(), fields...)
+	str := combine(meta, fields...)
 	logger.stdLogger.Print(str)
 }
 
-func combine(meta Fields, message string, fields ...Fields) string {
+func combine(meta Fields, fields ...Fields) string {
 
 	var str []string
 
@@ -147,10 +151,6 @@ func combine(meta Fields, message string, fields ...Fields) string {
 		if count > 0 {
 			str = append(str, post)
 		}
-	}
-
-	if len(message) > 0 {
-		str = append(str, message)
 	}
 
 	return strings.Join(str, " ")
