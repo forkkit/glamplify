@@ -3,7 +3,6 @@ package log_test
 import (
 	"bytes"
 	"errors"
-	stdlog "log"
 	"os"
 	"strings"
 	"testing"
@@ -15,8 +14,8 @@ import (
 func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(stdlogger *stdlog.Logger) {
-		stdlogger.SetOutput(memBuffer)
+	config := func(logger *log.FieldLogger) {
+		logger.SetOutput(memBuffer)
 	}
 	logger := log.New(config)
 
@@ -33,8 +32,8 @@ func TestDebug_Success(t *testing.T) {
 func TestDebugWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(stdlogger *stdlog.Logger) {
-		stdlogger.SetOutput(memBuffer)
+	config := func(logger *log.FieldLogger) {
+		logger.SetOutput(memBuffer)
 	}
 	logger := log.New(config)
 
@@ -55,8 +54,8 @@ func TestDebugWithFields_Success(t *testing.T) {
 func TestPrint_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(stdlogger *stdlog.Logger) {
-		stdlogger.SetOutput(memBuffer)
+	config := func(logger *log.FieldLogger) {
+		logger.SetOutput(memBuffer)
 	}
 	logger := log.New(config)
 
@@ -72,8 +71,8 @@ func TestPrint_Success(t *testing.T) {
 func TestPrintWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(stdlogger *stdlog.Logger) {
-		stdlogger.SetOutput(memBuffer)
+	config := func(logger *log.FieldLogger) {
+		logger.SetOutput(memBuffer)
 	}
 	logger := log.New(config)
 
@@ -93,8 +92,8 @@ func TestPrintWithFields_Success(t *testing.T) {
 func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(stdlogger *stdlog.Logger) {
-		stdlogger.SetOutput(memBuffer)
+	config := func(logger *log.FieldLogger) {
+		logger.SetOutput(memBuffer)
 	}
 	logger := log.New(config)
 
@@ -111,8 +110,8 @@ func TestError_Success(t *testing.T) {
 func TestErrorWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(stdlogger *stdlog.Logger) {
-		stdlogger.SetOutput(memBuffer)
+	config := func(logger *log.FieldLogger) {
+		logger.SetOutput(memBuffer)
 	}
 	logger := log.New(config)
 
@@ -132,8 +131,8 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 func TestLogSomeRealMessages(t *testing.T) {
 
-	config := func(stdlogger *stdlog.Logger) {
-		stdlogger.SetOutput(os.Stderr)
+	config := func(logger *log.FieldLogger) {
+		logger.SetOutput(os.Stderr)
 	}
 	logger := log.New(config)
 

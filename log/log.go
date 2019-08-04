@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,7 +20,8 @@ type Fields map[string]interface{}
 
 // FieldLogger wraps the standard library logger and add structured fields as quoted key value pairs
 type FieldLogger struct {
-	stdLogger *log.Logger
+	stdLogger  *log.Logger
+	timeFormat string
 }
 
 // So that you don't even need to create a new logger
@@ -27,16 +29,27 @@ var internal = New()
 
 // New creates a new FieldLogger. The optional configure func lets you set values on the underlying standard logger.
 // eg. SetOutput
-func New(configure ...func(*log.Logger)) *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+func New(configure ...func(*FieldLogger)) *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldLogger{}
 	logger.stdLogger = log.New(os.Stdout, "", 0)
+	logger.timeFormat = RFC3339Milli
 
 	for _, config := range configure {
-		config(logger.stdLogger)
+		config(logger)
 	}
 
 	return logger
+}
+
+// SetOutput todo
+func (logger *FieldLogger) SetOutput(writer io.Writer) {
+	logger.stdLogger.SetOutput(writer)
+}
+
+// SetTimeFormat todo...
+func (logger *FieldLogger) SetTimeFormat(format string) {
+	logger.timeFormat = format
 }
 
 // Debug writes a debug message with optional fields to the underlying standard logger.
@@ -63,7 +76,7 @@ func (logger FieldLogger) Debug(message string, fields ...Fields) {
 		"host":    hostName(),
 		"pid":     processID(),
 		"process": processName(),
-		"time":    timeNow(),
+		"time":    timeNow(logger.timeFormat),
 	}
 
 	str := combine(meta, message, fields...)
@@ -88,7 +101,7 @@ func Print(message string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Print(message string, fields ...Fields) {
 	meta := Fields{
-		"time": timeNow(),
+		"time": timeNow(logger.timeFormat),
 	}
 
 	str := combine(meta, message, fields...)
@@ -117,7 +130,7 @@ func (logger FieldLogger) Error(err error, fields ...Fields) {
 		"host":    hostName(),
 		"pid":     processID(),
 		"process": processName(),
-		"time":    timeNow(),
+		"time":    timeNow(logger.timeFormat),
 	}
 
 	str := combine(meta, err.Error(), fields...)
@@ -157,9 +170,8 @@ func serialize(fields Fields) (int, string) {
 	return len(pairs), strings.Join(pairs, " ")
 }
 
-func timeNow() string {
-	//return time.Now().Format(time.RFC3339)
-	return time.Now().Format(RFC3339Milli)
+func timeNow(format string) string {
+	return time.Now().Format(format)
 }
 
 func hostName() string {

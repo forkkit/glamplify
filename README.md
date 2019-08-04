@@ -50,7 +50,12 @@ import (
 
 func main() {
 
-    // Get the logger
+    // You can either get a new logger, or just use the public functions which internally use an internal logger
+    // eg. log.Debug(), log.Print() and log.Error()
+
+    // Example below shows with a specific logger instance, but either usage is ok depending on your needs.
+
+    // Get a new logger
     logger := log.New()
 
     // Emit debug trace
