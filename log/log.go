@@ -160,10 +160,18 @@ func serialize(fields Fields) (int, string) {
 	var pairs []string
 	for k, v := range fields {
 		vs := fmt.Sprintf("%v", v)
-		pairs = append(pairs, k+"="+strconv.Quote(vs))
+
+		pairs = append(pairs, quoteIfRequired(k)+"="+quoteIfRequired(vs))
 	}
 	sort.Strings(pairs)
 	return len(pairs), strings.Join(pairs, " ")
+}
+
+func quoteIfRequired(input string) string {
+	if strings.Contains(input, " ") {
+		input = strconv.Quote(input)
+	}
+	return input
 }
 
 func timeNow(format string) string {
