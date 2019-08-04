@@ -14,10 +14,8 @@ import (
 func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(logger *log.FieldLogger) {
-		logger.SetOutput(memBuffer)
-	}
-	logger := log.New(config)
+	logger := log.New()
+	logger.SetOutput(memBuffer)
 
 	logger.Debug("details")
 
@@ -32,10 +30,8 @@ func TestDebug_Success(t *testing.T) {
 func TestDebugWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(logger *log.FieldLogger) {
-		logger.SetOutput(memBuffer)
-	}
-	logger := log.New(config)
+	logger := log.New()
+	logger.SetOutput(memBuffer)
 
 	logger.Debug("details", log.Fields{
 		"string": "hello",
@@ -54,10 +50,8 @@ func TestDebugWithFields_Success(t *testing.T) {
 func TestPrint_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(logger *log.FieldLogger) {
-		logger.SetOutput(memBuffer)
-	}
-	logger := log.New(config)
+	logger := log.New()
+	logger.SetOutput(memBuffer)
 
 	logger.Print("info")
 
@@ -71,10 +65,8 @@ func TestPrint_Success(t *testing.T) {
 func TestPrintWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(logger *log.FieldLogger) {
-		logger.SetOutput(memBuffer)
-	}
-	logger := log.New(config)
+	logger := log.New()
+	logger.SetOutput(memBuffer)
 
 	logger.Print("info", log.Fields{
 		"string": "hello",
@@ -92,10 +84,8 @@ func TestPrintWithFields_Success(t *testing.T) {
 func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(logger *log.FieldLogger) {
-		logger.SetOutput(memBuffer)
-	}
-	logger := log.New(config)
+	logger := log.New()
+	logger.SetOutput(memBuffer)
 
 	logger.Error(errors.New("error"))
 
@@ -110,10 +100,8 @@ func TestError_Success(t *testing.T) {
 func TestErrorWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	config := func(logger *log.FieldLogger) {
-		logger.SetOutput(memBuffer)
-	}
-	logger := log.New(config)
+	logger := log.New()
+	logger.SetOutput(memBuffer)
 
 	logger.Error(errors.New("error"), log.Fields{
 		"string": "hello",
@@ -131,10 +119,8 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 func TestLogSomeRealMessages(t *testing.T) {
 
-	config := func(logger *log.FieldLogger) {
-		logger.SetOutput(os.Stderr)
-	}
-	logger := log.New(config)
+	logger := log.New()
+	logger.SetOutput(os.Stderr)
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("details", log.Fields{

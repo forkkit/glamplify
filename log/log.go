@@ -29,15 +29,11 @@ var internal = New()
 
 // New creates a new FieldLogger. The optional configure func lets you set values on the underlying standard logger.
 // eg. SetOutput
-func New(configure ...func(*FieldLogger)) *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+func New() *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldLogger{}
 	logger.stdLogger = log.New(os.Stdout, "", 0)
 	logger.timeFormat = RFC3339Milli
-
-	for _, config := range configure {
-		config(logger)
-	}
 
 	return logger
 }
