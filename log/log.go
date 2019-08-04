@@ -42,12 +42,12 @@ func New(configure ...func(*FieldLogger)) *FieldLogger { // https://dave.cheney.
 	return logger
 }
 
-// SetOutput todo
+// SetOutput set the output to anything that supports io.Writer
 func (logger *FieldLogger) SetOutput(writer io.Writer) {
 	logger.stdLogger.SetOutput(writer)
 }
 
-// SetTimeFormat todo...
+// SetTimeFormat allows you to change the default time format from "2006-01-02T15:04:05.000Z07:00" to whatever you like
 func (logger *FieldLogger) SetTimeFormat(format string) {
 	logger.timeFormat = format
 }
