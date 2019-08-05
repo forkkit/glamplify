@@ -126,6 +126,7 @@ func TestLogSomeRealMessages(t *testing.T) {
 
 	logger := log.New()
 	logger.SetOutput(os.Stderr)
+	logger.AddContext("app", "mytest-app.exe")
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("details", log.Fields{

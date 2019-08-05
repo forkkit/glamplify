@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type Fields map[string]interface{}
 type FieldLogger struct {
 	stdLogger  *log.Logger
 	timeFormat string
+	context    Fields
 }
 
 // So that you don't even need to create a new logger
@@ -34,8 +36,14 @@ func New() *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-optio
 	logger := &FieldLogger{}
 	logger.stdLogger = log.New(os.Stdout, "", 0)
 	logger.timeFormat = RFC3339Milli
+	logger.context = Fields{}
 
 	return logger
+}
+
+// AddContext will add a key-value pair to every logging message
+func (logger *FieldLogger) AddContext(key string, value interface{}) {
+	logger.context[key] = value
 }
 
 // SetOutput set the output to anything that supports io.Writer
@@ -68,15 +76,15 @@ func Debug(message string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Debug(message string, fields ...Fields) {
 	meta := Fields{
-		"severity": "DEBUG",
 		"host":     hostName(),
+		"msg":      message,
 		"pid":      processID(),
 		"process":  processName(),
+		"severity": "DEBUG",
 		"time":     timeNow(logger.timeFormat),
-		"msg":      message,
 	}
 
-	str := combine(meta, fields...)
+	str := combine(meta, logger.context, fields...)
 	logger.stdLogger.Print(str)
 }
 
@@ -98,12 +106,12 @@ func Print(message string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Print(message string, fields ...Fields) {
 	meta := Fields{
+		"msg":      message,
 		"severity": "INFO",
 		"time":     timeNow(logger.timeFormat),
-		"msg":      message,
 	}
 
-	str := combine(meta, fields...)
+	str := combine(meta, logger.context, fields...)
 	logger.stdLogger.Print(str)
 }
 
@@ -125,46 +133,52 @@ func Error(err error, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Error(err error, fields ...Fields) {
 	meta := Fields{
-		"severity": "ERROR",
+		"error":    err.Error(),
 		"host":     hostName(),
 		"pid":      processID(),
 		"process":  processName(),
+		"severity": "ERROR",
 		"time":     timeNow(logger.timeFormat),
-		"error":    err.Error(),
 	}
 
-	str := combine(meta, fields...)
+	str := combine(meta, logger.context, fields...)
 	logger.stdLogger.Print(str)
 }
 
-func combine(meta Fields, fields ...Fields) string {
+func combine(meta Fields, context Fields, fields ...Fields) string {
 
 	var str []string
 
 	count, pre := serialize(meta)
 	if count > 0 {
-		str = append(str, pre)
+		str = append(str, pre...)
+	}
+
+	count, ctx := serialize(context)
+	if count > 0 {
+		str = append(str, ctx...)
 	}
 
 	for _, f := range fields {
 		count, post := serialize(f)
 		if count > 0 {
-			str = append(str, post)
+			str = append(str, post...)
 		}
 	}
 
+	sort.Strings(str)
 	return strings.Join(str, " ")
 }
 
-func serialize(fields Fields) (int, string) {
+func serialize(fields Fields) (int, []string) {
 	var pairs []string
 	for k, v := range fields {
 		vs := fmt.Sprintf("%v", v)
 
 		pairs = append(pairs, quoteIfRequired(k)+"="+quoteIfRequired(vs))
 	}
-	sort.Strings(pairs)
-	return len(pairs), strings.Join(pairs, " ")
+
+	return len(pairs), pairs
 }
 
 func quoteIfRequired(input string) string {
@@ -178,13 +192,20 @@ func timeNow(format string) string {
 	return time.Now().Format(format)
 }
 
-func hostName() string {
-	name, err := os.Hostname()
-	if err != nil {
-		name = "<unknown>"
-	}
+var host string
+var hostOnce sync.Once
 
-	return name
+func hostName() string {
+
+	var err error
+	hostOnce.Do(func() {
+		host, err = os.Hostname()
+		if err != nil {
+			host = "<unknown>"
+		}
+	})
+
+	return host
 }
 
 func processName() string {
@@ -196,6 +217,13 @@ func processName() string {
 	return name
 }
 
+var pid int
+var pidOnce sync.Once
+
 func processID() int {
-	return os.Getpid()
+	pidOnce.Do(func() {
+		pid = os.Getpid()
+	})
+
+	return pid
 }

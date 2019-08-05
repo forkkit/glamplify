@@ -52,7 +52,12 @@ func main() {
 
     // You can either get a new logger, or just use the public functions which internally use an internal logger
     // eg. log.Debug(), log.Print() and log.Error()
-    // You can't set the Time Format or the Output on the internal logger. It always uses the default values:
+    // You can't use these functions on the internal logger (you must have your own instance of a logger)
+    // AddContext()
+    // StdOutput()
+    // SetTimeFormat()
+    // The internall logger will always use these default values:
+    // context = nil
     // output = os.Stderr
     // time format = "2006-01-02T15:04:05.000Z07:00"
 
@@ -60,7 +65,7 @@ func main() {
 
     // Get a new logger
     logger := log.New()
-    // Set logger.SetTimeFormat() or logger.SetOutput() if you need something different to the default values
+    // Set logger.AddContext(), logger.SetTimeFormat() or logger.SetOutput() if you need something different to the default values
 
     // Emit debug trace
     // All messages must be static strings (as per Culture Amp Sensibile Default)
