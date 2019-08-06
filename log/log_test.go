@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -162,7 +163,7 @@ func TestLogSomeRealMessages(t *testing.T) {
 
 func BenchmarkLogging(b * testing.B) {
 	logger := log.New()
-	logger.SetOutput(os.Stderr)
+	logger.SetOutput(ioutil.Discard)
 	logger.AddContext("app", "mytest-app.exe")
 	fields := log.Fields{
 		"string":        "hello",
@@ -173,7 +174,7 @@ func BenchmarkLogging(b * testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		_ = logger.Debug("test details", fields)
+		_ = logger.Print("test details", fields)
 	}
 
 }

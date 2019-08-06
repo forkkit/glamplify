@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -137,8 +138,10 @@ func Error(err error, fields ...Fields) error {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Error(err error, fields ...Fields) error {
 	meta := Fields{
+		"arch":		targetArch(),
 		"error":    err.Error(),
 		"host":     hostName(),
+		"os":		targetOS(),
 		"pid":      processID(),
 		"process":  processName(),
 		"severity": "ERROR",
@@ -250,4 +253,12 @@ func processID() int {
 	})
 
 	return pid
+}
+
+func targetArch() string {
+	return runtime.GOARCH
+}
+
+func targetOS() string {
+	return runtime.GOOS
 }
