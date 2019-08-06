@@ -1,63 +1,59 @@
 package log
 
 import (
-	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"runtime"
-	"sort"
-	"strings"
 	"sync"
-	"time"
 )
 
 // RFC3339Milli is the standard RFC3339 format with added milliseconds
 const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
 
-// Fields type, used to pass to Debug, Print and Error.
-type Fields map[string]interface{}
+type Config struct {
+	Output io.Writer
+	TimeFormat string
+}
 
 // FieldLogger wraps the standard library logger and add structured fields as quoted key value pairs
 type FieldLogger struct {
-	outputMutex sync.Mutex
+	mutex sync.Mutex
 	output io.Writer
-
 	timeFormat string
-	context    Fields
 }
 
 // So that you don't even need to create a new logger
-var internal = New()
+var (
+	internal = New()
+)
 
 // New creates a new FieldLogger. The optional configure func lets you set values on the underlying standard logger.
 // eg. SetOutput
-func New() *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+func New(configure...func(*Config)) *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldLogger{}
-	logger.output = os.Stdout
-	logger.timeFormat = RFC3339Milli
-	logger.context = Fields{}
+	conf := Config{
+		Output:     os.Stdout,
+		TimeFormat: RFC3339Milli,
+	}
+	for _, config := range configure  {
+		config(&conf)
+	}
+
+	logger.mutex.Lock()
+	defer logger.mutex.Unlock()
+
+	logger.output = conf.Output
+	logger.timeFormat = conf.TimeFormat
 
 	return logger
 }
 
-// AddContext will add a key-value pair to every logging message
-func (logger *FieldLogger) AddContext(key string, value interface{}) {
-	logger.context[key] = value
+func WithScope(fields Fields) *Scope {
+	return newScope(internal, fields)
 }
 
-// SetOutput set the output to anything that supports io.Writer
-func (logger *FieldLogger) SetOutput(writer io.Writer) {
-	logger.outputMutex.Lock()
-	defer logger.outputMutex.Unlock()
-
-	logger.output = writer
-}
-
-// SetTimeFormat allows you to change the default time format from "2006-01-02T15:04:05.000Z07:00" to whatever you like
-func (logger *FieldLogger) SetTimeFormat(format string) {
-	logger.timeFormat = format
+func (logger *FieldLogger)  WithScope(fields Fields) *Scope {
+	return newScope(logger, fields)
 }
 
 // Debug writes a debug message with optional fields to the underlying standard logger.
@@ -88,7 +84,8 @@ func (logger FieldLogger) Debug(message string, fields ...Fields) error {
 		"time":     timeNow(logger.timeFormat),
 	}
 
-	str := combine(meta, logger.context, fields...)
+	merged := meta.merge(fields...)
+	str := merged.serialize()
 	return logger.write(str)
 }
 
@@ -115,7 +112,8 @@ func (logger FieldLogger) Print(message string, fields ...Fields) error {
 		"time":     timeNow(logger.timeFormat),
 	}
 
-	str := combine(meta, logger.context, fields...)
+	merged := meta.merge(fields...)
+	str := merged.serialize()
 	return logger.write(str)
 }
 
@@ -147,7 +145,8 @@ func (logger FieldLogger) Error(err error, fields ...Fields) error {
 		"time":     timeNow(logger.timeFormat),
 	}
 
-	str := combine(meta, logger.context, fields...)
+	merged := meta.merge(fields...)
+	str := merged.serialize()
 	return logger.write(str)
 }
 
@@ -164,113 +163,10 @@ func (logger *FieldLogger) write(str string) error {
 		buffer = append(buffer, '\n')
 	}
 
-	logger.outputMutex.Lock()
-	defer logger.outputMutex.Unlock()
+	logger.mutex.Lock()
+	defer logger.mutex.Unlock()
 
 	_, err := logger.output.Write(buffer)
 	return err
 }
 
-func combine(meta Fields, context Fields, fields ...Fields) string {
-	var str []string
-
-	count, pre := serialize(meta)
-	if count > 0 {
-		str = append(str, pre...)
-	}
-
-	count, ctx := serialize(context)
-	if count > 0 {
-		str = append(str, ctx...)
-	}
-
-	for _, f := range fields {
-		count, post := serialize(f)
-		if count > 0 {
-			str = append(str, post...)
-		}
-	}
-
-	sort.Strings(str)
-	return strings.Join(str, " ")
-}
-
-func serialize(fields Fields) (int, []string) {
-	var pairs []string
-	for k, v := range fields {
-		vs, ok := v.(string)
-		if !ok {
-			// only Sptrinf non-strings
-			vs = fmt.Sprintf("%v", v)
-		}
-
-		pairs = append(pairs, quoteIfRequired(k)+"="+quoteIfRequired(vs))
-	}
-
-	return len(pairs), pairs
-}
-
-func quoteIfRequired(input string) string {
-	if strings.Contains(input, " ") {
-		// strconv.Quote is slow(ish) and does a lot of extra work we don't need
-		// input = strconv.Quote(input)
-		
-		var sb strings.Builder
-
-		sb.Grow(len(input) + 2)
-		sb.WriteString("\"")
-		sb.WriteString(input)
-		sb.WriteString("\"")
-
-		input = sb.String()
-	}
-	return input
-}
-
-func timeNow(format string) string {
-	return time.Now().Format(format)
-}
-
-var host string
-var hostOnce sync.Once
-
-func hostName() string {
-
-	var err error
-	hostOnce.Do(func() {
-		host, err = os.Hostname()
-		if err != nil {
-			host = "<unknown>"
-		}
-	})
-
-	return host
-}
-
-func processName() string {
-	name := os.Args[0]
-	if len(name) > 0 {
-		name = filepath.Base(name)
-	}
-
-	return name
-}
-
-var pid int
-var pidOnce sync.Once
-
-func processID() int {
-	pidOnce.Do(func() {
-		pid = os.Getpid()
-	})
-
-	return pid
-}
-
-func targetArch() string {
-	return runtime.GOARCH
-}
-
-func targetOS() string {
-	return runtime.GOOS
-}
