@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -213,7 +212,17 @@ func serialize(fields Fields) (int, []string) {
 
 func quoteIfRequired(input string) string {
 	if strings.Contains(input, " ") {
-		input = strconv.Quote(input)
+		// strconv.Quote is slow(ish) and does a lot of extra work we don't need
+		// input = strconv.Quote(input)
+		
+		var sb strings.Builder
+
+		sb.Grow(len(input) + 2)
+		sb.WriteString("\"")
+		sb.WriteString(input)
+		sb.WriteString("\"")
+
+		input = sb.String()
 	}
 	return input
 }
