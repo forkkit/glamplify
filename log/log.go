@@ -173,7 +173,6 @@ func (logger *FieldLogger) write(str string) error {
 }
 
 func combine(meta Fields, context Fields, fields ...Fields) string {
-
 	var str []string
 
 	count, pre := serialize(meta)
@@ -200,7 +199,11 @@ func combine(meta Fields, context Fields, fields ...Fields) string {
 func serialize(fields Fields) (int, []string) {
 	var pairs []string
 	for k, v := range fields {
-		vs := fmt.Sprintf("%v", v)
+		vs, ok := v.(string)
+		if !ok {
+			// only Sptrinf non-strings
+			vs = fmt.Sprintf("%v", v)
+		}
 
 		pairs = append(pairs, quoteIfRequired(k)+"="+quoteIfRequired(vs))
 	}
