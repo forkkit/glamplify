@@ -17,7 +17,8 @@ func TestDebug_Success(t *testing.T) {
 	logger := log.New()
 	logger.SetOutput(memBuffer)
 
-	logger.Debug("details")
+	err := logger.Debug("details")
+	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "msg=details"), "Logger was: '%s'. Expected: 'msg=details'", msg)
@@ -30,13 +31,14 @@ func TestDebugWithFields_Success(t *testing.T) {
 	logger := log.New()
 	logger.SetOutput(memBuffer)
 
-	logger.Debug("details", log.Fields{
+	err := logger.Debug("details", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
+	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "msg=details"), "Logger was: '%s'. Expected: 'msg=details'", msg)
@@ -54,7 +56,8 @@ func TestPrint_Success(t *testing.T) {
 	logger := log.New()
 	logger.SetOutput(memBuffer)
 
-	logger.Print("info")
+	err := logger.Print("info")
+	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "msg=info"), "Logger was: '%s'. Expected: 'msg=info'", msg)
@@ -67,13 +70,14 @@ func TestPrintWithFields_Success(t *testing.T) {
 	logger := log.New()
 	logger.SetOutput(memBuffer)
 
-	logger.Print("info", log.Fields{
+	err := logger.Print("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
+	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "msg=info"), "Logger was: '%s'. Expected: 'msg=info'", msg)
@@ -91,7 +95,8 @@ func TestError_Success(t *testing.T) {
 	logger := log.New()
 	logger.SetOutput(memBuffer)
 
-	logger.Error(errors.New("error"))
+	err := logger.Error(errors.New("error"))
+	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "error=error"), "Logger was: '%s'. Expected: 'error=error'", msg)
@@ -104,13 +109,14 @@ func TestErrorWithFields_Success(t *testing.T) {
 	logger := log.New()
 	logger.SetOutput(memBuffer)
 
-	logger.Error(errors.New("error"), log.Fields{
+	err := logger.Error(errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
+	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assert.Assert(t, strings.Contains(msg, "error=error"), "Logger was: '%s'. Expected: 'error=error'", msg)
@@ -129,7 +135,7 @@ func TestLogSomeRealMessages(t *testing.T) {
 	logger.AddContext("app", "mytest-app.exe")
 
 	// You should see these printed out, all correctly formatted.
-	logger.Debug("details", log.Fields{
+	_ = logger.Debug("details", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -137,18 +143,37 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	logger.Print("info", log.Fields{
+	_ = logger.Print("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	logger.Error(errors.New("error"), log.Fields{
+
+	_ = logger.Error(errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
+}
+
+func BenchmarkLogging(b * testing.B) {
+	logger := log.New()
+	logger.SetOutput(os.Stderr)
+	logger.AddContext("app", "mytest-app.exe")
+	fields := log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	}
+
+	for n := 0; n < b.N; n++ {
+		_ = logger.Debug("test details", fields)
+	}
+
 }
