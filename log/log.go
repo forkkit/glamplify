@@ -157,10 +157,11 @@ func (logger *FieldLogger) write(str string) error {
 	// Which does less, but is 3-10x faster
 
 	// alloc a slice to contain the string and possible '\n'
-	buffer := make([]byte, len(str) + 1)
-	buffer = append(buffer, str...)
-	if len(str) == 0 || str[len(str)-1] != '\n' {
-		buffer = append(buffer, '\n')
+	length := len(str)
+	buffer := make([]byte, length + 1)
+	copy(buffer[:], str)
+	if len(str) == 0 || str[length-1] != '\n' {
+		copy(buffer[length:], "\n")
 	}
 
 	logger.mutex.Lock()

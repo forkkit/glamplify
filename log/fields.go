@@ -64,7 +64,7 @@ func quoteIfRequired(input string) string {
 }
 
 func timeNow(format string) string {
-	return time.Now().Format(format)
+	return time.Now().UTC().Format(format)
 }
 
 var host string
