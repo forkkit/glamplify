@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 
@@ -165,34 +164,63 @@ func TestScope(t *testing.T) {
 
 func TestLogSomeRealMessages(t *testing.T) {
 
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = os.Stderr
-	})
-
 	// You should see these printed out, all correctly formatted.
-	_ = logger.Debug("details", log.Fields{
+	err := log.Debug("details", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
+	assert.Assert(t, err == nil)
 
-	_ = logger.Print("info", log.Fields{
+	err = log.Print("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
+	assert.Assert(t, err == nil)
 
-	_ = logger.Error(errors.New("error"), log.Fields{
+	err = log.Error(errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
+	assert.Assert(t, err == nil)
+
+	scope := log.WithScope(log.Fields{"scopeID": 123})
+	assert.Assert(t, scope != nil)
+
+	err = scope.Debug("details", log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+	assert.Assert(t, err == nil)
+
+	err = scope.Print("info", log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+	assert.Assert(t, err == nil)
+
+	err = scope.Error(errors.New("error"), log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+	assert.Assert(t, err == nil)
 }
 
 func BenchmarkLogging(b *testing.B) {
