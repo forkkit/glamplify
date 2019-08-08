@@ -2,8 +2,8 @@ package log
 
 // FieldLogger wraps the standard library logger and add structured fields as quoted key value pairs
 type Scope struct {
-	logger 	*FieldLogger
-	fields   Fields
+	logger *FieldLogger
+	fields Fields
 }
 
 func newScope(logger *FieldLogger, fields Fields) *Scope {

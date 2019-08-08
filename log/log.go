@@ -10,14 +10,14 @@ import (
 const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
 
 type Config struct {
-	Output io.Writer
+	Output     io.Writer
 	TimeFormat string
 }
 
 // FieldLogger wraps the standard library logger and add structured fields as quoted key value pairs
 type FieldLogger struct {
-	mutex sync.Mutex
-	output io.Writer
+	mutex      sync.Mutex
+	output     io.Writer
 	timeFormat string
 }
 
@@ -28,14 +28,14 @@ var (
 
 // New creates a new FieldLogger. The optional configure func lets you set values on the underlying standard logger.
 // eg. SetOutput
-func New(configure...func(*Config)) *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldLogger{}
 	conf := Config{
 		Output:     os.Stdout,
 		TimeFormat: RFC3339Milli,
 	}
-	for _, config := range configure  {
+	for _, config := range configure {
 		config(&conf)
 	}
 
@@ -52,7 +52,7 @@ func WithScope(fields Fields) *Scope {
 	return newScope(internal, fields)
 }
 
-func (logger *FieldLogger)  WithScope(fields Fields) *Scope {
+func (logger *FieldLogger) WithScope(fields Fields) *Scope {
 	return newScope(logger, fields)
 }
 
@@ -135,10 +135,10 @@ func Error(err error, fields ...Fields) error {
 // Use lower-case keys and values if possible.
 func (logger FieldLogger) Error(err error, fields ...Fields) error {
 	meta := Fields{
-		"arch":		targetArch(),
+		"arch":     targetArch(),
 		"error":    err.Error(),
 		"host":     hostName(),
-		"os":		targetOS(),
+		"os":       targetOS(),
 		"pid":      processID(),
 		"process":  processName(),
 		"severity": "ERROR",
@@ -158,7 +158,7 @@ func (logger *FieldLogger) write(str string) error {
 
 	// alloc a slice to contain the string and possible '\n'
 	length := len(str)
-	buffer := make([]byte, length + 1)
+	buffer := make([]byte, length+1)
 	copy(buffer[:], str)
 	if len(str) == 0 || str[length-1] != '\n' {
 		copy(buffer[length:], "\n")
@@ -170,4 +170,3 @@ func (logger *FieldLogger) write(str string) error {
 	_, err := logger.output.Write(buffer)
 	return err
 }
-

@@ -100,7 +100,6 @@ func TestError_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-
 	err := logger.Error(errors.New("error"))
 	assert.Assert(t, err == nil)
 
