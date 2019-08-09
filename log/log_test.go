@@ -22,8 +22,8 @@ func TestDebug_Success(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "msg=details"), "Logger was: '%s'. Expected: 'msg=details'", msg)
-	assert.Assert(t, strings.Contains(msg, "severity=DEBUG"), "Logger was: '%s'. Expected: 'severity=DEBUG'", msg)
+	assertKV(t, msg, "msg=details")
+	assertKV(t, msg, "severity=DEBUG")
 }
 
 func TestDebugWithFields_Success(t *testing.T) {
@@ -43,13 +43,13 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "msg=details"), "Logger was: '%s'. Expected: 'msg=details'", msg)
-	assert.Assert(t, strings.Contains(msg, "severity=DEBUG"), "Logger was: '%s'. Expected: 'severity=DEBUG'", msg)
-	assert.Assert(t, strings.Contains(msg, "string=hello"), "Logger was: '%s'. Expected: 'string=hello'", msg)
-	assert.Assert(t, strings.Contains(msg, "int=123"), "Logger was: '%s'. Expected: 'int=123'", msg)
-	assert.Assert(t, strings.Contains(msg, "float=42.48"), "Logger was: '%s'. Expected: 'float=42.48'", msg)
-	assert.Assert(t, strings.Contains(msg, "string2=\"hello world\""), "Logger was: '%s'. Expected: 'string2=\"hello world\"'", msg)
-	assert.Assert(t, strings.Contains(msg, "\"string3 space\"=world"), "Logger was: '%s'. Expected: '\"string3 space\"=world'", msg)
+	assertKV(t, msg, "msg=details")
+	assertKV(t, msg, "severity=DEBUG")
+	assertKV(t, msg, "string=hello")
+	assertKV(t, msg, "int=123")
+	assertKV(t, msg, "float=42.48")
+	assertKV(t, msg, "string2=\"hello world\"")
+	assertKV(t, msg, "\"string3 space\"=world")
 }
 
 func TestPrint_Success(t *testing.T) {
@@ -63,8 +63,8 @@ func TestPrint_Success(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "msg=info"), "Logger was: '%s'. Expected: 'msg=info'", msg)
-	assert.Assert(t, strings.Contains(msg, "severity=INFO"), "Logger was: '%s'. Expected: 'severity=INFO'", msg)
+	assertKV(t, msg, "msg=info")
+	assertKV(t, msg, "severity=INFO")
 }
 
 func TestPrintWithFields_Success(t *testing.T) {
@@ -84,13 +84,13 @@ func TestPrintWithFields_Success(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "msg=info"), "Logger was: '%s'. Expected: 'msg=info'", msg)
-	assert.Assert(t, strings.Contains(msg, "severity=INFO"), "Logger was: '%s'. Expected: 'severity=INFO'", msg)
-	assert.Assert(t, strings.Contains(msg, "string=hello"), "Logger was: '%s'. Expected: 'string=hello'", msg)
-	assert.Assert(t, strings.Contains(msg, "int=123"), "Logger was: '%s'. Expected: 'int=123'", msg)
-	assert.Assert(t, strings.Contains(msg, "float=42.48"), "Logger was: '%s'. Expected: 'float=42.48'", msg)
-	assert.Assert(t, strings.Contains(msg, "string2=\"hello world\""), "Logger was: '%s'. Expected: 'string2=\"hello world\"'", msg)
-	assert.Assert(t, strings.Contains(msg, "\"string3 space\"=world"), "Logger was: '%s'. Expected: '\"string3 space\"=world'", msg)
+	assertKV(t, msg, "msg=info")
+	assertKV(t, msg, "severity=INFO")
+	assertKV(t, msg, "string=hello")
+	assertKV(t, msg, "int=123")
+	assertKV(t, msg, "float=42.48")
+	assertKV(t, msg, "string2=\"hello world\"")
+	assertKV(t, msg, "\"string3 space\"=world")
 }
 
 func TestError_Success(t *testing.T) {
@@ -104,8 +104,8 @@ func TestError_Success(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "error=error"), "Logger was: '%s'. Expected: 'error=error'", msg)
-	assert.Assert(t, strings.Contains(msg, "severity=ERROR"), "Logger was: '%s'. Expected: 'severity=ERROR'", msg)
+	assertKV(t, msg, "error=error")
+	assertKV(t, msg, "severity=ERROR")
 }
 
 func TestErrorWithFields_Success(t *testing.T) {
@@ -125,13 +125,13 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "error=error"), "Logger was: '%s'. Expected: 'error=error'", msg)
-	assert.Assert(t, strings.Contains(msg, "severity=ERROR"), "Logger was: '%s'. Expected: 'severity=ERROR'", msg)
-	assert.Assert(t, strings.Contains(msg, "string=hello"), "Logger was: '%s'. Expected: 'string=hello'", msg)
-	assert.Assert(t, strings.Contains(msg, "int=123"), "Logger was: '%s'. Expected: 'int=123'", msg)
-	assert.Assert(t, strings.Contains(msg, "float=42.48"), "Logger was: '%s'. Expected: 'float=2.48'", msg)
-	assert.Assert(t, strings.Contains(msg, "string2=\"hello world\""), "Logger was: '%s'. Expected: 'string2=\"hello world\"'", msg)
-	assert.Assert(t, strings.Contains(msg, "\"string3 space\"=world"), "Logger was: '%s'. Expected: '\"string3 space\"=world'", msg)
+	assertKV(t, msg, "error=error")
+	assertKV(t, msg, "severity=ERROR")
+	assertKV(t, msg, "string=hello")
+	assertKV(t, msg, "int=123")
+	assertKV(t, msg, "float=42.48")
+	assertKV(t, msg, "string2=\"hello world\"")
+	assertKV(t, msg, "\"string3 space\"=world")
 }
 
 func TestScope(t *testing.T) {
@@ -148,8 +148,8 @@ func TestScope(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "msg=details"), "Logger was: '%s'. Expected: 'msg=details'", msg)
-	assert.Assert(t, strings.Contains(msg, "requestID=123"), "Logger was: '%s'. Expected: 'requestID=123'", msg)
+	assertKV(t, msg, "msg=details")
+	assertKV(t, msg, "requestID=123")
 
 	memBuffer.Reset()
 
@@ -157,8 +157,8 @@ func TestScope(t *testing.T) {
 	assert.Assert(t, err == nil)
 
 	msg = memBuffer.String()
-	assert.Assert(t, strings.Contains(msg, "msg=info"), "Logger was: '%s'. Expected: 'msg=info'", msg)
-	assert.Assert(t, strings.Contains(msg, "requestID=123"), "Logger was: '%s'. Expected: 'requestID=123'", msg)
+	assertKV(t, msg, "msg=info")
+	assertKV(t, msg, "requestID=123")
 }
 
 func TestLogSomeRealMessages(t *testing.T) {
@@ -239,4 +239,8 @@ func BenchmarkLogging(b *testing.B) {
 		_ = logger.Print("test details", fields)
 	}
 
+}
+
+func assertKV(t *testing.T, log string, kv string) {
+	assert.Assert(t, strings.Contains(log, kv), "Expected '%s' in '%s'", kv, log)
 }
