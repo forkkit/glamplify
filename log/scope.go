@@ -20,9 +20,9 @@ func newScope(logger *FieldLogger, fields Fields) *Scope {
 // Debug adds fields {level="debug", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (scope Scope) Debug(message string, fields ...Fields) error {
+func (scope Scope) Debug(message string, fields ...Fields) {
 	merged := scope.fields.merge(fields...)
-	return scope.logger.Debug(message, merged)
+	scope.logger.Debug(message, merged)
 }
 
 // Print writes a message with optional fields to the underlying standard logger.
@@ -31,9 +31,9 @@ func (scope Scope) Debug(message string, fields ...Fields) error {
 // Debug adds fields {time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (scope Scope) Print(message string, fields ...Fields) error {
+func (scope Scope) Print(message string, fields ...Fields) {
 	merged := scope.fields.merge(fields...)
-	return scope.logger.Print(message, merged)
+	scope.logger.Print(message, merged)
 }
 
 // Error writes a error message with optional fields to the underlying standard logger.
@@ -42,7 +42,7 @@ func (scope Scope) Print(message string, fields ...Fields) error {
 // Debug adds fields {level="error", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (scope Scope) Error(err error, fields ...Fields) error {
+func (scope Scope) Error(err error, fields ...Fields) {
 	merged := scope.fields.merge(fields...)
-	return scope.logger.Error(err, merged)
+	scope.logger.Error(err, merged)
 }

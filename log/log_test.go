@@ -18,8 +18,7 @@ func TestDebug_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	err := logger.Debug("details")
-	assert.Assert(t, err == nil)
+	logger.Debug("details")
 
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=details")
@@ -33,14 +32,13 @@ func TestDebugWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	err := logger.Debug("details", log.Fields{
+	logger.Debug("details", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=details")
@@ -59,8 +57,7 @@ func TestPrint_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	err := logger.Print("info")
-	assert.Assert(t, err == nil)
+	logger.Print("info")
 
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=info")
@@ -74,14 +71,13 @@ func TestPrintWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	err := logger.Print("info", log.Fields{
+	logger.Print("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=info")
@@ -100,8 +96,7 @@ func TestError_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	err := logger.Error(errors.New("error"))
-	assert.Assert(t, err == nil)
+	logger.Error(errors.New("error"))
 
 	msg := memBuffer.String()
 	assertKV(t, msg, "error=error")
@@ -115,14 +110,13 @@ func TestErrorWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	err := logger.Error(errors.New("error"), log.Fields{
+	logger.Error(errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
 	msg := memBuffer.String()
 	assertKV(t, msg, "error=error")
@@ -144,8 +138,7 @@ func TestScope(t *testing.T) {
 		"requestID": 123,
 	})
 
-	err := scope.Debug("details")
-	assert.Assert(t, err == nil)
+	scope.Debug("details")
 
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=details")
@@ -153,8 +146,7 @@ func TestScope(t *testing.T) {
 
 	memBuffer.Reset()
 
-	err = scope.Print("info")
-	assert.Assert(t, err == nil)
+	scope.Print("info")
 
 	msg = memBuffer.String()
 	assertKV(t, msg, "msg=info")
@@ -164,62 +156,56 @@ func TestScope(t *testing.T) {
 func TestLogSomeRealMessages(t *testing.T) {
 
 	// You should see these printed out, all correctly formatted.
-	err := log.Debug("details", log.Fields{
+	log.Debug("details", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
-	err = log.Print("info", log.Fields{
+	log.Print("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
-	err = log.Error(errors.New("error"), log.Fields{
+	log.Error(errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
 	scope := log.WithScope(log.Fields{"scopeID": 123})
 	assert.Assert(t, scope != nil)
 
-	err = scope.Debug("details", log.Fields{
+	scope.Debug("details", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
-	err = scope.Print("info", log.Fields{
+	scope.Print("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 
-	err = scope.Error(errors.New("error"), log.Fields{
+	scope.Error(errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	assert.Assert(t, err == nil)
 }
 
 func BenchmarkLogging(b *testing.B) {
@@ -236,7 +222,7 @@ func BenchmarkLogging(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		_ = logger.Print("test details", fields)
+		logger.Print("test details", fields)
 	}
 
 }

@@ -64,8 +64,8 @@ func (logger *FieldLogger) WithScope(fields Fields) *Scope {
 // Debug adds fields {level="debug", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func Debug(message string, fields ...Fields) error {
-	return internal.Debug(message, fields...)
+func Debug(message string, fields ...Fields) {
+	internal.Debug(message, fields...)
 }
 
 // Debug writes a debug message with optional fields to the underlying standard logger.
@@ -75,7 +75,7 @@ func Debug(message string, fields ...Fields) error {
 // Debug adds fields {level="debug", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (logger *FieldLogger) Debug(message string, fields ...Fields) error {
+func (logger *FieldLogger) Debug(message string, fields ...Fields) {
 	meta := Fields{
 		HOST:     hostName(),
 		MESSAGE:  message,
@@ -87,7 +87,7 @@ func (logger *FieldLogger) Debug(message string, fields ...Fields) error {
 
 	merged := meta.merge(fields...)
 	str := merged.serialize()
-	return logger.write(str)
+	logger.write(str)
 }
 
 // Print writes a message with optional fields to the underlying standard logger.
@@ -96,8 +96,8 @@ func (logger *FieldLogger) Debug(message string, fields ...Fields) error {
 // Debug adds fields {time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func Print(message string, fields ...Fields) error {
-	return internal.Print(message, fields...)
+func Print(message string, fields ...Fields) {
+	internal.Print(message, fields...)
 }
 
 // Print writes a message with optional fields to the underlying standard logger.
@@ -106,7 +106,7 @@ func Print(message string, fields ...Fields) error {
 // Debug adds fields {time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (logger *FieldLogger) Print(message string, fields ...Fields) error {
+func (logger *FieldLogger) Print(message string, fields ...Fields) {
 	meta := Fields{
 		MESSAGE:  message,
 		SEVERITY: INFO_SEV,
@@ -115,7 +115,7 @@ func (logger *FieldLogger) Print(message string, fields ...Fields) error {
 
 	merged := meta.merge(fields...)
 	str := merged.serialize()
-	return logger.write(str)
+	logger.write(str)
 }
 
 // Error writes a error message with optional fields to the underlying standard logger.
@@ -124,8 +124,8 @@ func (logger *FieldLogger) Print(message string, fields ...Fields) error {
 // Debug adds fields {level="error", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func Error(err error, fields ...Fields) error {
-	return internal.Error(err, fields...)
+func Error(err error, fields ...Fields) {
+	internal.Error(err, fields...)
 }
 
 // Error writes a error message with optional fields to the underlying standard logger.
@@ -134,7 +134,7 @@ func Error(err error, fields ...Fields) error {
 // Debug adds fields {level="error", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (logger *FieldLogger) Error(err error, fields ...Fields) error {
+func (logger *FieldLogger) Error(err error, fields ...Fields) {
 	meta := Fields{
 		ARCHITECTURE: targetArch(),
 		ERROR:        err.Error(),
@@ -148,10 +148,10 @@ func (logger *FieldLogger) Error(err error, fields ...Fields) error {
 
 	merged := meta.merge(fields...)
 	str := merged.serialize()
-	return logger.write(str)
+	logger.write(str)
 }
 
-func (logger *FieldLogger) write(str string) error {
+func (logger *FieldLogger) write(str string) {
 
 	// Note: Making this faster is a good thing (while we are a sync logger - async logger is a different story)
 	// So we don't use the stdlib logger.Print(), but rather have our own optimized version
@@ -168,6 +168,6 @@ func (logger *FieldLogger) write(str string) error {
 	logger.mutex.Lock()
 	defer logger.mutex.Unlock()
 
-	_, err := logger.output.Write(buffer)
-	return err
+	// This can return an error, but we just swallow it here as what can we or a client really do? Try and log it? :)
+	logger.output.Write(buffer)
 }
