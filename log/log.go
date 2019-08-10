@@ -74,14 +74,14 @@ func Debug(message string, fields ...Fields) error {
 // Debug adds fields {level="debug", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (logger FieldLogger) Debug(message string, fields ...Fields) error {
+func (logger *FieldLogger) Debug(message string, fields ...Fields) error {
 	meta := Fields{
-		"host":     hostName(),
-		"msg":      message,
-		"pid":      processID(),
-		"process":  processName(),
-		"severity": "DEBUG",
-		"time":     timeNow(logger.timeFormat),
+		HOST:     hostName(),
+		MESSAGE:  message,
+		PID:      processID(),
+		PROCESS:  processName(),
+		SEVERITY: DEBUG_SEV,
+		TIME:     timeNow(logger.timeFormat),
 	}
 
 	merged := meta.merge(fields...)
@@ -105,11 +105,11 @@ func Print(message string, fields ...Fields) error {
 // Debug adds fields {time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (logger FieldLogger) Print(message string, fields ...Fields) error {
+func (logger *FieldLogger) Print(message string, fields ...Fields) error {
 	meta := Fields{
-		"msg":      message,
-		"severity": "INFO",
-		"time":     timeNow(logger.timeFormat),
+		MESSAGE:  message,
+		SEVERITY: INFO_SEV,
+		TIME:     timeNow(logger.timeFormat),
 	}
 
 	merged := meta.merge(fields...)
@@ -133,16 +133,16 @@ func Error(err error, fields ...Fields) error {
 // Debug adds fields {level="error", time="2006-01-02T15:04:05Z07:00"}
 // and prints output in the format "fields message"
 // Use lower-case keys and values if possible.
-func (logger FieldLogger) Error(err error, fields ...Fields) error {
+func (logger *FieldLogger) Error(err error, fields ...Fields) error {
 	meta := Fields{
-		"arch":     targetArch(),
-		"error":    err.Error(),
-		"host":     hostName(),
-		"os":       targetOS(),
-		"pid":      processID(),
-		"process":  processName(),
-		"severity": "ERROR",
-		"time":     timeNow(logger.timeFormat),
+		ARCHITECTURE: targetArch(),
+		ERROR:        err.Error(),
+		HOST:         hostName(),
+		OS:           targetOS(),
+		PID:          processID(),
+		PROCESS:      processName(),
+		SEVERITY:     ERROR_SEV,
+		TIME:         timeNow(logger.timeFormat),
 	}
 
 	merged := meta.merge(fields...)

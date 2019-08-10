@@ -1,6 +1,6 @@
 package log
 
-// FieldLogger wraps the standard library logger and add structured fields as quoted key value pairs
+// Scope todo
 type Scope struct {
 	logger *FieldLogger
 	fields Fields
