@@ -49,10 +49,12 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 	return logger
 }
 
+// WithScope lets you add fields to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
 func WithScope(fields Fields) *Scope {
 	return newScope(internal, fields)
 }
 
+// WithScope lets you add fields to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
 func (logger *FieldLogger) WithScope(fields Fields) *Scope {
 	return newScope(logger, fields)
 }
