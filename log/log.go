@@ -9,6 +9,7 @@ import (
 // RFC3339Milli is the standard RFC3339 format with added milliseconds
 const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
 
+// Config for setting initial values for Logger
 type Config struct {
 	Output     io.Writer
 	TimeFormat string

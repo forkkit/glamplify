@@ -1,6 +1,6 @@
 package log
 
-// Scope todo
+// Scope allows you to set fields that can be re-used for subsequent log event. Useful for setting username, requestid etc for a Http Web Request.
 type Scope struct {
 	logger *FieldLogger
 	fields Fields
