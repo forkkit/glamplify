@@ -1,7 +1,9 @@
 package event
 
 import (
+	"github.com/cultureamp/glamplify/log"
 	"os"
+	"time"
 
 	newrelic "github.com/newrelic/go-agent"
 )
@@ -20,6 +22,11 @@ type Config struct {
 	// servers and spawn goroutines.  Setting this to be false is useful in
 	// testing and staging situations.
 	Enabled bool
+
+	// License is your New Relic license key.
+	//
+	// https://docs.newrelic.com/docs/accounts/install-new-relic/account-setup/license-key
+	License string
 
 	// Logging controls whether Event logging is sent to StdOut or not
 	Logging bool
@@ -45,10 +52,10 @@ type Application struct {
 func NewApplication(name string, configure ...func(*Config)) (*Application, error) {
 	app := &Application{}
 
-	lic := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	conf := Config{
 		Enabled:        false,
 		Logging:		false,
+		License:		os.Getenv("NEW_RELIC_LICENSE_KEY"),
 		ServerlessMode: false,
 	}
 
@@ -56,10 +63,11 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		config(&conf)
 	}
 
-	cfg := newrelic.NewConfig(name, lic)
-	cfg.Enabled = conf.Enabled
+	cfg := newrelic.NewConfig(name, conf.License)
+	cfg.Enabled = conf.Enabled				// useful to turn on/off in test/dev vs production accounts
 	cfg.Labels = conf.Labels
-	cfg.CustomInsightsEvents.Enabled = true
+	cfg.HighSecurity = false				// HighSecurity blocks sending custom events
+	cfg.CustomInsightsEvents.Enabled = true	// otherwise custom events won't fire
 	cfg.Utilization.DetectAWS = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
 
@@ -67,6 +75,13 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	if conf.Logging {
 		// So we have our own implementation that wraps our standard logger
 		cfg.Logger = newEventLogger()
+
+		cfg.Logger.Info("configuration", log.Fields{
+			"enabled": conf.Enabled,
+			"logging": conf.Logging,
+			"labels": conf.Labels,
+			"ServerlessMode": conf.ServerlessMode,
+		})
 	}
 
 	nrapp, err := newrelic.NewApplication(cfg)
@@ -75,6 +90,10 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 }
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
-func (app Application) RecordEvent(name string, entries Entries) {
-	app.nrapp.RecordCustomEvent(name, entries)
+func (app Application) RecordEvent(event_type string, entries Entries) error {
+	return app.nrapp.RecordCustomEvent(event_type, entries)
+}
+
+func (app Application) Shutdown() {
+	app.nrapp.Shutdown(30 * time.Second)
 }
