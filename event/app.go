@@ -21,6 +21,9 @@ type Config struct {
 	// testing and staging situations.
 	Enabled bool
 
+	// Logging controls whether Event logging is sent to StdOut or not
+	Logging bool
+
 	// Labels are key value pairs used to roll up applications into specific categories.
 	//
 	// https://docs.newrelic.com/docs/using-new-relic/user-interface-functions/organize-your-data/labels-categories-organize-apps-monitors
@@ -44,7 +47,8 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 	lic := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	conf := Config{
-		Enabled:        true,
+		Enabled:        false,
+		Logging:		false,
 		ServerlessMode: false,
 	}
 
@@ -53,12 +57,17 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	}
 
 	cfg := newrelic.NewConfig(name, lic)
-	//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :( Need our own logger impl?
 	cfg.Enabled = conf.Enabled
 	cfg.Labels = conf.Labels
 	cfg.CustomInsightsEvents.Enabled = true
 	cfg.Utilization.DetectAWS = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
+
+	//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
+	if conf.Logging {
+		// So we have our own implementation that wraps our standard logger
+		cfg.Logger = newEventLogger()
+	}
 
 	nrapp, err := newrelic.NewApplication(cfg)
 	app.nrapp = nrapp
