@@ -1,9 +1,10 @@
 package event
 
 import (
-	"github.com/cultureamp/glamplify/log"
 	"os"
 	"time"
+
+	"github.com/cultureamp/glamplify/log"
 
 	newrelic "github.com/newrelic/go-agent"
 )
@@ -45,17 +46,17 @@ type Config struct {
 
 // Application is a wrapper over the underlying implementation
 type Application struct {
-	nrapp newrelic.Application
+	impl newrelic.Application
+	conf Config
 }
 
 // NewApplication creates a new Application - you should only create 1 Application per process
 func NewApplication(name string, configure ...func(*Config)) (*Application, error) {
-	app := &Application{}
 
 	conf := Config{
 		Enabled:        false,
-		Logging:		false,
-		License:		os.Getenv("NEW_RELIC_LICENSE_KEY"),
+		Logging:        false,
+		License:        os.Getenv("NEW_RELIC_LICENSE_KEY"),
 		ServerlessMode: false,
 	}
 
@@ -64,10 +65,10 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	}
 
 	cfg := newrelic.NewConfig(name, conf.License)
-	cfg.Enabled = conf.Enabled				// useful to turn on/off in test/dev vs production accounts
+	cfg.Enabled = conf.Enabled // useful to turn on/off in test/dev vs production accounts
 	cfg.Labels = conf.Labels
-	cfg.HighSecurity = false				// HighSecurity blocks sending custom events
-	cfg.CustomInsightsEvents.Enabled = true	// otherwise custom events won't fire
+	cfg.HighSecurity = false                // HighSecurity blocks sending custom events
+	cfg.CustomInsightsEvents.Enabled = true // otherwise custom events won't fire
 	cfg.Utilization.DetectAWS = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
 
@@ -77,23 +78,44 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		cfg.Logger = newEventLogger()
 
 		cfg.Logger.Info("configuration", log.Fields{
-			"enabled": conf.Enabled,
-			"logging": conf.Logging,
-			"labels": conf.Labels,
+			"enabled":        conf.Enabled,
+			"logging":        conf.Logging,
+			"labels":         conf.Labels,
 			"ServerlessMode": conf.ServerlessMode,
 		})
 	}
 
-	nrapp, err := newrelic.NewApplication(cfg)
-	app.nrapp = nrapp
+	app := &Application{
+		conf: conf,
+	}
+
+	impl, err := newrelic.NewApplication(cfg)
+	if !conf.ServerlessMode {
+		// if conf.ServerlessMode = false (server mode) then newrelic.NewApplication spins up
+		// some go routines that make a network call back to NR. Until this happens any "RecordCustomEvents"
+		// seem to get dropped!
+		// Waiting here so that everything is set up and ready
+		time.Sleep(5 * time.Second)
+	}
+
+	app.impl = impl
 	return app, err
 }
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
-func (app Application) RecordEvent(event_type string, entries Entries) error {
-	return app.nrapp.RecordCustomEvent(event_type, entries)
+func (app Application) RecordEvent(eventType string, entries Entries) error {
+	return app.impl.RecordCustomEvent(eventType, entries)
 }
 
+// Shutdown flushes any remaining data to the SAAS endpoint
 func (app Application) Shutdown() {
-	app.nrapp.Shutdown(30 * time.Second)
+
+	// if conf.ServerlessMode = false (server mode) then newrelic.Shutdown can exit its internal go routines
+	// before it has sent all pending data!
+	// Waiting here so that everything is sent before we start closing down...
+	time.Sleep(5 * time.Second)
+
+	// The time duration passed here is how long to wait before the shutdown channel processes the request
+	// It is NOT how long to wait to send data before shutting down.
+	app.impl.Shutdown(30 * time.Second)
 }

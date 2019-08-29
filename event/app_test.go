@@ -1,10 +1,10 @@
 package event_test
 
 import (
+	"testing"
+
 	"github.com/cultureamp/glamplify/event"
 	"gotest.tools/assert"
-	"testing"
-	"time"
 )
 
 func TestApplication_RecordEvent_Server_Success(t *testing.T) {
@@ -17,15 +17,11 @@ func TestApplication_RecordEvent_Server_Success(t *testing.T) {
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, app != nil, "application was nil")
 
-	time.Sleep(3 * time.Second)
-
 	err = app.RecordEvent("glamplify_unittest_customevent", event.Entries{
 		"aString": "hello world",
-		"aInt": 123,
+		"aInt":    123,
 	})
 	assert.Assert(t, err == nil, err)
 
-	time.Sleep(3 * time.Second)
 	app.Shutdown()
 }
-
