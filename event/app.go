@@ -1,6 +1,7 @@
 package event
 
 import (
+	"net/http"
 	"os"
 	"time"
 
@@ -107,6 +108,21 @@ func (app Application) RecordEvent(eventType string, entries Entries) error {
 	return app.impl.RecordCustomEvent(eventType, entries)
 }
 
+func (app Application) startTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
+	txn := Transaction{}
+
+	impl := app.impl.StartTransaction("background", w, r)
+	txn.impl = impl
+
+	return txn
+}
+
+// WrapTxnHandler adds a Transaction within the current request
+func (app *Application) WrapTxnHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
+	p, h := app.wrapHandlerInTxn(pattern, http.HandlerFunc(handler))
+	return p, func(w http.ResponseWriter, r *http.Request) { h.ServeHTTP(w, r) }
+}
+
 // Shutdown flushes any remaining data to the SAAS endpoint
 func (app Application) Shutdown() {
 
@@ -118,4 +134,14 @@ func (app Application) Shutdown() {
 	// The time duration passed here is how long to wait before the shutdown channel processes the request
 	// It is NOT how long to wait to send data before shutting down.
 	app.impl.Shutdown(30 * time.Second)
+}
+
+func (app *Application) wrapHandlerInTxn(pattern string, handler http.Handler) (string, http.Handler) {
+	return pattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		txn := app.startTransaction(pattern, w, r)
+		defer txn.End()
+
+		r = txn.addTransactionContext(r)
+		handler.ServeHTTP(txn, r)
+	})
 }
