@@ -139,7 +139,7 @@ func (app Application) Shutdown() {
 
 func (app *Application) wrapHandlerInTxn(pattern string, handler http.Handler) (string, http.Handler) {
 	return pattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		txn := app.startTransaction(pattern, w, r)
+		txn := app.StartTransaction(pattern, w, r)
 		defer txn.End()
 
 		r = txn.addTransactionContext(r)
