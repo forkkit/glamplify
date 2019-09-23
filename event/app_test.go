@@ -51,7 +51,9 @@ func TestApplication_AddAttribute_Server_Success(t *testing.T) {
 func addAttribute(w http.ResponseWriter, r *http.Request) {
 	txn, ok := event.TxnFromRequest(w, r)
 	if ok {
-		txn.AddAttribute("txnString", "hello txn world")
-		txn.AddAttribute("txnInt", "456")
+		txn.AddAttributes(event.Entries{
+			"aString": "hello world",
+			"aInt":    123,
+		})
 	}
 }

@@ -18,9 +18,17 @@ func (txn Transaction) addTransactionContext(req *http.Request) *http.Request {
 	return req.WithContext(ctx)
 }
 
-// AddAttribute adds customer data (key-value) to a current transaction (ie. http web request)
-func (txn Transaction) AddAttribute(key string, value interface{}) error {
-	return txn.impl.AddAttribute(key, value)
+// AddAttributes adds customer data (key-value) to a current transaction (ie. http web request)
+func (txn Transaction) AddAttributes(entries Entries) error {
+
+	var err error
+	for k, v := range entries {
+		err = txn.impl.AddAttribute(k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // End closes the current transaction
