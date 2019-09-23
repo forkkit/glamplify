@@ -108,10 +108,11 @@ func (app Application) RecordEvent(eventType string, entries Entries) error {
 	return app.impl.RecordCustomEvent(eventType, entries)
 }
 
-func (app Application) startTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
+// StartTransaction TODO
+func (app Application) StartTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
 	txn := Transaction{}
 
-	impl := app.impl.StartTransaction("background", w, r)
+	impl := app.impl.StartTransaction(name, w, r)
 	txn.impl = impl
 
 	return txn
