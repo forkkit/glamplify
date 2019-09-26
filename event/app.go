@@ -43,6 +43,9 @@ type Config struct {
 	//
 	// https://docs.newrelic.com/docs/serverless-function-monitoring/aws-lambda-monitoring/get-started/introduction-new-relic-monitoring-aws-lambda
 	ServerlessMode bool
+
+	// internal logger
+	logger *eventLogger
 }
 
 // Application is a wrapper over the underlying implementation
@@ -59,6 +62,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		Logging:        false,
 		License:        os.Getenv("NEW_RELIC_LICENSE_KEY"),
 		ServerlessMode: false,
+		logger:         nil,
 	}
 
 	for _, config := range configure {
@@ -73,10 +77,12 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	cfg.Utilization.DetectAWS = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
 
-	//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
 	if conf.Logging {
+		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
 		// So we have our own implementation that wraps our standard logger
-		cfg.Logger = newEventLogger()
+
+		conf.logger = newEventLogger()
+		cfg.Logger = conf.logger
 
 		cfg.Logger.Info("configuration", log.Fields{
 			"enabled":        conf.Enabled,
@@ -105,12 +111,17 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
 func (app Application) RecordEvent(eventType string, entries Entries) error {
-	return app.impl.RecordCustomEvent(eventType, entries)
+	err := app.impl.RecordCustomEvent(eventType, entries)
+	app.logError("RecordEvent", err)
+	return err
 }
 
-// StartTransaction TODO
+// StartTransaction begins recording. Don't forget to call txn.End()
 func (app Application) StartTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
-	txn := Transaction{}
+	txn := Transaction{
+		logging: app.conf.Logging,
+		logger:  app.conf.logger,
+	}
 
 	impl := app.impl.StartTransaction(name, w, r)
 	txn.impl = impl
@@ -145,4 +156,12 @@ func (app *Application) wrapHandlerInTxn(pattern string, handler http.Handler) (
 		r = txn.addTransactionContext(r)
 		handler.ServeHTTP(txn, r)
 	})
+}
+
+func (app Application) logError(msg string, err error) {
+	if err != nil && app.conf.Logging {
+		app.conf.logger.Error(msg, map[string]interface{}{
+			"error": err,
+		})
+	}
 }
