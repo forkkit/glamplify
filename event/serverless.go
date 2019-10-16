@@ -2,7 +2,6 @@ package event
 
 import (
 	"github.com/aws/aws-lambda-go/lambda"
-	newrelic "github.com/newrelic/go-agent"
 	"github.com/newrelic/go-agent/_integrations/nrlambda"
 )
 
@@ -14,8 +13,8 @@ import (
 //
 //	glServerless.Start(myhandler, app)
 //
-func Start(handler interface{}, app newrelic.Application) {
-	nrlambda.Start(handler, app)
+func Start(handler interface{}, app Application) {
+	nrlambda.Start(handler, app.impl)
 }
 
 // StartHandler should be used in place of lambda.StartHandler.  Replace:
@@ -26,6 +25,6 @@ func Start(handler interface{}, app newrelic.Application) {
 //
 //	glServerless.StartHandler(myhandler, app)
 //
-func StartHandler(handler lambda.Handler, app newrelic.Application) {
-	nrlambda.StartHandler(handler, app)
+func StartHandler(handler lambda.Handler, app Application) {
+	nrlambda.StartHandler(handler, app.impl)
 }
