@@ -113,9 +113,11 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
 func (app Application) RecordEvent(eventType string, entries Entries) error {
-	err := app.impl.RecordCustomEvent(eventType, entries)
-	app.logError("RecordEvent", err)
-	return err
+	//err := app.impl.RecordCustomEvent(eventType, entries)
+	app.impl.RecordCustomEvent(eventType, entries)
+	//app.logError("RecordEvent", err)
+	//return err
+	return nil
 }
 
 // StartTransaction begins recording. Don't forget to call txn.End()
