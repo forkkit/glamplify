@@ -74,7 +74,7 @@ func main() {
 
     // Emit Error (can add optional fields if required)
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-    err := errors.New("Main program stopped unexpectedly",
+    err := errors.New("Main program stopped unexpectedly")
     log.Error(err)
 
     // If you want to set some fields for a particular scope (eg. for a Web Request 
