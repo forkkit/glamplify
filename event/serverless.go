@@ -13,7 +13,7 @@ import (
 //
 //	glServerless.Start(myhandler, app)
 //
-func Start(handler interface{}, app Application) {
+func Start(handler interface{}, app *Application) {
 	nrlambda.Start(handler, app.impl)
 }
 
@@ -25,6 +25,6 @@ func Start(handler interface{}, app Application) {
 //
 //	glServerless.StartHandler(myhandler, app)
 //
-func StartHandler(handler lambda.Handler, app Application) {
+func StartHandler(handler lambda.Handler, app *Application) {
 	nrlambda.StartHandler(handler, app.impl)
 }
