@@ -63,3 +63,19 @@ func (txn Transaction) logError(msg string, err error) {
 		})
 	}
 }
+
+// FromContext todo
+func FromContext(ctx context.Context) *Transaction {
+	txn := newrelic.FromContext(ctx)
+	if txn != nil {
+		return &Transaction{
+			impl:    txn,
+			logging: false,
+			logger:  nil,
+		}
+	}
+
+	// TODO log error!
+	return nil
+
+}
