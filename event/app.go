@@ -76,6 +76,8 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	cfg.CustomInsightsEvents.Enabled = true // otherwise custom events won't fire
 	cfg.Utilization.DetectAWS = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
+	cfg.ErrorCollector.Enabled = true
+	cfg.ErrorCollector.CaptureEvents = true
 
 	if conf.Logging {
 		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
