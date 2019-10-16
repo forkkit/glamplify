@@ -107,3 +107,95 @@ Use `log.Debug` for logging that will only be used when diving deep to uncover b
 Use `log.Print` for standard log messages that you want to see always. These will never be turned off and will likely be always sent to 3rd party systems for further analysis (eg. Spliunk).
 
 Use `log.Error` when you have encounter a GO error. This will NOT stop the program, it is up to you to call exit() or panic() if this is not recoverable. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
+
+### Events
+
+#### Adding Attributes to a Web Request Transaction
+```
+package main
+
+import (
+    "github.com/cultureamp/glamplify/events"
+)
+
+func main() {
+
+    app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+		conf.Enabled = true
+		conf.Logging = true
+		conf.ServerlessMode = false
+	})
+
+	_, handler := app.WrapTxnHandler("/", rootRequestHandler)
+	http.HandlerFunc(handler)
+
+    if err := http.ListenAndServe(":8080", nil); err != nil {
+        panic(err)
+    }
+
+	app.Shutdown()
+}
+
+func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+
+    // Do things
+
+	txn, ok := event.TxnFromRequest(w, r)
+	if ok {
+		txn.AddAttributes(event.Entries{
+			"aString": "hello world",
+			"aInt":    123,
+		})
+	}
+
+    // Do more things
+
+	if ok {
+		txn.AddAttributes(event.Entries{
+			"aString2": "goodbye",
+			"aInt2":    456,
+		})
+	}
+
+}
+```
+
+#### Custom Events
+```
+package main
+
+import (
+    "github.com/cultureamp/glamplify/events"
+)
+
+func main() {
+
+    app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+		conf.Enabled = true
+		conf.Logging = true
+		conf.ServerlessMode = false
+	})
+
+	_, handler := app.WrapTxnHandler("/", rootRequestHandler)
+	http.HandlerFunc(handler)
+
+    if err := http.ListenAndServe(":8080", nil); err != nil {
+        panic(err)
+    }
+
+	app.Shutdown()
+}
+
+func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+
+    // Do things
+
+	err = app.RecordEvent("mycustom_event", event.Entries{
+		"aString": "hello world",
+		"aInt":    123,
+	})
+
+    // Do more things
+
+}
+```
