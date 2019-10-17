@@ -10,6 +10,7 @@ import (
 // Transaction is a wrapper over the underlying implementation
 type Transaction struct {
 	impl    newrelic.Transaction
+	app     *Application
 	logging bool
 	logger  *eventLogger
 }
@@ -18,6 +19,11 @@ func (txn Transaction) addTransactionContext(req *http.Request) *http.Request {
 	ctx := req.Context()
 	ctx = context.WithValue(ctx, txnContextKey, txn)
 	return req.WithContext(ctx)
+}
+
+// GetApplication todo
+func (txn Transaction) GetApplication() *Application {
+	return txn.app
 }
 
 // AddAttributes adds customer data (key-value) to a current transaction (ie. http web request)

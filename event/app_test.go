@@ -38,7 +38,7 @@ func TestApplication_AddAttribute_Server_Success(t *testing.T) {
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, app != nil, "application was nil")
 
-	_, handler := app.WrapTxnHandler("/", addAttribute)
+	_, handler := app.WrapHTTPHandler("/", addAttribute)
 	h := http.HandlerFunc(handler)
 
 	rr := httptest.NewRecorder()

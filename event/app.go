@@ -7,12 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/cultureamp/glamplify/log"
 
 	newrelic "github.com/newrelic/go-agent"
-	"github.com/newrelic/go-agent/_integrations/nrlambda"
 )
 
 // Entries contains key-value pairs to record along with the event
@@ -120,27 +117,40 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
 func (app Application) RecordEvent(eventType string, entries Entries) error {
+	app.log("Begin RecordEvent",
+		log.Fields{
+			"eventType": eventType,
+		},
+		entries,
+	)
 	err := app.impl.RecordCustomEvent(eventType, entries)
 	app.logError("RecordEvent", err)
+
 	return err
 }
 
-// StartTransaction begins recording. Don't forget to call txn.End()
-func (app Application) StartTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
-	txn := Transaction{
-		logging: app.conf.Logging,
-		logger:  app.conf.logger,
+// GetTransactionFrom todo
+func (app *Application) GetTransactionFrom(ctx context.Context) (*Transaction, error) {
+	txn := newrelic.FromContext(ctx)
+	if txn != nil {
+		// Yuck - we need to get a CA txn/app here, not the NR one... how?
+		return &Transaction{
+			impl:    txn,
+			app:     app,
+			logging: app.conf.Logging,
+			logger:  app.conf.logger,
+		}, nil
 	}
 
-	impl := app.impl.StartTransaction(name, w, r)
-	txn.impl = impl
-
-	return txn
+	// No transaction!
+	err := errors.New("no current transaction")
+	app.logError("Call app.StartTransaction() to create a new transaction.", err)
+	return nil, err
 }
 
-// WrapTxnHandler adds a Transaction within the current request
-func (app *Application) WrapTxnHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
-	p, h := app.wrapHandlerInTxn(pattern, http.HandlerFunc(handler))
+// WrapHTTPHandler adds a Transaction within the current request
+func (app *Application) WrapHTTPHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
+	p, h := app.wrapHTTPHandler(pattern, http.HandlerFunc(handler))
 	return p, func(w http.ResponseWriter, r *http.Request) { h.ServeHTTP(w, r) }
 }
 
@@ -157,9 +167,9 @@ func (app Application) Shutdown() {
 	app.impl.Shutdown(30 * time.Second)
 }
 
-func (app *Application) wrapHandlerInTxn(pattern string, handler http.Handler) (string, http.Handler) {
+func (app *Application) wrapHTTPHandler(pattern string, handler http.Handler) (string, http.Handler) {
 	return pattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		txn := app.StartTransaction(pattern, w, r)
+		txn := app.startTransaction(pattern, w, r)
 		defer txn.End()
 
 		r = txn.addTransactionContext(r)
@@ -167,63 +177,23 @@ func (app *Application) wrapHandlerInTxn(pattern string, handler http.Handler) (
 	})
 }
 
-// GetCurrentTransacation todo
-func (app Application) GetCurrentTransacation(ctx context.Context) (*Transaction, error) {
-	txn := newrelic.FromContext(ctx)
-	if txn != nil {
-		return &Transaction{
-			impl:    txn,
-			logging: app.conf.Logging,
-			logger:  app.conf.logger,
-		}, nil
+func (app *Application) startTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
+	txn := Transaction{
+		app:     app,
+		logging: app.conf.Logging,
+		logger:  app.conf.logger,
 	}
 
-	// No transaction!
-	err := errors.New("no current transaction")
-	app.logError("Call app.StartTransaction() to create a new transaction.", err)
-	return nil, err
+	impl := app.impl.StartTransaction(name, w, r)
+	txn.impl = impl
+
+	return txn
 }
 
-func (app Application) wrapHandler(handler lambda.Handler) lambda.Handler {
-
-	return &lambdaHandler{
-		impl:            handler,
-		app:             app,
-		functionName:    lambdacontext.FunctionName,
-		functionVersion: lambdacontext.FunctionVersion,
-		logGroupName:    lambdacontext.LogGroupName,
-		logStreamName:   lambdacontext.LogStreamName,
-		memoryLimitInMB: lambdacontext.MemoryLimitInMB,
-	}
-}
-
-func (app Application) wrap(handler interface{}) lambda.Handler {
-	return app.wrapHandler(lambda.NewHandler(handler))
-}
-
-// Start should be used in place of lambda.Start use app.Start(handler)
-func (app Application) Start(handler interface{}) {
-	// 1. First wrap the handler with NewRelic
-	nr := nrlambda.Wrap(handler, app.impl)
-	// 2. Then wrap that with CultureAmp
-	ca := app.wrap(nr)
-	// 3. Start the handler
-	lambda.Start(ca)
-}
-
-// StartHandler should be used in place of lambda.StartHandler use app.StartHandler(handler)
-func (app Application) StartHandler(handler lambda.Handler) {
-	// 1. First wrap the handler with NewRelic
-	nr := nrlambda.WrapHandler(handler, app.impl)
-	// 2. Then wrap that with CultureAmp
-	ca := app.wrapHandler(nr)
-	// 3. Start the handler
-	lambda.StartHandler(ca)
-}
-
-func (app Application) log(msg string, fields log.Fields) {
+func (app Application) log(msg string, fields log.Fields, entries ...Entries) {
 	if app.conf.Logging {
-		app.conf.logger.Info(msg, fields)
+		merged := app.conf.logger.merge(fields, entries...)
+		app.conf.logger.Debug(msg, merged)
 	}
 }
 

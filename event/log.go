@@ -2,6 +2,7 @@ package event
 
 import (
 	"errors"
+
 	"github.com/cultureamp/glamplify/log"
 )
 
@@ -43,4 +44,20 @@ func (logger eventLogger) Debug(msg string, context map[string]interface{}) {
 
 func (logger eventLogger) DebugEnabled() bool {
 	return false
+}
+
+func (logger eventLogger) merge(fields log.Fields, entries ...Entries) log.Fields {
+	merged := log.Fields{}
+
+	for k, v := range fields {
+		merged[k] = v
+	}
+
+	for _, f := range entries {
+		for k, v := range f {
+			merged[k] = v
+		}
+	}
+
+	return merged
 }

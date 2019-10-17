@@ -85,7 +85,7 @@ func main() {
 		conf.ServerlessMode = false
 	})
 
-	_, handler := app.WrapTxnHandler("/", rootRequestHandler)
+	_, handler := app.WrapHTTPHandler("/", rootRequestHandler)
 	h := http.HandlerFunc(handler)
 
 	rr := httptest.NewRecorder()

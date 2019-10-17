@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/cultureamp/glamplify/log"
+	"github.com/newrelic/go-agent/_integrations/nrlambda"
 )
 
 type lambdaHandler struct {
@@ -55,4 +57,51 @@ func (handler *lambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byt
 	})
 
 	return result, err
+}
+
+func (app Application) wrapLambda(handler lambda.Handler) lambda.Handler {
+
+	return &lambdaHandler{
+		impl:            handler,
+		app:             app,
+		functionName:    lambdacontext.FunctionName,
+		functionVersion: lambdacontext.FunctionVersion,
+		logGroupName:    lambdacontext.LogGroupName,
+		logStreamName:   lambdacontext.LogStreamName,
+		memoryLimitInMB: lambdacontext.MemoryLimitInMB,
+	}
+}
+
+func (app Application) wrapLambdaHandler(handler interface{}) lambda.Handler {
+	return app.wrapLambda(lambda.NewHandler(handler))
+}
+
+// Start should be used in place of lambda.Start use app.Start(handler)
+func (app Application) Start(handler interface{}) {
+	// 1. First wrap the handler with NewRelic
+	nr := nrlambda.Wrap(handler, app.impl)
+	// 2. Then wrap that with CultureAmp
+	ca := app.wrapLambda(nr)
+	// 3. Start the handler
+	lambda.Start(ca)
+}
+
+// Start should be used in place of lambda.Start use Start(handler, app)
+func Start(handler interface{}, app *Application) {
+	app.Start(handler)
+}
+
+// StartHandler should be used in place of lambda.StartHandler use app.StartHandler(handler)
+func (app Application) StartHandler(handler lambda.Handler) {
+	// 1. First wrap the handler with NewRelic
+	nr := nrlambda.WrapHandler(handler, app.impl)
+	// 2. Then wrap that with CultureAmp
+	ca := app.wrapLambdaHandler(nr)
+	// 3. Start the handler
+	lambda.StartHandler(ca)
+}
+
+// StartHandler should be used in place of lambda.StartHandler use StartHandler(handler, app)
+func StartHandler(handler lambda.Handler, app *Application) {
+	app.StartHandler(handler)
 }
