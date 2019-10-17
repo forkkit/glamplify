@@ -1,13 +1,18 @@
 package event
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/cultureamp/glamplify/log"
 
 	newrelic "github.com/newrelic/go-agent"
+	"github.com/newrelic/go-agent/_integrations/nrlambda"
 )
 
 // Entries contains key-value pairs to record along with the event
@@ -76,8 +81,8 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	cfg.CustomInsightsEvents.Enabled = true // otherwise custom events won't fire
 	cfg.Utilization.DetectAWS = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
-	cfg.ErrorCollector.Enabled = true
-	cfg.ErrorCollector.CaptureEvents = true
+	cfg.ErrorCollector.Enabled = false
+	cfg.ErrorCollector.CaptureEvents = false
 
 	if conf.Logging {
 		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
@@ -85,6 +90,8 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 		conf.logger = newEventLogger()
 		cfg.Logger = conf.logger
+		cfg.ErrorCollector.Enabled = true
+		cfg.ErrorCollector.CaptureEvents = true
 
 		cfg.Logger.Info("configuration", log.Fields{
 			"enabled":        conf.Enabled,
@@ -113,11 +120,9 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
 func (app Application) RecordEvent(eventType string, entries Entries) error {
-	//err := app.impl.RecordCustomEvent(eventType, entries)
-	app.impl.RecordCustomEvent(eventType, entries)
-	//app.logError("RecordEvent", err)
-	//return err
-	return nil
+	err := app.impl.RecordCustomEvent(eventType, entries)
+	app.logError("RecordEvent", err)
+	return err
 }
 
 // StartTransaction begins recording. Don't forget to call txn.End()
@@ -160,6 +165,66 @@ func (app *Application) wrapHandlerInTxn(pattern string, handler http.Handler) (
 		r = txn.addTransactionContext(r)
 		handler.ServeHTTP(txn, r)
 	})
+}
+
+// GetCurrentTransacation todo
+func (app Application) GetCurrentTransacation(ctx context.Context) (*Transaction, error) {
+	txn := newrelic.FromContext(ctx)
+	if txn != nil {
+		return &Transaction{
+			impl:    txn,
+			logging: app.conf.Logging,
+			logger:  app.conf.logger,
+		}, nil
+	}
+
+	// No transaction!
+	err := errors.New("no current transaction")
+	app.logError("Call app.StartTransaction() to create a new transaction.", err)
+	return nil, err
+}
+
+func (app Application) wrapHandler(handler lambda.Handler) lambda.Handler {
+
+	return &lambdaHandler{
+		impl:            handler,
+		app:             app,
+		functionName:    lambdacontext.FunctionName,
+		functionVersion: lambdacontext.FunctionVersion,
+		logGroupName:    lambdacontext.LogGroupName,
+		logStreamName:   lambdacontext.LogStreamName,
+		memoryLimitInMB: lambdacontext.MemoryLimitInMB,
+	}
+}
+
+func (app Application) wrap(handler interface{}) lambda.Handler {
+	return app.wrapHandler(lambda.NewHandler(handler))
+}
+
+// Start should be used in place of lambda.Start use app.Start(handler)
+func (app Application) Start(handler interface{}) {
+	// 1. First wrap the handler with NewRelic
+	nr := nrlambda.Wrap(handler, app.impl)
+	// 2. Then wrap that with CultureAmp
+	ca := app.wrap(nr)
+	// 3. Start the handler
+	lambda.Start(ca)
+}
+
+// StartHandler should be used in place of lambda.StartHandler use app.StartHandler(handler)
+func (app Application) StartHandler(handler lambda.Handler) {
+	// 1. First wrap the handler with NewRelic
+	nr := nrlambda.WrapHandler(handler, app.impl)
+	// 2. Then wrap that with CultureAmp
+	ca := app.wrapHandler(nr)
+	// 3. Start the handler
+	lambda.StartHandler(ca)
+}
+
+func (app Application) log(msg string, fields log.Fields) {
+	if app.conf.Logging {
+		app.conf.logger.Info(msg, fields)
+	}
 }
 
 func (app Application) logError(msg string, err error) {
