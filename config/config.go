@@ -18,6 +18,7 @@ type ApplicationConfiguration struct {
 // Load todo
 func Load() *Configuration {
 	// Todo - better way to work out where the config.yml file is?
+	// Do we have a sensible default for this?
 	return LoadFrom(
 		[]string{".", "../", "../config", "./config"},
 		"config",
@@ -29,8 +30,6 @@ func LoadFrom(paths []string, configName string) *Configuration {
 
 	viper.SetDefault("appname", "service-name")
 	viper.SetDefault("version", 1.0)
-	viper.SetDefault("logname", "default")
-	viper.SetDefault("loglevel", "warn")
 
 	viper.SetEnvPrefix("CONFIG")
 	viper.AutomaticEnv()

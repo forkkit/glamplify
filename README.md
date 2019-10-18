@@ -24,7 +24,7 @@ func main() {
     settings := config.Load()
 
     // Or if you want to look for a config file from a specific location use
-    settings = config.LoadFrom([]string{"${HOME}/settings"}, "config")
+    // settings = config.LoadFrom([]string{"${HOME}/settings"}, "config")
 
     // Then you can use
     if settings.App.Version > 2.0 {
