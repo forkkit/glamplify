@@ -60,7 +60,7 @@ func main() {
     // All messages must be static strings (as per Culture Amp Sensibile Default)
     log.Debug("Something happened")
 
-    // Emit debug trace with fields - by default these are set "forward-to=none" (not splunk, remain in cloudwatch log)
+    // Emit debug trace with fields - by default these are set "forward-log=none" (not splunk, remain in cloudwatch log)
     // Fields can contain any type of variables
     log.Debug("Something happened", log.Fields{
 		"aString": "hello",
@@ -68,11 +68,11 @@ func main() {
 		"aFloat":  42.48,
 	})
 
-    // Emit normal logging (can add optional fields if required) - by default these set "forward-to=splunk" (sent to splunk from cloudwatch log)
+    // Emit normal logging (can add optional fields if required) - by default these set "forward-log=splunk" (sent to splunk from cloudwatch log)
     // Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
     log.Print("Executing main")
 
-    // Emit normal logging with fields - by default these are set "forward-to=splunk" (sent to splunk from cloudwatch log)
+    // Emit normal logging with fields - by default these are set "forward-log=splunk" (sent to splunk from cloudwatch log)
     // Fields can contain any type of variables
     log.Print("Executing main", log.Fields{
 		"program-name": "helloworld.exe",
@@ -80,12 +80,12 @@ func main() {
 		"user":  "admin",
 	})
 
-    // Emit Error (can add optional fields if required)  - by default these set "forward-to=splunk" (sent to splunk from cloudwatch log)
+    // Emit Error (can add optional fields if required)  - by default these set "forward-log=splunk" (sent to splunk from cloudwatch log)
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
     err := errors.New("missing database connection string")
     log.Error(err, "Main program stopped unexpectedly")
 
-    // Emit error logging with fields - by default these are set "forward-to=splunk" (sent to splunk from cloudwatch log)
+    // Emit error logging with fields - by default these are set "forward-log=splunk" (sent to splunk from cloudwatch log)
     // Fields can contain any type of variables
     err := errors.New("missing database connection string")
     log.Error(err, "Executing main", log.Fields{
