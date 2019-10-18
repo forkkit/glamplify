@@ -44,7 +44,6 @@ func (handler *lambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byt
 		})
 	}
 
-	handler.app.log("Adding handler and app to ctx", log.Fields{})
 	// Add the CA handler to the ctx so that we can get it later inside "Invoke"
 	ctx = handler.addToContext(ctx)
 	// Add the CA application to the ctx so that we can get it later inside "Invoke"

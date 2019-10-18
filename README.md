@@ -282,9 +282,9 @@ func handler(ctx context.Context) {
 
     // Do things
 
-    txn, err := event.TxnFromContext(ctx)
+    app, err := event.AppFromContext(ctx)
     if err != nil {
-        err = txn.GetApplication().RecordEvent("mycustom_event", event.Entries{
+        err = app.RecordEvent("mycustom_event", event.Entries{
             "aString": "hello world",
             "aInt":    123,
         })
