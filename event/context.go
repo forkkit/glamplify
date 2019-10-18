@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+
+	newrelic "github.com/newrelic/go-agent"
 )
 
 type key int
@@ -21,8 +23,47 @@ func TxnFromRequest(w http.ResponseWriter, r *http.Request) (*Transaction, error
 	return TxnFromContext(ctx)
 }
 
-// TxnFromContext retireves the current Transation from the given context, error is set appropriately
+// TxnFromContext gets the current Transaction from the given context
 func TxnFromContext(ctx context.Context) (*Transaction, error) {
+
+	// 1. First try and get the CA txn from the context. It will be there for HTTP wrapped methods,
+	// but not for serverless/lambda ones
+	txn, err := txnFromContext(ctx)
+	if err == nil && txn != nil {
+		return txn, nil
+	}
+
+	// 2. So likely a serverless/lambda call, so try and get the CA lambdaHandler so we can get the txnName & app
+	// It should be there as we added it before calling "Invoke". We
+	txnName := "<unknown>"
+	handler, err := handlerFromContext(ctx)
+	if err == nil && handler != nil {
+		txnName = handler.functionName
+	}
+
+	// 2. So likely a serverless/lambda call, so get the NR txn from the ctx
+	impl := newrelic.FromContext(ctx)
+	if impl != nil {
+		// A bit yuck - we need to create a CA txn here after the fact because NR created one invisibly to us...
+		txn = &Transaction{
+			impl:    impl,
+			app:     &handler.app,
+			name:    txnName,
+			logging: handler.app.conf.Logging,
+			logger:  handler.app.conf.logger,
+		}
+
+		return txn, nil
+	}
+
+	// No transaction!
+	err = errors.New("no transaction found")
+	handler.app.logError("Call app.StartTransaction() to create a new transaction.", err)
+	return nil, err
+}
+
+// TxnFromContext retireves the current Transation from the given context, error is set appropriately
+func txnFromContext(ctx context.Context) (*Transaction, error) {
 	txn, ok := ctx.Value(txnContextKey).(*Transaction)
 	if ok && txn != nil {
 		return txn, nil

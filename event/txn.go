@@ -62,12 +62,12 @@ func (txn Transaction) WriteHeader(statusCode int) {
 	txn.impl.WriteHeader(statusCode)
 }
 
-func (txn *Transaction) addTransactionToHTTPContext(req *http.Request) *http.Request {
-	ctx := txn.addTransactionToContext(req.Context())
+func (txn *Transaction) addToHTTPContext(req *http.Request) *http.Request {
+	ctx := txn.addToContext(req.Context())
 	return req.WithContext(ctx)
 }
 
-func (txn *Transaction) addTransactionToContext(ctx context.Context) context.Context {
+func (txn *Transaction) addToContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, txnContextKey, txn)
 }
 

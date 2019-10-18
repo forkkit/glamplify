@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"os"
 	"time"
@@ -129,47 +128,6 @@ func (app Application) RecordEvent(eventType string, entries Entries) error {
 	return err
 }
 
-// GetTransactionFrom gets the current Transaction from the given context
-func (app *Application) GetTransactionFrom(ctx context.Context) (*Transaction, error) {
-
-	// 1. First try and get the CA txn from the context. It will be there for HTTP wrapped methods,
-	// but not for serverless/lambda ones
-	txn, err := TxnFromContext(ctx)
-	if err == nil && txn != nil {
-		return txn, nil
-	}
-
-	// 2. So likely a serverless/lambda call, so try and get the CA lambdaHandler so we can get the txnName
-	// It should be there as we added it before calling "Invoke". We
-	txnName := "<unknown>"
-	handler, err := handlerFromContext(ctx)
-	if err == nil && handler != nil {
-		txnName = handler.functionName
-	}
-
-	// 2. So likely a serverless/lambda call, so get the NR txn from the ctx
-	impl := newrelic.FromContext(ctx)
-	if impl != nil {
-		// A bit yuck - we need to create a CA txn here after the fact because NR created one invisibly to us...
-		txn = &Transaction{
-			impl:    impl,
-			app:     app,
-			name:    txnName,
-			logging: app.conf.Logging,
-			logger:  app.conf.logger,
-		}
-
-		// Add to ctx in case of multiple calls by client
-		txn.addTransactionToContext(ctx)
-		return txn, nil
-	}
-
-	// No transaction!
-	err = errors.New("no transaction found")
-	app.logError("Call app.StartTransaction() to create a new transaction.", err)
-	return nil, err
-}
-
 // WrapHTTPHandler adds a Transaction within the current request
 func (app *Application) WrapHTTPHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
 	p, h := app.wrapHTTPHandler(pattern, http.HandlerFunc(handler))
@@ -201,7 +159,6 @@ func (app *Application) wrapHTTPHandler(pattern string, handler http.Handler) (s
 }
 
 func (app *Application) startTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
-
 	app.log("Starting Transaction", log.Fields{
 		"txnName": name,
 	})
@@ -213,13 +170,17 @@ func (app *Application) startTransaction(name string, w http.ResponseWriter, r *
 		logging: app.conf.Logging,
 		logger:  app.conf.logger,
 	}
-	r = txn.addTransactionToHTTPContext(r)
+	r = txn.addToHTTPContext(r)
 
 	// call the NR implementation
 	impl := app.impl.StartTransaction(name, w, r)
 	txn.impl = impl
 
 	return txn
+}
+
+func (app *Application) addToContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, appContextKey, app)
 }
 
 func (app Application) log(msg string, fields log.Fields, entries ...Entries) {

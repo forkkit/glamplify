@@ -32,7 +32,7 @@ func (handler *lambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byt
 
 	var tin interface{}
 	if handler.app.conf.Logging {
-		json.Unmarshal(payload, tin)
+		json.Unmarshal(payload, &tin)
 
 		handler.app.log("Begin Invoke", log.Fields{
 			"function":        handler.functionName,
@@ -44,19 +44,27 @@ func (handler *lambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byt
 		})
 	}
 
+	handler.app.log("Adding handler and app to ctx", log.Fields{})
 	// Add the CA handler to the ctx so that we can get it later inside "Invoke"
-	handler.addHandlerToContext(ctx)
+	ctx = handler.addToContext(ctx)
+	// Add the CA application to the ctx so that we can get it later inside "Invoke"
+	ctx = handler.app.addToContext(ctx)
+
 	result, err := handler.impl.Invoke(ctx, payload)
 
-	handler.app.log("Invoke Ended", log.Fields{
-		"function":        handler.functionName,
-		"version":         handler.functionVersion,
-		"logGroup":        handler.logGroupName,
-		"logStream":       handler.logStreamName,
-		"memoryLimitInMB": handler.memoryLimitInMB,
-		"result":          result,
-		"error":           err,
-	})
+	var tout interface{}
+	if handler.app.conf.Logging {
+		json.Unmarshal(result, &tout)
+		handler.app.log("Invoke Ended", log.Fields{
+			"function":        handler.functionName,
+			"version":         handler.functionVersion,
+			"logGroup":        handler.logGroupName,
+			"logStream":       handler.logStreamName,
+			"memoryLimitInMB": handler.memoryLimitInMB,
+			"result":          tout,
+			"error":           err,
+		})
+	}
 
 	return result, err
 }
@@ -68,7 +76,7 @@ func (app Application) Start(handler interface{}) {
 	// 2. Then wrap that with CultureAmp
 	ca := app.wrapLambda(nr)
 	// 3. Start the handler
-	lambda.Start(ca)
+	lambda.StartHandler(ca)
 }
 
 // Start should be used in place of lambda.Start use Start(handler, app)
@@ -108,6 +116,6 @@ func (app Application) wrapLambdaHandler(handler interface{}) lambda.Handler {
 	return app.wrapLambda(lambda.NewHandler(handler))
 }
 
-func (handler *lambdaHandler) addHandlerToContext(ctx context.Context) context.Context {
+func (handler *lambdaHandler) addToContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, handlerContextKey, handler)
 }
