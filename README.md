@@ -120,7 +120,7 @@ import (
 
 func main() {
 
-    app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -160,7 +160,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-#### Custom Events
+#### Custom Events to a Web Request Transaction
 ```
 package main
 
@@ -170,7 +170,7 @@ import (
 
 func main() {
 
-    app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -194,6 +194,82 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 		"aString": "hello world",
 		"aInt":    123,
 	})
+
+    // Do more things
+
+}
+```
+
+#### Adding Attributes to a Lambda (Serverless)
+```
+package main
+
+import (
+    "github.com/cultureamp/glamplify/events"
+)
+
+func main() {
+    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
+		conf.Enabled = true
+		conf.Logging = true
+		conf.ServerlessMode = true
+	})
+
+    event.Start(handler, app)
+}
+
+func handler(ctx context.Context) {
+
+    // Do things
+
+	txn, err := event.TxnFromContext(ctx)
+	if err != nil {
+		txn.AddAttributes(event.Entries{
+			"aString": "hello world",
+			"aInt":    123,
+		})
+	}
+
+    // Do more things
+
+	if err != nil {
+		txn.AddAttributes(event.Entries{
+			"aString2": "goodbye",
+			"aInt2":    456,
+		})
+	}
+
+}
+```
+
+#### Custom Events to a Lambda (Serverless)
+```
+package main
+
+import (
+    "github.com/cultureamp/glamplify/events"
+)
+
+func main() {
+    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
+		conf.Enabled = true
+		conf.Logging = true
+		conf.ServerlessMode = true
+	})
+
+    event.Start(handler, app)
+}
+
+func handler(ctx context.Context) {
+
+    // Do things
+
+    txn, err := event.TxnFromContext(ctx)
+    if err != nil {
+        err = txn.GetApplication().RecordEvent("mycustom_event", event.Entries{
+            "aString": "hello world",
+            "aInt":    123,
+        })
 
     // Do more things
 
