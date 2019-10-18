@@ -54,13 +54,13 @@ func main() {
     // eg. log.Debug(), log.Print() and log.Error()
 
     // Example below shows usage with the package level logger (sensible default), but can 
-    // use an instance of a logger by calling log.New()
+    // use an instance of a logger by calling mylogger := log.New()
 
     // Emit debug trace
     // All messages must be static strings (as per Culture Amp Sensibile Default)
     log.Debug("Something happened")
 
-    // Emit debug trace with fields
+    // Emit debug trace with fields - by default these are set "forward-to=none" (not splunk, remain in cloudwatch log)
     // Fields can contain any type of variables
     log.Debug("Something happened", log.Fields{
 		"aString": "hello",
@@ -68,14 +68,31 @@ func main() {
 		"aFloat":  42.48,
 	})
 
-    // Emit normal logging (can add optional fields if required)
+    // Emit normal logging (can add optional fields if required) - by default these set "forward-to=splunk" (sent to splunk from cloudwatch log)
     // Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
     log.Print("Executing main")
 
-    // Emit Error (can add optional fields if required)
+    // Emit normal logging with fields - by default these are set "forward-to=splunk" (sent to splunk from cloudwatch log)
+    // Fields can contain any type of variables
+    log.Print("Executing main", log.Fields{
+		"program-name": "helloworld.exe",
+		"start-up-param":    123,
+		"user":  "admin",
+	})
+
+    // Emit Error (can add optional fields if required)  - by default these set "forward-to=splunk" (sent to splunk from cloudwatch log)
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-    err := errors.New("Main program stopped unexpectedly")
-    log.Error(err)
+    err := errors.New("missing database connection string")
+    log.Error(err, "Main program stopped unexpectedly")
+
+    // Emit error logging with fields - by default these are set "forward-to=splunk" (sent to splunk from cloudwatch log)
+    // Fields can contain any type of variables
+    err := errors.New("missing database connection string")
+    log.Error(err, "Executing main", log.Fields{
+		"program-name": "helloworld.exe",
+		"start-up-param":    123,
+		"user":  "admin",
+	})
 
     // If you want to set some fields for a particular scope (eg. for a Web Request 
     // have a requestID for every log message within that scope) then you can use WithScope()
@@ -91,14 +108,17 @@ func main() {
 
     memBuffer := &bytes.Buffer{}
     logger := log.New(func(conf *log.Config) {
-            conf.Output = memBuffer  // can be set to anything that support io.Write
-            conf.TimeFormat = "2006-01-02T15:04:05" // any valid time format
+            conf.Output = memBuffer                     // can be set to anything that support io.Write
+            conf.TimeFormat = "2006-01-02T15:04:05"     // any valid time format
+            conf.debugForwardLogTo = "splunk"           // send debug messages to "splunk"
         })
 
     // The internall logger will always use these default values:
     // output = os.Stderr
     // time format = "2006-01-02T15:04:05.000Z07:00"
-  
+    // debugForwardLogTo = "none"
+    // printForwardLogTo = "splunk"
+    // errorForwardLogTo = "splunk"
 }
 
 ```
@@ -121,9 +141,9 @@ import (
 func main() {
 
     app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
-		conf.Enabled = true
-		conf.Logging = true
-		conf.ServerlessMode = false
+		conf.Enabled = true             // default = "false"
+		conf.Logging = true             // default = "false"
+		conf.ServerlessMode = false     // default = "false"
 	})
 
 	_, handler := app.WrapTxnHandler("/", rootRequestHandler)
@@ -171,9 +191,9 @@ import (
 func main() {
 
     app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
-		conf.Enabled = true
-		conf.Logging = true
-		conf.ServerlessMode = false
+		conf.Enabled = true             // default = "false"
+		conf.Logging = true             // default = "false"
+		conf.ServerlessMode = false     // default = "false"
 	})
 
 	_, handler := app.WrapTxnHandler("/", rootRequestHandler)
@@ -196,7 +216,6 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
     // Do more things
-
 }
 ```
 
@@ -210,9 +229,9 @@ import (
 
 func main() {
     app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
-		conf.Enabled = true
-		conf.Logging = true
-		conf.ServerlessMode = true
+		conf.Enabled = true             // default = "false"
+		conf.Logging = true             // default = "false"
+		conf.ServerlessMode = true      // default = "false"
 	})
 
     event.Start(handler, app)
@@ -238,7 +257,6 @@ func handler(ctx context.Context) {
 			"aInt2":    456,
 		})
 	}
-
 }
 ```
 
@@ -252,9 +270,9 @@ import (
 
 func main() {
     app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
-		conf.Enabled = true
-		conf.Logging = true
-		conf.ServerlessMode = true
+		conf.Enabled = true             // default = "false"
+		conf.Logging = true             // default = "false"
+		conf.ServerlessMode = true      // default = "false"
 	})
 
     event.Start(handler, app)
@@ -272,6 +290,5 @@ func handler(ctx context.Context) {
         })
 
     // Do more things
-
 }
 ```
