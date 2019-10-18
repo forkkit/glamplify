@@ -44,9 +44,11 @@ func (handler *lambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byt
 		})
 	}
 
+	// Add the CA handler to the ctx so that we can get it later inside "Invoke"
+	handler.addHandlerToContext(ctx)
 	result, err := handler.impl.Invoke(ctx, payload)
 
-	handler.app.log("End Invoke", log.Fields{
+	handler.app.log("Invoke Ended", log.Fields{
 		"function":        handler.functionName,
 		"version":         handler.functionVersion,
 		"logGroup":        handler.logGroupName,
@@ -57,23 +59,6 @@ func (handler *lambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byt
 	})
 
 	return result, err
-}
-
-func (app Application) wrapLambda(handler lambda.Handler) lambda.Handler {
-
-	return &lambdaHandler{
-		impl:            handler,
-		app:             app,
-		functionName:    lambdacontext.FunctionName,
-		functionVersion: lambdacontext.FunctionVersion,
-		logGroupName:    lambdacontext.LogGroupName,
-		logStreamName:   lambdacontext.LogStreamName,
-		memoryLimitInMB: lambdacontext.MemoryLimitInMB,
-	}
-}
-
-func (app Application) wrapLambdaHandler(handler interface{}) lambda.Handler {
-	return app.wrapLambda(lambda.NewHandler(handler))
 }
 
 // Start should be used in place of lambda.Start use app.Start(handler)
@@ -104,4 +89,25 @@ func (app Application) StartHandler(handler lambda.Handler) {
 // StartHandler should be used in place of lambda.StartHandler use StartHandler(handler, app)
 func StartHandler(handler lambda.Handler, app *Application) {
 	app.StartHandler(handler)
+}
+
+func (app Application) wrapLambda(handler lambda.Handler) lambda.Handler {
+
+	return &lambdaHandler{
+		impl:            handler,
+		app:             app,
+		functionName:    lambdacontext.FunctionName,
+		functionVersion: lambdacontext.FunctionVersion,
+		logGroupName:    lambdacontext.LogGroupName,
+		logStreamName:   lambdacontext.LogStreamName,
+		memoryLimitInMB: lambdacontext.MemoryLimitInMB,
+	}
+}
+
+func (app Application) wrapLambdaHandler(handler interface{}) lambda.Handler {
+	return app.wrapLambda(lambda.NewHandler(handler))
+}
+
+func (handler *lambdaHandler) addHandlerToContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, handlerContextKey, handler)
 }

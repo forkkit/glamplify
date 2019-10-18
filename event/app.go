@@ -129,21 +129,43 @@ func (app Application) RecordEvent(eventType string, entries Entries) error {
 	return err
 }
 
-// GetTransactionFrom todo
+// GetTransactionFrom gets the current Transaction from the given context
 func (app *Application) GetTransactionFrom(ctx context.Context) (*Transaction, error) {
-	txn := newrelic.FromContext(ctx)
-	if txn != nil {
-		// Yuck - we need to get a CA txn/app here, not the NR one... how?
-		return &Transaction{
-			impl:    txn,
+
+	// 1. First try and get the CA txn from the context. It will be there for HTTP wrapped methods,
+	// but not for serverless/lambda ones
+	txn, err := txnFromContext(ctx)
+	if err == nil && txn != nil {
+		return txn, nil
+	}
+
+	// 2. So likely a serverless/lambda call, so try and get the CA lambdaHandler so we can get the txnName
+	// It should be there as we added it before calling "Invoke". We
+	txnName := "<unknown>"
+	handler, err := handlerFromContext(ctx)
+	if err == nil && handler != nil {
+		txnName = handler.functionName
+	}
+
+	// 2. So likely a serverless/lambda call, so get the NR txn from the ctx
+	impl := newrelic.FromContext(ctx)
+	if impl != nil {
+		// A bit yuck - we need to create a CA txn here after the fact because NR created one invisibly to us...
+		txn = &Transaction{
+			impl:    impl,
 			app:     app,
+			name:    txnName,
 			logging: app.conf.Logging,
 			logger:  app.conf.logger,
-		}, nil
+		}
+
+		// Add to ctx in case of multiple calls by client
+		txn.addTransactionToContext(ctx)
+		return txn, nil
 	}
 
 	// No transaction!
-	err := errors.New("no current transaction")
+	err = errors.New("no transaction found")
 	app.logError("Call app.StartTransaction() to create a new transaction.", err)
 	return nil, err
 }
@@ -157,10 +179,12 @@ func (app *Application) WrapHTTPHandler(pattern string, handler func(http.Respon
 // Shutdown flushes any remaining data to the SAAS endpoint
 func (app Application) Shutdown() {
 
-	// if conf.ServerlessMode = false (server mode) then newrelic.Shutdown can exit its internal go routines
-	// before it has sent all pending data!
-	// Waiting here so that everything is sent before we start closing down...
-	time.Sleep(5 * time.Second)
+	if !app.conf.ServerlessMode {
+		// if conf.ServerlessMode = false (server mode) then newrelic.Shutdown can exit its internal go routines
+		// before it has sent all pending data!
+		// Waiting here so that everything is sent before we start closing down...
+		time.Sleep(5 * time.Second)
+	}
 
 	// The time duration passed here is how long to wait before the shutdown channel processes the request
 	// It is NOT how long to wait to send data before shutting down.
@@ -172,18 +196,26 @@ func (app *Application) wrapHTTPHandler(pattern string, handler http.Handler) (s
 		txn := app.startTransaction(pattern, w, r)
 		defer txn.End()
 
-		r = txn.addTransactionContext(r)
 		handler.ServeHTTP(txn, r)
 	})
 }
 
 func (app *Application) startTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
+
+	app.log("Starting Transaction", log.Fields{
+		"txnName": name,
+	})
+
+	// Create our wrapper txn and add it to the HTTP ctx
 	txn := Transaction{
 		app:     app,
+		name:    name,
 		logging: app.conf.Logging,
 		logger:  app.conf.logger,
 	}
+	r = txn.addTransactionToHTTPContext(r)
 
+	// call the NR implementation
 	impl := app.impl.StartTransaction(name, w, r)
 	txn.impl = impl
 

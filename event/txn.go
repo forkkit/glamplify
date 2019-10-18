@@ -2,8 +2,10 @@ package event
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
+	"github.com/cultureamp/glamplify/log"
 	newrelic "github.com/newrelic/go-agent"
 )
 
@@ -11,14 +13,19 @@ import (
 type Transaction struct {
 	impl    newrelic.Transaction
 	app     *Application
+	name    string
 	logging bool
 	logger  *eventLogger
 }
 
-func (txn Transaction) addTransactionContext(req *http.Request) *http.Request {
-	ctx := req.Context()
-	ctx = context.WithValue(ctx, txnContextKey, txn)
-	return req.WithContext(ctx)
+func txnFromContext(ctx context.Context) (*Transaction, error) {
+	txn, ok := ctx.Value(txnContextKey).(*Transaction)
+	if ok && txn != nil {
+		return txn, nil
+	}
+
+	err := errors.New("no transaction in context")
+	return nil, err
 }
 
 // GetApplication todo
@@ -43,6 +50,10 @@ func (txn Transaction) AddAttributes(entries Entries) error {
 // End closes the current transaction
 func (txn Transaction) End() {
 	txn.impl.End()
+
+	txn.log("Transaction Ended", log.Fields{
+		"txnName": txn.name,
+	})
 }
 
 // Header delegates to the wrapped response
@@ -62,10 +73,25 @@ func (txn Transaction) WriteHeader(statusCode int) {
 	txn.impl.WriteHeader(statusCode)
 }
 
+func (txn *Transaction) addTransactionToHTTPContext(req *http.Request) *http.Request {
+	ctx := txn.addTransactionToContext(req.Context())
+	return req.WithContext(ctx)
+}
+
+func (txn *Transaction) addTransactionToContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, txnContextKey, txn)
+}
+
 func (txn Transaction) logError(msg string, err error) {
 	if err != nil && txn.logging {
 		txn.logger.Error(msg, map[string]interface{}{
 			"error": err,
 		})
+	}
+}
+
+func (txn Transaction) log(msg string, fields log.Fields) {
+	if txn.logging {
+		txn.logger.Debug(msg, fields)
 	}
 }

@@ -99,8 +99,8 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do things
 
-	txn, ok := event.TxnFromRequest(w, r)
-	if ok {
+	txn, err := event.TxnFromRequest(w, r)
+	if err == nil {
 		txn.AddAttributes(event.Entries{
 			"aString": "hello world",
 			"aInt":    123,
@@ -109,7 +109,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do more things
 
-	if ok {
+	if err == nil {
 		txn.AddAttributes(event.Entries{
 			"aString2": "goodbye",
 			"aInt2":    456,
