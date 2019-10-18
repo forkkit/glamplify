@@ -17,7 +17,7 @@ type Transaction struct {
 	logger  *eventLogger
 }
 
-// GetApplication todo
+// GetApplication gets the Application from the current Transaction
 func (txn Transaction) GetApplication() *Application {
 	return txn.app
 }

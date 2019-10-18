@@ -15,7 +15,7 @@ type ApplicationConfiguration struct {
 	Version float64 `yaml:"version"`
 }
 
-// Load todo
+// Load the default config.yml file
 func Load() *Configuration {
 	// Todo - better way to work out where the config.yml file is?
 	// Do we have a sensible default for this?
@@ -25,7 +25,7 @@ func Load() *Configuration {
 	)
 }
 
-// LoadFrom todo...
+// LoadFrom the config from these specific paths with this specific filename
 func LoadFrom(paths []string, configName string) *Configuration {
 
 	viper.SetDefault("appname", "service-name")
