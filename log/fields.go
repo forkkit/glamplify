@@ -33,7 +33,7 @@ const (
 // Fields type, used to pass to Debug, Print and Error.
 type Fields map[string]interface{}
 
-var first = []string{TIME, SEVERITY, OS, ARCHITECTURE, HOST, PID, PROCESS}
+var first = []string{TIME, SEVERITY, OS, ARCHITECTURE, HOST, PID, PROCESS, FORWARD}
 var last = []string{MESSAGE, ERROR}
 
 func (fields Fields) merge(other ...Fields) Fields {
