@@ -23,6 +23,7 @@ func TestDebug_Success(t *testing.T) {
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=details")
 	assertKV(t, msg, "severity=DEBUG")
+	assertKV(t, msg, "forward-log=none")
 }
 
 func TestDebugWithFields_Success(t *testing.T) {
@@ -43,6 +44,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=details")
 	assertKV(t, msg, "severity=DEBUG")
+	assertKV(t, msg, "forward-log=none")
 	assertKV(t, msg, "string=hello")
 	assertKV(t, msg, "int=123")
 	assertKV(t, msg, "float=42.48")
@@ -62,6 +64,7 @@ func TestPrint_Success(t *testing.T) {
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=info")
 	assertKV(t, msg, "severity=INFO")
+	assertKV(t, msg, "forward-log=splunk")
 }
 
 func TestPrintWithFields_Success(t *testing.T) {
@@ -82,6 +85,7 @@ func TestPrintWithFields_Success(t *testing.T) {
 	msg := memBuffer.String()
 	assertKV(t, msg, "msg=info")
 	assertKV(t, msg, "severity=INFO")
+	assertKV(t, msg, "forward-log=splunk")
 	assertKV(t, msg, "string=hello")
 	assertKV(t, msg, "int=123")
 	assertKV(t, msg, "float=42.48")
@@ -101,6 +105,7 @@ func TestError_Success(t *testing.T) {
 	msg := memBuffer.String()
 	assertKV(t, msg, "error=error")
 	assertKV(t, msg, "severity=ERROR")
+	assertKV(t, msg, "forward-log=splunk")
 }
 
 func TestErrorWithFields_Success(t *testing.T) {
@@ -121,6 +126,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	msg := memBuffer.String()
 	assertKV(t, msg, "error=error")
 	assertKV(t, msg, "severity=ERROR")
+	assertKV(t, msg, "forward-log=splunk")
 	assertKV(t, msg, "string=hello")
 	assertKV(t, msg, "int=123")
 	assertKV(t, msg, "float=42.48")
@@ -141,6 +147,7 @@ func TestScope(t *testing.T) {
 	scope.Debug("details")
 
 	msg := memBuffer.String()
+	assertKV(t, msg, "forward-log=none")
 	assertKV(t, msg, "msg=details")
 	assertKV(t, msg, "requestID=123")
 
@@ -149,6 +156,7 @@ func TestScope(t *testing.T) {
 	scope.Print("info")
 
 	msg = memBuffer.String()
+	assertKV(t, msg, "forward-log=splunk")
 	assertKV(t, msg, "msg=info")
 	assertKV(t, msg, "requestID=123")
 }

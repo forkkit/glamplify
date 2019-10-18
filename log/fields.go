@@ -22,6 +22,7 @@ const (
 	PROCESS      = "process"
 	SEVERITY     = "severity"
 	TIME         = "time"
+	FORWARD      = "forward-log"
 
 	// Severity Values
 	DEBUG_SEV = "DEBUG"

@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/cultureamp/glamplify/log"
@@ -16,16 +15,6 @@ type Transaction struct {
 	name    string
 	logging bool
 	logger  *eventLogger
-}
-
-func txnFromContext(ctx context.Context) (*Transaction, error) {
-	txn, ok := ctx.Value(txnContextKey).(*Transaction)
-	if ok && txn != nil {
-		return txn, nil
-	}
-
-	err := errors.New("no transaction in context")
-	return nil, err
 }
 
 // GetApplication todo

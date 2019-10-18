@@ -11,20 +11,30 @@ const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
 
 // Config for setting initial values for Logger
 type Config struct {
-	Output     io.Writer
-	TimeFormat string
+	Output            io.Writer
+	TimeFormat        string
+	debugForwardLogTo string
+	printForwardLogTo string
+	errorForwardLogTo string
 }
 
 // FieldLogger wraps the standard library logger and add structured fields as quoted key value pairs
 type FieldLogger struct {
-	mutex      sync.Mutex
-	output     io.Writer
-	timeFormat string
+	mutex             sync.Mutex
+	output            io.Writer
+	timeFormat        string
+	debugForwardLogTo string
+	printForwardLogTo string
+	errorForwardLogTo string
 }
 
 // So that you don't even need to create a new logger
 var (
-	internal = New()
+	internal = New(func(conf *Config) {
+		conf.debugForwardLogTo = "none"
+		conf.printForwardLogTo = "splunk"
+		conf.errorForwardLogTo = "splunk"
+	})
 )
 
 // New creates a new FieldLogger. The optional configure func lets you set values on the underlying standard logger.
@@ -33,8 +43,11 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 
 	logger := &FieldLogger{}
 	conf := Config{
-		Output:     os.Stdout,
-		TimeFormat: RFC3339Milli,
+		Output:            os.Stdout,
+		TimeFormat:        RFC3339Milli,
+		debugForwardLogTo: "none",
+		printForwardLogTo: "splunk",
+		errorForwardLogTo: "splunk",
 	}
 	for _, config := range configure {
 		config(&conf)
@@ -45,6 +58,9 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 
 	logger.output = conf.Output
 	logger.timeFormat = conf.TimeFormat
+	logger.debugForwardLogTo = conf.debugForwardLogTo
+	logger.printForwardLogTo = conf.printForwardLogTo
+	logger.errorForwardLogTo = conf.errorForwardLogTo
 
 	return logger
 }
@@ -85,6 +101,7 @@ func (logger *FieldLogger) Debug(message string, fields ...Fields) {
 		PROCESS:  processName(),
 		SEVERITY: DEBUG_SEV,
 		TIME:     timeNow(logger.timeFormat),
+		FORWARD:  logger.debugForwardLogTo,
 	}
 
 	merged := meta.merge(fields...)
@@ -113,6 +130,7 @@ func (logger *FieldLogger) Print(message string, fields ...Fields) {
 		MESSAGE:  message,
 		SEVERITY: INFO_SEV,
 		TIME:     timeNow(logger.timeFormat),
+		FORWARD:  logger.printForwardLogTo,
 	}
 
 	merged := meta.merge(fields...)
@@ -146,6 +164,7 @@ func (logger *FieldLogger) Error(err error, fields ...Fields) {
 		PROCESS:      processName(),
 		SEVERITY:     ERROR_SEV,
 		TIME:         timeNow(logger.timeFormat),
+		FORWARD:      logger.errorForwardLogTo,
 	}
 
 	merged := meta.merge(fields...)

@@ -134,7 +134,7 @@ func (app *Application) GetTransactionFrom(ctx context.Context) (*Transaction, e
 
 	// 1. First try and get the CA txn from the context. It will be there for HTTP wrapped methods,
 	// but not for serverless/lambda ones
-	txn, err := txnFromContext(ctx)
+	txn, err := TxnFromContext(ctx)
 	if err == nil && txn != nil {
 		return txn, nil
 	}
