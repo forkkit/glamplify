@@ -72,6 +72,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 	cfg := newrelic.NewConfig(name, conf.License)
 	cfg.Enabled = conf.Enabled // useful to turn on/off in test/dev vs production accounts
+	cfg.License = conf.License
 	cfg.Labels = conf.Labels
 	cfg.HighSecurity = false                // HighSecurity blocks sending custom events
 	cfg.CustomInsightsEvents.Enabled = true // otherwise custom events won't fire
