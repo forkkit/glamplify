@@ -102,6 +102,11 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	}
 
 	impl, err := newrelic.NewApplication(cfg)
+	if err != nil {
+		app.logError("Failed to create Application", err)
+		return nil, err
+	}
+
 	if !conf.ServerlessMode {
 		// if conf.ServerlessMode = false (server mode) then newrelic.NewApplication spins up
 		// some go routines that make a network call back to NR. Until this happens any "RecordCustomEvents"
