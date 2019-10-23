@@ -13,7 +13,6 @@ func main() {
 		conf.Logging = true        // default = "false"
 		conf.ServerlessMode = true // default = "false"
 	})
-
 	event.Start(handler, app)
 }
 

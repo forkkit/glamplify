@@ -41,7 +41,7 @@ func TxnFromContext(ctx context.Context) (*Transaction, error) {
 		txnName = handler.functionName
 	}
 
-	// 2. So likely a serverless/lambda call, so get the NR txn from the ctx
+	// 3. So likely a serverless/lambda call, so get the NR txn from the ctx
 	impl := newrelic.FromContext(ctx)
 	if impl != nil {
 		// A bit yuck - we need to create a CA txn here after the fact because NR created one invisibly to us...
