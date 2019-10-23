@@ -90,7 +90,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		cfg.ErrorCollector.Enabled = true
 		cfg.ErrorCollector.CaptureEvents = true
 
-		cfg.Logger.Info("configuration", log.Fields{
+		cfg.Logger.Debug("configuration", log.Fields{
 			"enabled":        conf.Enabled,
 			"logging":        conf.Logging,
 			"labels":         conf.Labels,

@@ -18,7 +18,7 @@ func main() {
 }
 
 func handler(ctx context.Context, input string) (string, error) {
-	log.Print("Begin handler", log.Fields{
+	log.Debug("Begin handler", log.Fields{
 		"input": input,
 	})
 
@@ -32,7 +32,7 @@ func handler(ctx context.Context, input string) (string, error) {
 		return "TXN ERROR", err
 	}
 
-	log.Print("End handler", log.Fields{
+	log.Debug("End handler", log.Fields{
 		"app": app,
 		"txn": txn,
 	})

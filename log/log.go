@@ -3,6 +3,7 @@ package log
 import (
 	"io"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -157,7 +158,7 @@ func Error(err error, fields ...Fields) {
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
 	meta := Fields{
 		ARCHITECTURE: targetArch(),
-		ERROR:        err.Error(),
+		ERROR:        strings.TrimSpace(err.Error()),
 		HOST:         hostName(),
 		OS:           targetOS(),
 		PID:          processID(),
