@@ -130,6 +130,8 @@ Use `log.Error` when you have encounter a GO error. This will NOT stop the progr
 
 ### Events
 
+Make sure you have the environment variable NEW_RELIC_LICENSE_KEY set to the correct 40 character license key. Alternativately, you can read it from another environment variable and pass it into the event.Config struct.
+
 #### Adding Attributes to a Web Request Transaction
 ```
 package main
@@ -140,7 +142,7 @@ import (
 
 func main() {
 
-    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
+    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
 		conf.Enabled = true             // default = "false"
 		conf.Logging = true             // default = "false"
 		conf.ServerlessMode = false     // default = "false"
@@ -190,7 +192,7 @@ import (
 
 func main() {
 
-    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
+    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
 		conf.Enabled = true             // default = "false"
 		conf.Logging = true             // default = "false"
 		conf.ServerlessMode = false     // default = "false"
@@ -210,7 +212,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     // Do things
 
-	err = app.RecordEvent("mycustom_event", event.Entries{
+	err = app.RecordEvent("mycustomEvent", event.Entries{
 		"aString": "hello world",
 		"aInt":    123,
 	})
@@ -228,7 +230,7 @@ import (
 )
 
 func main() {
-    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
+    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
 		conf.Enabled = true             // default = "false"
 		conf.Logging = true             // default = "false"
 		conf.ServerlessMode = true      // default = "false"
@@ -269,7 +271,7 @@ import (
 )
 
 func main() {
-    app, err := event.NewApplication("Glamplify-Demo", func(conf *event.Config) {
+    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
 		conf.Enabled = true             // default = "false"
 		conf.Logging = true             // default = "false"
 		conf.ServerlessMode = true      // default = "false"
@@ -284,7 +286,7 @@ func handler(ctx context.Context) {
 
     app, err := event.AppFromContext(ctx)
     if err != nil {
-        err = app.RecordEvent("mycustom_event", event.Entries{
+        err = app.RecordEvent("mycustomEvent", event.Entries{
             "aString": "hello world",
             "aInt":    123,
         })

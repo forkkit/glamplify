@@ -79,7 +79,7 @@ func main() {
 
 	/* EVENTS */
 
-	app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+	app, err := event.NewApplication("GlamplifyUnitTests", func(conf *event.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -115,5 +115,4 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 			"aInt2":    456,
 		})
 	}
-
 }
