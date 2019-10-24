@@ -93,6 +93,23 @@ func TestPrintWithFields_Success(t *testing.T) {
 	assertKV(t, msg, "\"string3 space\"=world")
 }
 
+func TestPrintWithDuplicateFields_Success(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	logger.Print("info", log.Fields{
+		log.FORWARD: "sumo", // set a standard field, this should overwrite the default
+	})
+
+	msg := memBuffer.String()
+	assertKV(t, msg, "msg=info")
+	assertKV(t, msg, "severity=INFO")
+	assertKV(t, msg, "forward-log=sumo") // by default this would normally be set to "splunk"
+}
+
 func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
