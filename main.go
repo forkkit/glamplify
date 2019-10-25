@@ -83,6 +83,12 @@ func main() {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
+		conf.Labels = &event.Labels{
+			"asset":          "unknown",
+			"classification": "restricted",
+			"workload":       "development",
+			"camp":           "amplify",
+		}
 	})
 
 	_, handler := app.WrapHTTPHandler("/", rootRequestHandler)

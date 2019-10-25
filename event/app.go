@@ -11,8 +11,9 @@ import (
 	newrelic "github.com/newrelic/go-agent"
 )
 
-// Entries contains key-value pairs to record along with the event
-type Entries map[string]interface{}
+const (
+	wait_FOR_NEWRELIC = 4 * time.Second
+)
 
 // Labels are key value pairs used to roll up applications into specific categoriess
 type Labels map[string]string
@@ -73,13 +74,19 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	cfg := newrelic.NewConfig(name, conf.License)
 	cfg.Enabled = conf.Enabled // useful to turn on/off in test/dev vs production accounts
 	cfg.License = conf.License
-	cfg.Labels = conf.Labels
-	cfg.HighSecurity = false                // HighSecurity blocks sending custom events
 	cfg.CustomInsightsEvents.Enabled = true // otherwise custom events won't fire
-	cfg.Utilization.DetectAWS = true
+	cfg.ErrorCollector.Enabled = true
+	cfg.ErrorCollector.CaptureEvents = true
+	cfg.HighSecurity = false // HighSecurity blocks sending custom events
+	cfg.Labels = conf.Labels // camp, environment, data classificiation, etc
+	cfg.RuntimeSampler.Enabled = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
-	cfg.ErrorCollector.Enabled = false
-	cfg.ErrorCollector.CaptureEvents = false
+	cfg.TransactionTracer.Enabled = true
+	cfg.Utilization.DetectAWS = true
+	cfg.Utilization.DetectDocker = true
+
+	// for now we turn off DistributedTracing because it is too expensive
+	cfg.DistributedTracer.Enabled = false
 
 	if conf.Logging {
 		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
@@ -87,8 +94,6 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 		conf.logger = newEventLogger()
 		cfg.Logger = conf.logger
-		cfg.ErrorCollector.Enabled = true
-		cfg.ErrorCollector.CaptureEvents = true
 
 		cfg.Logger.Debug("configuration", log.Fields{
 			"enabled":        conf.Enabled,
@@ -113,7 +118,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		// some go routines that make a network call back to NR. Until this happens any "RecordCustomEvents"
 		// seem to get dropped!
 		// Waiting here so that everything is set up and ready
-		time.Sleep(5 * time.Second)
+		time.Sleep(wait_FOR_NEWRELIC)
 	}
 
 	app.impl = impl
@@ -122,14 +127,23 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
 func (app Application) RecordEvent(eventType string, entries Entries) error {
-	app.log("Begin RecordEvent",
-		log.Fields{
-			"eventType": eventType,
-		},
-		entries,
-	)
-	err := app.impl.RecordCustomEvent(eventType, entries)
+	app.log("Begin RecordEvent", log.Fields{"eventType": eventType}, entries)
+
+	// NewRelic has limits on number and size of entries
+	// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
+	// However, if you pass in a string entry longer than 255 it fails "siliently"!!!!!
+	// TODO - implement our own checking?
+
+	ok, err := entries.validate()
+	if !ok {
+		app.logError("RecordEvent", err)
+		app.log("End RecordEvent", log.Fields{"eventType": eventType}, entries)
+		return err
+	}
+
+	err = app.impl.RecordCustomEvent(eventType, entries)
 	app.logError("RecordEvent", err)
+	app.log("End RecordEvent", log.Fields{"eventType": eventType}, entries)
 
 	return err
 }
@@ -147,7 +161,7 @@ func (app Application) Shutdown() {
 		// if conf.ServerlessMode = false (server mode) then newrelic.Shutdown can exit its internal go routines
 		// before it has sent all pending data!
 		// Waiting here so that everything is sent before we start closing down...
-		time.Sleep(5 * time.Second)
+		time.Sleep(wait_FOR_NEWRELIC)
 	}
 
 	// The time duration passed here is how long to wait before the shutdown channel processes the request
@@ -160,6 +174,7 @@ func (app *Application) wrapHTTPHandler(pattern string, handler http.Handler) (s
 		txn := app.startTransaction(pattern, w, r)
 		defer txn.End()
 
+		r = txn.addToHTTPContext(r)
 		handler.ServeHTTP(txn, r)
 	})
 }
@@ -176,7 +191,6 @@ func (app *Application) startTransaction(name string, w http.ResponseWriter, r *
 		logging: app.conf.Logging,
 		logger:  app.conf.logger,
 	}
-	r = txn.addToHTTPContext(r)
 
 	// call the NR implementation
 	impl := app.impl.StartTransaction(name, w, r)
