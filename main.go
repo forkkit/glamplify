@@ -83,7 +83,7 @@ func main() {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
-		conf.Labels = &event.Labels{
+		conf.Labels = event.Labels{
 			"asset":          "unknown",
 			"classification": "restricted",
 			"workload":       "development",

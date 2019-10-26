@@ -7,8 +7,10 @@ import (
 // Entries contains key-value pairs to record along with the event
 type Entries map[string]interface{}
 
-// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
-func (entries Entries) validate() (bool, error) {
+// Validate checks that Entries are valid before processing
+func (entries Entries) Validate() (bool, error) {
+	// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
+
 	for k, v := range entries {
 
 		switch s := v.(type) {

@@ -10,8 +10,8 @@ import (
 
 type key int
 
+// https://stackoverflow.com/questions/40891345/fix-should-not-use-basic-type-string-as-key-in-context-withvalue-golint
 const (
-	// https://stackoverflow.com/questions/40891345/fix-should-not-use-basic-type-string-as-key-in-context-withvalue-golint
 	txnContextKey     key = iota
 	appContextKey     key = iota
 	handlerContextKey key = iota
@@ -34,14 +34,15 @@ func TxnFromContext(ctx context.Context) (*Transaction, error) {
 	}
 
 	// 2. So likely a serverless/lambda call, so try and get the CA lambdaHandler so we can get the txnName & app
-	// It should be there as we added it before calling "Invoke". We
+	// It should be there as we added it before calling "Invoke".
 	txnName := "<unknown>"
 	handler, err := handlerFromContext(ctx)
-	if err == nil && handler != nil {
-		txnName = handler.functionName
+	if err != nil || handler == nil {
+		return nil, err
 	}
 
 	// 3. So likely a serverless/lambda call, so get the NR txn from the ctx
+	txnName = handler.functionName
 	impl := newrelic.FromContext(ctx)
 	if impl != nil {
 		// A bit yuck - we need to create a CA txn here after the fact because NR created one invisibly to us...

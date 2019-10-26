@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	wait_FOR_NEWRELIC = 4 * time.Second
+	waitFORNR = 4 * time.Second
 )
 
 // Labels are key value pairs used to roll up applications into specific categoriess
@@ -118,7 +118,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		// some go routines that make a network call back to NR. Until this happens any "RecordCustomEvents"
 		// seem to get dropped!
 		// Waiting here so that everything is set up and ready
-		time.Sleep(wait_FOR_NEWRELIC)
+		time.Sleep(waitFORNR)
 	}
 
 	app.impl = impl
@@ -134,7 +134,7 @@ func (app Application) RecordEvent(eventType string, entries Entries) error {
 	// However, if you pass in a string entry longer than 255 it fails "siliently"!!!!!
 	// TODO - implement our own checking?
 
-	ok, err := entries.validate()
+	ok, err := entries.Validate()
 	if !ok {
 		app.logError("RecordEvent", err)
 		app.log("End RecordEvent", log.Fields{"eventType": eventType}, entries)
@@ -161,7 +161,7 @@ func (app Application) Shutdown() {
 		// if conf.ServerlessMode = false (server mode) then newrelic.Shutdown can exit its internal go routines
 		// before it has sent all pending data!
 		// Waiting here so that everything is sent before we start closing down...
-		time.Sleep(wait_FOR_NEWRELIC)
+		time.Sleep(waitFORNR)
 	}
 
 	// The time duration passed here is how long to wait before the shutdown channel processes the request
