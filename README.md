@@ -114,7 +114,7 @@ func main() {
         })
 
     // The internall logger will always use these default values:
-    // output = os.Stderr
+    // output = os.Stdout
     // time format = "2006-01-02T15:04:05.000Z07:00"
     // debugForwardLogTo = "none"
     // printForwardLogTo = "splunk"
