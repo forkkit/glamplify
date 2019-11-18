@@ -36,6 +36,18 @@ func (txn Transaction) AddAttributes(entries Entries) error {
 	return nil
 }
 
+func (txn Transaction) ReportError(err error) error {
+	return txn.impl.NoticeError(err)
+}
+
+func (txn Transaction) ReportErrorDetails(msg string, class string, entries Entries) error {
+	return txn.impl.NoticeError(newrelic.Error{
+		Message:    msg,
+		Class:      class,
+		Attributes: entries,
+	})
+}
+
 // End closes the current transaction
 func (txn Transaction) End() {
 	txn.impl.End()
