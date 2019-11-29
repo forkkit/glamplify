@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"github.com/cultureamp/glamplify/field"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -30,8 +31,7 @@ const (
 	ERROR_SEV = "ERROR"
 )
 
-// Fields type, used to pass to Debug, Print and Error.
-type Fields map[string]interface{}
+type Fields field.Fields
 
 var first = []string{TIME, SEVERITY, OS, ARCHITECTURE, HOST, PID, PROCESS, FORWARD}
 var last = []string{MESSAGE, ERROR}
@@ -61,7 +61,7 @@ func (fields Fields) serialize() string {
 	// everything else in the middle - sorted
 	pairs = fields.sortMiddle(pairs)
 
-	// finish with 'last' fields
+	// finish with 'last' field
 	pairs = fields.accumulate(pairs, last)
 
 	return strings.Join(pairs, " ")

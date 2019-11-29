@@ -1,4 +1,4 @@
-package event
+package monitor
 
 import (
 	"context"

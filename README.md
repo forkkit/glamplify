@@ -11,7 +11,7 @@ go get github.com/cultureamp/glamplify
 ## Usage
 
 ### Config
-```
+```Go
 package main
 
 import (
@@ -39,10 +39,11 @@ If no config.yml or config.json can be found, or if it is corrupted, then a conf
 
 ### Logging
 
-```
+```Go
 package main
 
 import (
+    "bytes"
     "errors"
 
     "github.com/cultureamp/glamplify/log"
@@ -60,47 +61,47 @@ func main() {
     // All messages must be static strings (as per Culture Amp Sensibile Default)
     log.Debug("Something happened")
 
-    // Emit debug trace with fields - by default these are set "forward-log=none" (not splunk, remain in cloudwatch log)
+    field
     // Fields can contain any type of variables
     log.Debug("Something happened", log.Fields{
-		"aString": "hello",
-		"aInt":    123,
-		"aFloat":  42.48,
-	})
+        "aString": "hello",
+        "aInt":    123,
+        "aFloat":  42.48,
+     })
 
-    // Emit normal logging (can add optional fields if required) - by default these set "forward-log=splunk" (sent to splunk from cloudwatch log)
+    field
     // Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
     log.Print("Executing main")
 
-    // Emit normal logging with fields - by default these are set "forward-log=splunk" (sent to splunk from cloudwatch log)
+    field
     // Fields can contain any type of variables
     log.Print("Executing main", log.Fields{
-		"program-name": "helloworld.exe",
-		"start-up-param":    123,
-		"user":  "admin",
-	})
+        "program-name": "helloworld.exe",
+        "start-up-param":    123,
+        "user":  "admin",
+    })
 
-    // Emit Error (can add optional fields if required)  - by default these set "forward-log=splunk" (sent to splunk from cloudwatch log)
+    field
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
     err := errors.New("missing database connection string")
     log.Error(err, "Main program stopped unexpectedly")
 
-    // Emit error logging with fields - by default these are set "forward-log=splunk" (sent to splunk from cloudwatch log)
+    field
     // Fields can contain any type of variables
     err := errors.New("missing database connection string")
     log.Error(err, "Executing main", log.Fields{
-		"program-name": "helloworld.exe",
-		"start-up-param":    123,
-		"user":  "admin",
-	})
+        "program-name": "helloworld.exe",
+        "start-up-param":    123,
+        "user":  "admin",
+     })
 
-    // If you want to set some fields for a particular scope (eg. for a Web Request 
+    field
     // have a requestID for every log message within that scope) then you can use WithScope()
     scope := log.WithScope(log.Fields { "requestID" : 123 })
 
     // then just use the scope as you would a normal logger
-    // Fields passed in the scope will be merged with any fields passed in subsequent calls
-    // If duplicate keys, then fields in Debug, Print, Error will overwrite those of the scope
+    field
+    field
     scope.Print("Starting web request", log.Fields { "auth": "oauth" })
 
     // If you want to change the output or time format you can only do this for an
@@ -108,10 +109,10 @@ func main() {
 
     memBuffer := &bytes.Buffer{}
     logger := log.New(func(conf *log.Config) {
-            conf.Output = memBuffer                     // can be set to anything that support io.Write
-            conf.TimeFormat = "2006-01-02T15:04:05"     // any valid time format
-            conf.debugForwardLogTo = "splunk"           // send debug messages to "splunk"
-        })
+        conf.Output = memBuffer                     // can be set to anything that support io.Write
+        conf.TimeFormat = "2006-01-02T15:04:05"     // any valid time format
+        conf.debugForwardLogTo = "splunk"           // send debug messages to "splunk"
+    })
 
     // The internall logger will always use these default values:
     // output = os.Stdout
@@ -128,165 +129,171 @@ Use `log.Print` for standard log messages that you want to see always. These wil
 
 Use `log.Error` when you have encounter a GO error. This will NOT stop the program, it is up to you to call exit() or panic() if this is not recoverable. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
 
-### Events
+### Monitor
 
-Make sure you have the environment variable NEW_RELIC_LICENSE_KEY set to the correct 40 character license key. Alternativately, you can read it from another environment variable and pass it into the event.Config struct.
+Make sure you have the environment variable NEW_RELIC_LICENSE_KEY set to the correct 40 character license key. Alternatively, you can read it from another environment variable and pass it into the event.Config struct.
 
 #### Adding Attributes to a Web Request Transaction
-```
+```Go
 package main
 
 import (
-    "github.com/cultureamp/glamplify/events"
+    "net/http"
+    "github.com/cultureamp/glamplify/monitor"
 )
 
 func main() {
 
-    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
-		conf.Enabled = true             // default = "false"
-		conf.Logging = true             // default = "false"
-		conf.ServerlessMode = false     // default = "false"
-	})
+    app, err := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
+        conf.Enabled = true             // default = "false"
+        conf.Logging = true             // default = "false"
+        conf.ServerlessMode = false     // default = "false"
+     })
 
-	_, handler := app.WrapTxnHandler("/", rootRequestHandler)
-	http.HandlerFunc(handler)
+    _, handler := app.WrapTxnHandler("/", rootRequestHandler)
+    http.HandlerFunc(handler)
 
     if err := http.ListenAndServe(":8080", nil); err != nil {
         panic(err)
     }
 
-	app.Shutdown()
+    app.Shutdown()
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     // Do things
 
-	txn, ok := event.TxnFromRequest(w, r)
-	if ok {
-		txn.AddAttributes(event.Entries{
-			"aString": "hello world",
-			"aInt":    123,
-		})
-	}
+    txn, ok := monitor.TxnFromRequest(w, r)
+    if ok {
+        txn.AddAttributes(monitor.Fields{
+            "aString": "hello world",
+            "aInt":    123,
+        })
+    }
 
     // Do more things
 
-	if ok {
-		txn.AddAttributes(event.Entries{
-			"aString2": "goodbye",
-			"aInt2":    456,
-		})
-	}
+    if ok {
+        txn.AddAttributes(monitor.Fields{
+            "aString2": "goodbye",
+            "aInt2":    456,
+        })
+    }
 
 }
 ```
 
 #### Custom Events to a Web Request Transaction
-```
+```Go
 package main
 
 import (
-    "github.com/cultureamp/glamplify/events"
+    "net/http"
+    "github.com/cultureamp/glamplify/monitor"
 )
 
 func main() {
 
-    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
+    app, err := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
 		conf.Enabled = true             // default = "false"
 		conf.Logging = true             // default = "false"
 		conf.ServerlessMode = false     // default = "false"
 	})
 
-	_, handler := app.WrapTxnHandler("/", rootRequestHandler)
-	http.HandlerFunc(handler)
+    _, handler := app.WrapTxnHandler("/", rootRequestHandler)
+    http.HandlerFunc(handler)
 
     if err := http.ListenAndServe(":8080", nil); err != nil {
         panic(err)
     }
-
-	app.Shutdown()
+    
+    app.Shutdown()
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     // Do things
 
-	err = app.RecordEvent("mycustomEvent", event.Entries{
-		"aString": "hello world",
-		"aInt":    123,
-	})
+    err = monitor.RecordEvent("mycustomEvent", monitor.Fields{
+        "aString": "hello world",
+        "aInt":    123,
+    })
 
     // Do more things
 }
 ```
 
 #### Adding Attributes to a Lambda (Serverless)
-```
+```Go
 package main
 
 import (
-    "github.com/cultureamp/glamplify/events"
+    "context"
+    "net/http"
+    "github.com/cultureamp/glamplify/monitor"
 )
 
 func main() {
-    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
-		conf.Enabled = true             // default = "false"
-		conf.Logging = true             // default = "false"
-		conf.ServerlessMode = true      // default = "false"
-	})
+    app, err := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
+        conf.Enabled = true             // default = "false"
+        conf.Logging = true             // default = "false"
+        conf.ServerlessMode = true      // default = "false"
+     })
 
-    event.Start(handler, app)
+    monitor.Start(handler, app)
 }
 
 func handler(ctx context.Context) {
 
     // Do things
 
-	txn, err := event.TxnFromContext(ctx)
-	if err != nil {
-		txn.AddAttributes(event.Entries{
-			"aString": "hello world",
-			"aInt":    123,
-		})
-	}
+    txn, err := monitor.TxnFromContext(ctx)
+    if err != nil {
+        txn.AddAttributes(monitor.Fields{
+            "aString": "hello world",
+            "aInt":    123,
+        })
+    }
 
     // Do more things
 
-	if err != nil {
-		txn.AddAttributes(event.Entries{
-			"aString2": "goodbye",
-			"aInt2":    456,
-		})
-	}
+    if err != nil {
+        txn.AddAttributes(monitor.Fields{
+            "aString2": "goodbye",
+            "aInt2":    456,
+        })
+    }
 }
 ```
 
 #### Custom Events to a Lambda (Serverless)
-```
+```Go
 package main
 
 import (
-    "github.com/cultureamp/glamplify/events"
+    "context"
+    "net/http"
+    "github.com/cultureamp/glamplify/monitor"
 )
 
 func main() {
-    app, err := event.NewApplication("GlamplifyDemo", func(conf *event.Config) {
-		conf.Enabled = true             // default = "false"
-		conf.Logging = true             // default = "false"
-		conf.ServerlessMode = true      // default = "false"
-	})
+    app, err := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
+        conf.Enabled = true             // default = "false"
+        conf.Logging = true             // default = "false"
+        conf.ServerlessMode = true      // default = "false"
+    })
 
-    event.Start(handler, app)
+    monitor.Start(handler, app)
 }
 
 func handler(ctx context.Context) {
 
     // Do things
 
-    app, err := event.AppFromContext(ctx)
+    app, err := monitor.AppFromContext(ctx)
     if err != nil {
-        err = app.RecordEvent("mycustomEvent", event.Entries{
+        err = app.RecordEvent("mycustomEvent", monitor.Fields{
             "aString": "hello world",
             "aInt":    123,
         })

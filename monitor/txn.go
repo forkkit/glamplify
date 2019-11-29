@@ -1,4 +1,4 @@
-package event
+package monitor
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type Transaction struct {
 	app     *Application
 	name    string
 	logging bool
-	logger  *eventLogger
+	logger  *monitorLogger
 }
 
 // GetApplication gets the Application from the current Transaction
@@ -23,10 +23,10 @@ func (txn Transaction) GetApplication() *Application {
 }
 
 // AddAttributes adds customer data (key-value) to a current transaction (ie. http web request)
-func (txn Transaction) AddAttributes(entries Entries) error {
+func (txn Transaction) AddAttributes(fields Fields) error {
 
 	var err error
-	for k, v := range entries {
+	for k, v := range fields {
 		err = txn.impl.AddAttribute(k, v)
 		if err != nil {
 			txn.logError("AddAtributes", err)
@@ -40,11 +40,11 @@ func (txn Transaction) ReportError(err error) error {
 	return txn.impl.NoticeError(err)
 }
 
-func (txn Transaction) ReportErrorDetails(msg string, class string, entries Entries) error {
+func (txn Transaction) ReportErrorDetails(msg string, class string, fields Fields) error {
 	return txn.impl.NoticeError(newrelic.Error{
 		Message:    msg,
 		Class:      class,
-		Attributes: entries,
+		Attributes: fields,
 	})
 }
 

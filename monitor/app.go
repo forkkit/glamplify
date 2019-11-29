@@ -1,4 +1,4 @@
-package event
+package monitor
 
 import (
 	"context"
@@ -40,14 +40,14 @@ type Config struct {
 	// https://docs.newrelic.com/docs/using-new-relic/user-interface-functions/organize-your-data/labels-categories-organize-apps-monitors
 	Labels Labels
 
-	// ServerlessMode contains fields which control behavior when running in
+	// ServerlessMode contains field which control behavior when running in
 	// AWS Lambda.
 	//
 	// https://docs.newrelic.com/docs/serverless-function-monitoring/aws-lambda-monitoring/get-started/introduction-new-relic-monitoring-aws-lambda
 	ServerlessMode bool
 
 	// internal logger
-	logger *eventLogger
+	logger *monitorLogger
 }
 
 // Application is a wrapper over the underlying implementation
@@ -92,7 +92,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
 		// So we have our own implementation that wraps our standard logger
 
-		conf.logger = newEventLogger()
+		conf.logger = newMonitorLogger()
 		cfg.Logger = conf.logger
 
 		cfg.Logger.Debug("configuration", log.Fields{
@@ -126,24 +126,24 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 }
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
-func (app Application) RecordEvent(eventType string, entries Entries) error {
-	app.log("Begin RecordEvent", log.Fields{"eventType": eventType}, entries)
+func (app Application) RecordEvent(eventType string, fields Fields) error {
+	app.log("Begin RecordEvent", log.Fields{"eventType": eventType}, fields)
 
 	// NewRelic has limits on number and size of entries
 	// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
 	// However, if you pass in a string entry longer than 255 it fails "siliently"!!!!!
 	// TODO - implement our own checking?
 
-	ok, err := entries.Validate()
+	ok, err := fields.Validate()
 	if !ok {
 		app.logError("RecordEvent", err)
-		app.log("End RecordEvent", log.Fields{"eventType": eventType}, entries)
+		app.log("End RecordEvent", log.Fields{"eventType": eventType}, fields)
 		return err
 	}
 
-	err = app.impl.RecordCustomEvent(eventType, entries)
+	err = app.impl.RecordCustomEvent(eventType, fields)
 	app.logError("RecordEvent", err)
-	app.log("End RecordEvent", log.Fields{"eventType": eventType}, entries)
+	app.log("End RecordEvent", log.Fields{"eventType": eventType}, fields)
 
 	return err
 }
@@ -203,9 +203,9 @@ func (app *Application) addToContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, appContextKey, app)
 }
 
-func (app Application) log(msg string, fields log.Fields, entries ...Entries) {
+func (app Application) log(msg string, logFields log.Fields, fields ...Fields) {
 	if app.conf.Logging {
-		merged := app.conf.logger.merge(fields, entries...)
+		merged := app.conf.logger.merge(logFields, fields...)
 		app.conf.logger.Debug(msg, merged)
 	}
 }

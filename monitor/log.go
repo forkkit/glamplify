@@ -1,4 +1,4 @@
-package event
+package monitor
 
 import (
 	"errors"
@@ -13,47 +13,47 @@ import (
 // level.  logrus and logxi are supported by the integration packages
 // https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogrus and
 // https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogxi/v1.
-type eventLogger struct {
+type monitorLogger struct {
 	fieldLogger *log.FieldLogger
 }
 
-func newEventLogger() *eventLogger {
+func newMonitorLogger() *monitorLogger {
 	logger := log.New()
 
-	return &eventLogger{
+	return &monitorLogger{
 		fieldLogger: logger,
 	}
 }
 
-func (logger eventLogger) Error(msg string, context map[string]interface{}) {
+func (logger monitorLogger) Error(msg string, context map[string]interface{}) {
 	err := errors.New(msg)
 	logger.fieldLogger.Error(err, context)
 }
 
-func (logger eventLogger) Warn(msg string, context map[string]interface{}) {
+func (logger monitorLogger) Warn(msg string, context map[string]interface{}) {
 	logger.fieldLogger.Print(msg, context)
 }
 
-func (logger eventLogger) Info(msg string, context map[string]interface{}) {
+func (logger monitorLogger) Info(msg string, context map[string]interface{}) {
 	logger.fieldLogger.Print(msg, context)
 }
 
-func (logger eventLogger) Debug(msg string, context map[string]interface{}) {
+func (logger monitorLogger) Debug(msg string, context map[string]interface{}) {
 	logger.fieldLogger.Debug(msg, context)
 }
 
-func (logger eventLogger) DebugEnabled() bool {
+func (logger monitorLogger) DebugEnabled() bool {
 	return false
 }
 
-func (logger eventLogger) merge(fields log.Fields, entries ...Entries) log.Fields {
+func (logger monitorLogger) merge(logFields log.Fields, fields ...Fields) log.Fields {
 	merged := log.Fields{}
 
-	for k, v := range fields {
+	for k, v := range logFields {
 		merged[k] = v
 	}
 
-	for _, f := range entries {
+	for _, f := range fields {
 		for k, v := range f {
 			merged[k] = v
 		}

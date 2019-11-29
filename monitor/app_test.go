@@ -1,14 +1,14 @@
-package event_test
+package monitor_test
 
 import (
+	"github.com/cultureamp/glamplify/monitor"
 	"testing"
 
-	"github.com/cultureamp/glamplify/event"
 	"gotest.tools/assert"
 )
 
 func TestApplication_RecordEvent_Server_Success(t *testing.T) {
-	app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+	app, err := monitor.NewApplication("Glamplify-Unit-Tests", func(conf *monitor.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -17,7 +17,7 @@ func TestApplication_RecordEvent_Server_Success(t *testing.T) {
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, app != nil, "application was nil")
 
-	err = app.RecordEvent("glamplify_unittest_customevent", event.Entries{
+	err = app.RecordEvent("glamplify_unittest_customevent", monitor.Entries{
 		"aString": "hello world",
 		"aInt":    123,
 	})
@@ -27,7 +27,7 @@ func TestApplication_RecordEvent_Server_Success(t *testing.T) {
 }
 
 func TestApplication_RecordEvent_Server_Fail(t *testing.T) {
-	app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+	app, err := monitor.NewApplication("Glamplify-Unit-Tests", func(conf *monitor.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -36,7 +36,7 @@ func TestApplication_RecordEvent_Server_Fail(t *testing.T) {
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, app != nil, "application was nil")
 
-	err = app.RecordEvent("glamplify_unittest_customevent", event.Entries{
+	err = app.RecordEvent("glamplify_unittest_customevent", monitor.Entries{
 		"test":  "big_long_string_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890",
 		"anull": nil,
 	})

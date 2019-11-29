@@ -1,17 +1,17 @@
-package event_test
+package monitor_test
 
 import (
 	"context"
+	"github.com/cultureamp/glamplify/monitor"
 	"testing"
 
-	"github.com/cultureamp/glamplify/event"
 	"gotest.tools/assert"
 )
 
 func TestContext_Fail(t *testing.T) {
 
 	ctx := context.TODO()
-	txn, err := event.TxnFromContext(ctx)
+	txn, err := monitor.TxnFromContext(ctx)
 
 	assert.Assert(t, txn == nil, txn)
 	assert.Assert(t, err != nil, err)

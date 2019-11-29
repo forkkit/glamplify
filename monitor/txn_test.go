@@ -1,18 +1,18 @@
-package event_test
+package monitor_test
 
 import (
 	"context"
 	"errors"
+	"github.com/cultureamp/glamplify/monitor"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cultureamp/glamplify/event"
 	"gotest.tools/assert"
 )
 
 func TestTxn_AddAttribute_Server_Success(t *testing.T) {
-	app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+	app, err := monitor.NewApplication("Glamplify-Unit-Tests", func(conf *monitor.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -32,9 +32,9 @@ func TestTxn_AddAttribute_Server_Success(t *testing.T) {
 }
 
 func addAttribute(w http.ResponseWriter, r *http.Request) {
-	txn, err := event.TxnFromRequest(w, r)
+	txn, err := monitor.TxnFromRequest(w, r)
 	if err == nil {
-		txn.AddAttributes(event.Entries{
+		txn.AddAttributes(monitor.Entries{
 			"aString": "hello world",
 			"aInt":    123,
 		})
@@ -42,7 +42,7 @@ func addAttribute(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestTxn_NoticeError_Server_Success(t *testing.T) {
-	app, err := event.NewApplication("Glamplify-Unit-Tests", func(conf *event.Config) {
+	app, err := monitor.NewApplication("Glamplify-Unit-Tests", func(conf *monitor.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -69,12 +69,12 @@ func TestTxn_NoticeError_Server_Success(t *testing.T) {
 func reportError(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	t, _ := ctx.Value("t").(*testing.T)
-	
-	txn, err := event.TxnFromRequest(w, r)
+
+	txn, err := monitor.TxnFromRequest(w, r)
 	if err == nil {
 		err = txn.ReportError(errors.New("standard error message"))
 		assert.Assert(t, err == nil, err )
-		txn.ReportErrorDetails("detailed error", "txn_test", event.Entries{
+		txn.ReportErrorDetails("detailed error", "txn_test", monitor.Entries{
 			"aString": "hello world",
 		})
 		assert.Assert(t, err == nil, err )
