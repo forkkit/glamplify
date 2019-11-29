@@ -107,7 +107,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	txn, err := monitor.TxnFromRequest(w, r)
 	if err == nil {
-		txn.AddAttributes(monitor.Entries{
+		txn.AddAttributes(monitor.Fields{
 			"aString": "hello world",
 			"aInt":    123,
 		})
@@ -116,7 +116,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Do more things
 
 	if err == nil {
-		txn.AddAttributes(monitor.Entries{
+		txn.AddAttributes(monitor.Fields{
 			"aString2": "goodbye",
 			"aInt2":    456,
 		})
