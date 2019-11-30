@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"errors"
+	http2 "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/monitor"
+	"github.com/cultureamp/glamplify/notify"
 	"net/http"
 	"net/http/httptest"
 
@@ -31,7 +33,7 @@ func main() {
 	// eg. log.Debug(), log.Print() and log.Error()
 
 	// Example below shows usage with the package level logger (sensible default), but can
-	// use an instance of a logger by calling log.New()
+	// use an instance of a logger by calling log.NewNotifier()
 
 	// Emit debug trace
 	// All messages must be static strings (as per Culture Amp Sensibile Default)
@@ -51,7 +53,7 @@ func main() {
 
 	// Emit Error (can add optional field if required)
 	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-	err := errors.New("Main program stopped unexpectedly")
+	err := errors.New("main program stopped unexpectedly")
 	log.Error(err)
 
 	// If you want to set some field for a particular scope (eg. for a Web Request
@@ -77,9 +79,9 @@ func main() {
 	// time format = "2006-01-02T15:04:05.000Z07:00"
 	logger.Print("Something useful just happened")
 
-	/* EVENTS */
+	/* Monitor & Notify */
 
-	app, err := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
+	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
@@ -90,12 +92,24 @@ func main() {
 			"camp":           "amplify",
 		}
 	})
+	if appErr != nil {
+		log.Error(appErr)
+	}
 
-	_, handler := app.WrapHTTPHandler("/", rootRequestHandler)
+	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func (conf *notify.Config) {
+		conf.Enabled = true
+		conf.Logging = true
+		conf.AppVersion = "1.0.0"
+	})
+	if notifyErr != nil {
+		log.Error(notifyErr)
+	}
+
+	pattern, handler := http2.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)
 	h := http.HandlerFunc(handler)
 
 	rr := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", pattern, nil)
 	h.ServeHTTP(rr, req)
 
 	app.Shutdown()

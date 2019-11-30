@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/cultureamp/glamplify/helper"
+	"github.com/cultureamp/glamplify/errors"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 )
@@ -24,13 +24,13 @@ func handler(ctx context.Context, input string) (string, error) {
 
 	app, err := monitor.AppFromContext(ctx)
 	if err != nil {
-		helper.HandleError(err, fields)
+		errors.HandleError(err, fields)
 		return "APP ERROR", err
 	}
 
 	txn, err := monitor.TxnFromContext(ctx)
 	if err != nil {
-		helper.HandleErrorWithContext(err, ctx, fields)
+		errors.HandleErrorWithContext(err, ctx, fields)
 		return "TXN ERROR", err
 	}
 

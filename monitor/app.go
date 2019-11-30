@@ -78,7 +78,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	cfg.ErrorCollector.Enabled = true
 	cfg.ErrorCollector.CaptureEvents = true
 	cfg.HighSecurity = false // HighSecurity blocks sending custom events
-	cfg.Labels = conf.Labels // camp, environment, data classificiation, etc
+	cfg.Labels = conf.Labels // camp, environment, data classification, etc
 	cfg.RuntimeSampler.Enabled = true
 	cfg.ServerlessMode.Enabled = conf.ServerlessMode
 	cfg.TransactionTracer.Enabled = true

@@ -4,7 +4,10 @@ import (
 	"context"
 	"github.com/bugsnag/bugsnag-go"
 	"github.com/cultureamp/glamplify/field"
+	"github.com/cultureamp/glamplify/helper"
+	"net/http"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -21,19 +24,27 @@ type Notifier struct {
 	conf Config
 }
 
-var (
-	internal = New(func(conf *Config) {conf.Enabled = true})
+const (
+	waitFORBugsnag = 2 * time.Second
 )
 
-func New(configure ...func(*Config)) *Notifier {
+var (
+	internal, _ = NewNotifier(helper.GetEnvOrDefault("APP_NAME", "default"), func(conf *Config) {conf.Enabled = true})
+)
+
+func NewNotifier(name string, configure ...func(*Config)) (*Notifier, error) {
+
+	if len(name) == 0 {
+		name = helper.GetEnvOrDefault("APP_NAME", "default")
+	}
 
 	conf := Config{
 		Enabled:        	false,
 		Logging:			false,
 		License:        	os.Getenv("BUGSNAG_LICENSE_KEY"),
-		AppName: 			os.Getenv("APP_NAME"),
-		AppVersion: 		os.Getenv("APP_VERSION"),
-		ReleaseStage:   	os.Getenv("APP_ENV"),
+		AppName:			name,
+		AppVersion: 		helper.GetEnvOrDefault("APP_VERSION", "1.0.0"),
+		ReleaseStage:   	helper.GetEnvOrDefault("APP_ENV", "production"),
 		ProjectPackages: 	[]string{"github.com/cultureamp"},
 	}
 
@@ -56,7 +67,24 @@ func New(configure ...func(*Config)) *Notifier {
 
 	bugsnag.Configure(cfg)
 
-	return &Notifier{conf:conf}
+	return &Notifier{conf:conf}, nil
+}
+
+// Shutdown flushes any remaining data to the SAAS endpoint
+func (notify Notifier) Shutdown() {
+	time.Sleep(waitFORBugsnag)
+}
+
+func (notify *Notifier) WrapHTTPHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
+	p, h := notify.wrapHTTPHandler(pattern, http.HandlerFunc(handler))
+	return p, func(w http.ResponseWriter, r *http.Request) {
+		r = notify.addToHTTPContext(r)
+		h.ServeHTTP(w, r)
+	}
+}
+
+func (notify *Notifier) wrapHTTPHandler(pattern string, handler http.Handler) (string, http.Handler) {
+	return pattern, bugsnag.Handler(handler)
 }
 
 func Error(err error, fields field.Fields) error {
@@ -81,6 +109,15 @@ func (notify Notifier) ErrorWithContext(err error, ctx context.Context, fields f
 
 	meta := fieldsAsMetaData(fields)
 	return bugsnag.Notify(err, ctx, meta)
+}
+
+func (notify *Notifier) addToHTTPContext(req *http.Request) *http.Request {
+	ctx := notify.addToContext(req.Context())
+	return req.WithContext(ctx)
+}
+
+func (notify *Notifier) addToContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, notifyContextKey, notify)
 }
 
 func fieldsAsMetaData(fields field.Fields) bugsnag.MetaData {

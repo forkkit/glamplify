@@ -15,7 +15,7 @@ go get github.com/cultureamp/glamplify
 package main
 
 import (
-    "github.com/cultureamp/glamplify/config"
+	"github.com/cultureamp/glamplify/config"
 )
 
 func main() {
@@ -61,7 +61,6 @@ func main() {
     // All messages must be static strings (as per Culture Amp Sensibile Default)
     log.Debug("Something happened")
 
-    field
     // Fields can contain any type of variables
     log.Debug("Something happened", log.Fields{
         "aString": "hello",
@@ -69,11 +68,9 @@ func main() {
         "aFloat":  42.48,
      })
 
-    field
     // Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
     log.Print("Executing main")
 
-    field
     // Fields can contain any type of variables
     log.Print("Executing main", log.Fields{
         "program-name": "helloworld.exe",
@@ -81,27 +78,22 @@ func main() {
         "user":  "admin",
     })
 
-    field
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
     err := errors.New("missing database connection string")
     log.Error(err, "Main program stopped unexpectedly")
 
-    field
     // Fields can contain any type of variables
-    err := errors.New("missing database connection string")
+    err = errors.New("missing database connection string")
     log.Error(err, "Executing main", log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
         "user":  "admin",
      })
 
-    field
     // have a requestID for every log message within that scope) then you can use WithScope()
     scope := log.WithScope(log.Fields { "requestID" : 123 })
 
     // then just use the scope as you would a normal logger
-    field
-    field
     scope.Print("Starting web request", log.Fields { "auth": "oauth" })
 
     // If you want to change the output or time format you can only do this for an
@@ -114,7 +106,7 @@ func main() {
         conf.debugForwardLogTo = "splunk"           // send debug messages to "splunk"
     })
 
-    // The internall logger will always use these default values:
+    // The internal logger will always use these default values:
     // output = os.Stdout
     // time format = "2006-01-02T15:04:05.000Z07:00"
     // debugForwardLogTo = "none"
@@ -131,7 +123,8 @@ Use `log.Error` when you have encounter a GO error. This will NOT stop the progr
 
 ### Monitor
 
-Make sure you have the environment variable NEW_RELIC_LICENSE_KEY set to the correct 40 character license key. Alternatively, you can read it from another environment variable and pass it into the event.Config struct.
+Make sure you have the environment variable NEW_RELIC_LICENSE_KEY set to the correct 40 character license key. 
+Alternatively, you can read it from another environment variable and pass it into the monitor.Config struct.
 
 #### Adding Attributes to a Web Request Transaction
 ```Go
@@ -150,10 +143,10 @@ func main() {
         conf.ServerlessMode = false     // default = "false"
      })
 
-    _, handler := app.WrapTxnHandler("/", rootRequestHandler)
-    http.HandlerFunc(handler)
+    _, handler := app.WrapHTTPHandler("/", rootRequestHandler)
+    h := http.HandlerFunc(handler)
 
-    if err := http.ListenAndServe(":8080", nil); err != nil {
+    if err = http.ListenAndServe(":8080", h); err != nil {
         panic(err)
     }
 
@@ -164,8 +157,8 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     // Do things
 
-    txn, ok := monitor.TxnFromRequest(w, r)
-    if ok {
+    txn, err := monitor.TxnFromRequest(w, r)
+    if err != nil {
         txn.AddAttributes(monitor.Fields{
             "aString": "hello world",
             "aInt":    123,
@@ -174,7 +167,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     // Do more things
 
-    if ok {
+    if err != nil {
         txn.AddAttributes(monitor.Fields{
             "aString2": "goodbye",
             "aInt2":    456,
@@ -201,10 +194,10 @@ func main() {
 		conf.ServerlessMode = false     // default = "false"
 	})
 
-    _, handler := app.WrapTxnHandler("/", rootRequestHandler)
-    http.HandlerFunc(handler)
+    _, handler := app.WrapHTTPHandler("/", rootRequestHandler)
+    h := http.HandlerFunc(handler)
 
-    if err := http.ListenAndServe(":8080", nil); err != nil {
+    if err = http.ListenAndServe(":8080", h); err != nil {
         panic(err)
     }
     
@@ -214,8 +207,9 @@ func main() {
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     // Do things
+    app, err := monitor.AppFromRequest(w, r)
 
-    err = monitor.RecordEvent("mycustomEvent", monitor.Fields{
+    err = app.RecordEvent("mycustomEvent", monitor.Fields{
         "aString": "hello world",
         "aInt":    123,
     })
@@ -301,3 +295,61 @@ func handler(ctx context.Context) {
     // Do more things
 }
 ```
+
+## Notify
+
+Make sure you have the environment variable BUGSNAG_LICENSE_KEY set to the correct license key. 
+Alternatively, you can read it from another environment variable and pass it into the notify.Config struct.
+
+```Go
+package main
+
+import (
+    "net/http"
+    "errors"
+    "github.com/cultureamp/glamplify/log"
+    "github.com/cultureamp/glamplify/field"
+    "github.com/cultureamp/glamplify/notify"
+)
+
+func main() {
+
+    notifier, err := notify.NewNotifier("GlamplifyDemo", func(conf *notify.Config) {
+        conf.Enabled = true             // default = "false"
+        conf.Logging = true             // default = "false"
+     })
+
+    _, handler := notifier.WrapHTTPHandler("/", rootRequestHandler)
+    h := http.HandlerFunc(handler)
+
+    if err = http.ListenAndServe(":8080", h); err != nil {
+        panic(err)
+    }
+
+    notifier.Shutdown()
+}
+
+func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+
+    // Do things
+
+    // pretend we got an error
+    err := errors.New("NPE") // 
+
+    notifier, notifyErr := notify.NotifyFromRequest(w, r)
+    if notifyErr != nil {
+        log.Error(err)
+    }
+
+    notifier.ErrorWithContext(err, r.Context(), field.Fields {
+        "key": "value",
+    })
+
+}
+```
+
+## Both Monitor and Notify
+
+Best practise is to have both Monitor and Notify
+
+Example coming soon!
