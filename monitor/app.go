@@ -40,7 +40,7 @@ type Config struct {
 	// https://docs.newrelic.com/docs/using-new-relic/user-interface-functions/organize-your-data/labels-categories-organize-apps-monitors
 	Labels Labels
 
-	// ServerlessMode contains field which control behavior when running in
+	// ServerlessMode contains types which control behavior when running in
 	// AWS Lambda.
 	//
 	// https://docs.newrelic.com/docs/serverless-function-monitoring/aws-lambda-monitoring/get-started/introduction-new-relic-monitoring-aws-lambda

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"github.com/cultureamp/glamplify/types"
 	"io"
 	"os"
 	"strings"
@@ -12,29 +13,20 @@ const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
 
 // Config for setting initial values for Logger
 type Config struct {
-	Output            io.Writer
-	TimeFormat        string
-	debugForwardLogTo string
-	printForwardLogTo string
-	errorForwardLogTo string
+	Output     io.Writer
+	TimeFormat string
 }
 
-// FieldLogger wraps the standard library logger and add structured field as quoted key value pairs
+// FieldLogger wraps the standard library logger and add structured types as quoted key value pairs
 type FieldLogger struct {
-	mutex             sync.Mutex
-	output            io.Writer
-	timeFormat        string
-	debugForwardLogTo string
-	printForwardLogTo string
-	errorForwardLogTo string
+	mutex      sync.Mutex
+	output     io.Writer
+	timeFormat string
 }
 
 // So that you don't even need to create a new logger
 var (
-		internal = New(func(conf *Config) {
-		conf.debugForwardLogTo = "none"
-		conf.printForwardLogTo = "splunk"
-		conf.errorForwardLogTo = "splunk"
+	internal = New(func(conf *Config) {
 	})
 )
 
@@ -44,11 +36,8 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 
 	logger := &FieldLogger{}
 	conf := Config{
-		Output:            os.Stdout,
-		TimeFormat:        RFC3339Milli,
-		debugForwardLogTo: "none",
-		printForwardLogTo: "splunk",
-		errorForwardLogTo: "splunk",
+		Output:     os.Stdout,
+		TimeFormat: RFC3339Milli,
 	}
 	for _, config := range configure {
 		config(&conf)
@@ -59,79 +48,82 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 
 	logger.output = conf.Output
 	logger.timeFormat = conf.TimeFormat
-	logger.debugForwardLogTo = conf.debugForwardLogTo
-	logger.printForwardLogTo = conf.printForwardLogTo
-	logger.errorForwardLogTo = conf.errorForwardLogTo
 
 	return logger
 }
 
-// WithScope lets you add field to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
+// WithScope lets you add types to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
 func WithScope(fields Fields) *Scope {
 	return newScope(internal, fields)
 }
 
-// WithScope lets you add field to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
+// WithScope lets you add types to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
 func (logger *FieldLogger) WithScope(fields Fields) *Scope {
 	return newScope(logger, fields)
 }
 
-// Debug writes a debug message with optional field to the underlying standard logger.
+// Debug writes a debug message with optional types to the underlying standard logger.
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="debug", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// All types values will be automatically quoted (keys will not be).
+// Debug adds types {level="debug", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "types message"
 // Use lower-case keys and values if possible.
 func Debug(message string, fields ...Fields) {
 	internal.Debug(message, fields...)
 }
 
-// Debug writes a debug message with optional field to the underlying standard logger.
+// Debug writes a debug message with optional types to the underlying standard logger.
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="debug", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// All types values will be automatically quoted (keys will not be).
+// Debug adds types {level="debug", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "types message"
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Debug(message string, fields ...Fields) {
 	meta := Fields{
-		HOST:     hostName(),
-		MESSAGE:  message,
-		PID:      processID(),
-		PROCESS:  processName(),
-		SEVERITY: DEBUG_SEV,
-		TIME:     timeNow(logger.timeFormat),
-		FORWARD:  logger.debugForwardLogTo,
+		types.ARCHITECTURE_LOG: targetArch(),
+		types.HOST_LOG:         hostName(),
+		types.MESSAGE_LOG:      message,
+		types.OS_LOG:           targetOS(),
+		types.PID_LOG:          processID(),
+		types.PROCESS_LOG:      processName(),
+		types.SEVERITY_LOG:     types.DEBUG_SEV_LOG,
+		types.TIME_LOG:     timeNow(logger.timeFormat),
 	}
 
 	merged := meta.merge(fields...)
+
 	str := merged.serialize()
 	logger.write(str)
 }
 
-// Print writes a message with optional field to the underlying standard logger.
+// Print writes a message with optional types to the underlying standard logger.
 // Useful to normal tracing that should be captured during standard operating behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// All types values will be automatically quoted (keys will not be).
+// Debug adds types {time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "types message"
 // Use lower-case keys and values if possible.
 func Print(message string, fields ...Fields) {
 	internal.Print(message, fields...)
 }
 
-// Print writes a message with optional field to the underlying standard logger.
+// Print writes a message with optional types to the underlying standard logger.
 // Useful to normal tracing that should be captured during standard operating behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// All types values will be automatically quoted (keys will not be).
+// Debug adds types {time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "types message"
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Print(message string, fields ...Fields) {
 	meta := Fields{
-		MESSAGE:  message,
-		SEVERITY: INFO_SEV,
-		TIME:     timeNow(logger.timeFormat),
-		FORWARD:  logger.printForwardLogTo,
+		types.ARCHITECTURE_LOG: targetArch(),
+		types.HOST_LOG:         hostName(),
+		types.MESSAGE_LOG:      message,
+		types.OS_LOG:           targetOS(),
+		types.PID_LOG:          processID(),
+		types.PROCESS_LOG:      processName(),
+		types.SEVERITY_LOG:     types.DEBUG_SEV_LOG,
+		types.TIME_LOG:     timeNow(logger.timeFormat),
 	}
 
 	merged := meta.merge(fields...)
@@ -139,33 +131,32 @@ func (logger *FieldLogger) Print(message string, fields ...Fields) {
 	logger.write(str)
 }
 
-// Error writes a error message with optional field to the underlying standard logger.
+// Error writes a error message with optional types to the underlying standard logger.
 // Useful to trace errors should be captured always.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="error", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// All types values will be automatically quoted (keys will not be).
+// Debug adds types {level="error", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "types message"
 // Use lower-case keys and values if possible.
 func Error(err error, fields ...Fields) {
 	internal.Error(err, fields...)
 }
 
-// Error writes a error message with optional field to the underlying standard logger.
+// Error writes a error message with optional types to the underlying standard logger.
 // Useful to trace errors should be captured always.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="error", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// All types values will be automatically quoted (keys will not be).
+// Debug adds types {level="error", time="2006-01-02T15:04:05Z07:00"}
+// and prints output in the format "types message"
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
 	meta := Fields{
-		ARCHITECTURE: targetArch(),
-		ERROR:        strings.TrimSpace(err.Error()),
-		HOST:         hostName(),
-		OS:           targetOS(),
-		PID:          processID(),
-		PROCESS:      processName(),
-		SEVERITY:     ERROR_SEV,
-		TIME:         timeNow(logger.timeFormat),
-		FORWARD:      logger.errorForwardLogTo,
+		types.ARCHITECTURE_LOG: targetArch(),
+		types.HOST_LOG:         hostName(),
+		types.MESSAGE_LOG:      strings.TrimSpace(err.Error()),
+		types.OS_LOG:           targetOS(),
+		types.PID_LOG:          processID(),
+		types.PROCESS_LOG:      processName(),
+		types.SEVERITY_LOG:     types.DEBUG_SEV_LOG,
+		types.TIME_LOG:     timeNow(logger.timeFormat),
 	}
 
 	merged := meta.merge(fields...)

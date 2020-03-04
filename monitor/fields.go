@@ -2,11 +2,11 @@ package monitor
 
 import (
 	"fmt"
-	"github.com/cultureamp/glamplify/field"
+	"github.com/cultureamp/glamplify/types"
 )
 
 // Entries contains key-value pairs to record along with the event
-type Fields field.Fields
+type Fields types.Fields
 
 // Validate checks that Entries are valid before processing
 func (fields Fields) Validate() (bool, error) {

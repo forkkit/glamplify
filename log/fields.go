@@ -1,40 +1,21 @@
 package log
 
 import (
-	"fmt"
-	"github.com/cultureamp/glamplify/field"
+	"encoding/hex"
+	json2 "encoding/json"
+	"github.com/cultureamp/glamplify/types"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-const (
-	// List of standard keys used for logging
-	ARCHITECTURE = "arch"
-	ERROR        = "error"
-	HOST         = "host"
-	MESSAGE      = "msg"
-	OS           = "os"
-	PID          = "pid"
-	PROCESS      = "process"
-	SEVERITY     = "severity"
-	TIME         = "time"
-	FORWARD      = "forward-log"
 
-	// Severity Values
-	DEBUG_SEV = "DEBUG"
-	INFO_SEV  = "INFO"
-	ERROR_SEV = "ERROR"
-)
-
-type Fields field.Fields
-
-var first = []string{TIME, SEVERITY, OS, ARCHITECTURE, HOST, PID, PROCESS, FORWARD}
-var last = []string{MESSAGE, ERROR}
+type Fields types.Fields
 
 func (fields Fields) merge(other ...Fields) Fields {
 	merged := Fields{}
@@ -53,81 +34,16 @@ func (fields Fields) merge(other ...Fields) Fields {
 }
 
 func (fields Fields) serialize() string {
-	var pairs []string
 
-	// Do 'first' feids
-	pairs = fields.accumulate(pairs, first)
-
-	// everything else in the middle - sorted
-	pairs = fields.sortMiddle(pairs)
-
-	// finish with 'last' field
-	pairs = fields.accumulate(pairs, last)
-
-	return strings.Join(pairs, " ")
-}
-
-func (fields Fields) sortMiddle(pairs []string) []string {
-	var middle []string
-	for k, v := range fields {
-		if !stringInSlice(k, last) {
-			middle = appendTo(middle, k, v)
-		}
-	}
-	if len(middle) > 0 {
-		sort.Strings(middle)
-		pairs = append(pairs, middle...)
+	bytes, err := json2.Marshal(fields)
+	if err != nil {
+		// REVISIT - panic?
 	}
 
-	return pairs
+	return string(bytes)
 }
 
-func (fields Fields) accumulate(pairs []string, from []string) []string {
-	for _, k := range from {
-		v, ok := fields[k]
-		if ok {
-			pairs = appendTo(pairs, k, v)
-			delete(fields, k)
-		}
-	}
-	return pairs
-}
 
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-func appendTo(pairs []string, key string, val interface{}) []string {
-	vs, ok := val.(string)
-	if !ok {
-		// only Sptrinf non-strings
-		vs = fmt.Sprintf("%v", val)
-	}
-
-	return append(pairs, quoteIfRequired(key)+"="+quoteIfRequired(vs))
-}
-
-func quoteIfRequired(input string) string {
-	if strings.Contains(input, " ") {
-		// strconv.Quote is slow(ish) and does a lot of extra work we don't need
-		// input = strconv.Quote(input)
-
-		var sb strings.Builder
-
-		sb.Grow(len(input) + 2)
-		sb.WriteString("\"")
-		sb.WriteString(input)
-		sb.WriteString("\"")
-
-		input = sb.String()
-	}
-	return input
-}
 
 func timeNow(format string) string {
 	return time.Now().UTC().Format(format)
@@ -175,4 +91,31 @@ func targetArch() string {
 
 func targetOS() string {
 	return runtime.GOOS
+}
+
+var randG = rand.New(rand.NewSource(time.Now().UnixNano()))
+func traceID() string {
+	epoch := time.Now().Unix()
+	hex := randHexString(24)
+
+	var sb strings.Builder
+
+	sb.Grow( +40)
+
+	sb.WriteString("1-")
+	sb.WriteString(strconv.FormatInt(epoch, 10))
+	sb.WriteString("-")
+	sb.WriteString(hex)
+
+	return sb.String()
+}
+
+func randHexString(n int) string {
+	b := make([]byte, (n+1)/2) // can be simplified to n/2 if n is always even
+
+	if _, err := randG.Read(b); err != nil {
+		panic(err)
+	}
+
+	return hex.EncodeToString(b)[:n]
 }

@@ -7,7 +7,7 @@ import (
 )
 
 // Logger is the interface that is used for logging in the go-agent.  Assign the
-// Config.Logger field to the Logger you wish to use.  Loggers must be safe for
+// Config.Logger types to the Logger you wish to use.  Loggers must be safe for
 // use in multiple goroutines.  Two Logger implementations are included:
 // NewLogger, which logs at info level, and NewDebugLogger which logs at debug
 // level.  logrus and logxi are supported by the integration packages

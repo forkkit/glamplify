@@ -101,7 +101,7 @@ func TestPrintWithDuplicateFields_Success(t *testing.T) {
 	})
 
 	logger.Print("info", log.Fields{
-		log.FORWARD: "sumo", // set a standard field, this should overwrite the default
+		log.FORWARD: "sumo", // set a standard types, this should overwrite the default
 	})
 
 	msg := memBuffer.String()
