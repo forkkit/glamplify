@@ -126,7 +126,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 }
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
-func (app Application) RecordEvent(eventType string, fields Fields) error {
+func (app Application) RecordEvent(eventType string, fields log.Fields) error {
 	app.log("Begin RecordEvent", log.Fields{"eventType": eventType}, fields)
 
 	// NewRelic has limits on number and size of entries
@@ -134,7 +134,7 @@ func (app Application) RecordEvent(eventType string, fields Fields) error {
 	// However, if you pass in a string entry longer than 255 it fails "siliently"!!!!!
 	// TODO - implement our own checking?
 
-	ok, err := fields.Validate()
+	ok, err := fields.ValidateNewRelic()
 	if !ok {
 		app.logError("RecordEvent", err)
 		app.log("End RecordEvent", log.Fields{"eventType": eventType}, fields)
@@ -203,9 +203,9 @@ func (app *Application) addToContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, appContextKey, app)
 }
 
-func (app Application) log(msg string, logFields log.Fields, fields ...Fields) {
+func (app Application) log(msg string, logFields log.Fields, fields ...log.Fields) {
 	if app.conf.Logging {
-		merged := app.conf.logger.merge(logFields, fields...)
+		merged := logFields.Merge(fields...)
 		app.conf.logger.Debug(msg, merged)
 	}
 }

@@ -49,7 +49,7 @@ func main() {
 
 	// Emit normal logging (can add optional types if required)
 	// Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
-	log.Print("Executing main")
+	log.Info("Executing main")
 
 	// Emit Error (can add optional types if required)
 	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
@@ -63,7 +63,7 @@ func main() {
 	// then just use the scope as you would a normal logger
 	// Fields passed in the scope will be merged with any types passed in subsequent calls
 	// If duplicate keys, then types in Debug, Print, Error will overwrite those of the scope
-	scope.Print("Starting web request", log.Fields{"auth": "oauth"})
+	scope.Info("Starting web request", log.Fields{"auth": "oauth"})
 
 	// If you want to change the output or time format you can only do this for an
 	// instance of the logger you create (not the internal one) by doing this:
@@ -74,10 +74,10 @@ func main() {
 		conf.TimeFormat = "2006-01-02T15:04:05" // any valid time format
 	})
 
-	// The internall logger will always use these default values:
+	// The internal logger will always use these default values:
 	// output = os.Stderr
 	// time format = "2006-01-02T15:04:05.000Z07:00"
-	logger.Print("Something useful just happened")
+	logger.Info("Something useful just happened")
 
 	/* Monitor & Notify */
 
@@ -121,7 +121,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	txn, err := monitor.TxnFromRequest(w, r)
 	if err == nil {
-		txn.AddAttributes(monitor.Fields{
+		txn.AddAttributes(log.Fields{
 			"aString": "hello world",
 			"aInt":    123,
 		})
@@ -130,7 +130,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Do more things
 
 	if err == nil {
-		txn.AddAttributes(monitor.Fields{
+		txn.AddAttributes(log.Fields{
 			"aString2": "goodbye",
 			"aInt2":    456,
 		})

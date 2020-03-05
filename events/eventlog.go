@@ -2,13 +2,11 @@ package events
 
 import (
 	"context"
-	"github.com/cultureamp/glamplify/types"
+	"github.com/cultureamp/glamplify/constants"
 	"github.com/cultureamp/glamplify/log"
 	"os"
 	"sync"
 )
-
-
 
 // Config for setting initial values for EventLog
 type Config struct {
@@ -49,11 +47,11 @@ func New(configure ...func(*Config)) *EventLog { // https://dave.cheney.net/2014
 	return eventLog
 }
 
-func Audit(event string, success bool, ctx context.Context, fields types.Fields) {
+func Audit(event string, success bool, ctx context.Context, fields log.Fields) {
 	internal.Audit(event, success, ctx, fields)
 }
 
-func (eventlog EventLog) Audit(event string, success bool, ctx context.Context, fields types.Fields) {
+func (eventlog EventLog) Audit(event string, success bool, ctx context.Context, fields log.Fields) {
 
 	// todo - add event and success fields
 
@@ -63,19 +61,24 @@ func (eventlog EventLog) Audit(event string, success bool, ctx context.Context, 
 	//log.Print()
 }
 
-func (eventlog EventLog) addIfMissing(ctx context.Context, fields types.Fields) types.Fields {
+func (eventlog EventLog) addIfMissing(ctx context.Context, fields log.Fields) log.Fields {
 
-	fields = eventlog.addFieldIfMissing(log.PRODUCT, ProductEnv, ctx, fields)
-	fields = eventlog.addFieldIfMissing(log.APP, AppEnv, ctx, fields)
-	fields = eventlog.addFieldIfMissing(log.TRACE_ID, TraceIdEnv, traceId, ctx, fields)
-	fields = eventlog.addFieldIfMissing(log.MODULE, ModuleEnv, ctx, fields)
-	fields = eventlog.addFieldIfMissing(log.ACCOUNT, AccountEnv, ctx, fields)
-	fields = eventlog.addFieldIfMissing(log.USER, UserEnv, ctx, fields)
+	fields = eventlog.addFieldIfMissing(constants.ProcessLog, constants.ProductEnv, constants.ProductCtx, ctx, fields)
+	fields = eventlog.addFieldIfMissing(constants.AppLog, constants.AppEnv, constants.AccountCtx, ctx, fields)
+	fields = eventlog.addFieldIfMissing(constants.TraceIdLog, constants.TraceIdEnv, constants.TraceIdCtx, ctx, fields)
+	fields = eventlog.addFieldIfMissing(constants.ModuleLog, constants.ModuleEnv, constants.ModuleCtx, ctx, fields)
+	fields = eventlog.addFieldIfMissing(constants.AccountLog, constants.AccountEnv, constants.AccountCtx, ctx, fields)
+	fields = eventlog.addFieldIfMissing(constants.UserLog, constants.UserEnv, constants.UserCtx, ctx, fields)
 
 	return fields
 }
 
-func (eventlog EventLog) addFieldIfMissing(fieldName string, osVar string, ctxKey eventKey, ctx context.Context, fields types.Fields) types.Fields {
+func (eventlog EventLog) addFieldIfMissing(
+	fieldName string,
+	osVar string,
+	ctxKey constants.EventCtxKey,
+	ctx context.Context,
+	fields log.Fields) log.Fields {
 
 	// If it contains
 	if _, ok := fields[fieldName]; ok {

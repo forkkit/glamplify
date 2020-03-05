@@ -1,6 +1,7 @@
 package monitor_test
 
 import (
+	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestApplication_RecordEvent_Server_Success(t *testing.T) {
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, app != nil, "application was nil")
 
-	err = app.RecordEvent("glamplify_unittest_customevent", monitor.Entries{
+	err = app.RecordEvent("glamplify_unittest_customevent", log.Fields{
 		"aString": "hello world",
 		"aInt":    123,
 	})
@@ -36,7 +37,7 @@ func TestApplication_RecordEvent_Server_Fail(t *testing.T) {
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, app != nil, "application was nil")
 
-	err = app.RecordEvent("glamplify_unittest_customevent", monitor.Entries{
+	err = app.RecordEvent("glamplify_unittest_customevent",log.Fields{
 		"test":  "big_long_string_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890",
 		"anull": nil,
 	})

@@ -3,7 +3,7 @@ package notify_test
 import (
 	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/types"
+	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/notify"
 	"gotest.tools/assert"
 	"net/http"
@@ -20,7 +20,7 @@ func TestNotify_Error_Success(t *testing.T) {
 	})
 	assert.Assert(t, err == nil, err)
 
-	err = notifier.Error(errors.New("NPE"), types.Fields{
+	err = notifier.Error(errors.New("NPE"), log.Fields{
 		"user": "mike",
 		"pwd": "abc",     // should be filtered out in bugsnag
 		"age": 47,
@@ -64,7 +64,7 @@ func rootRequest(w http.ResponseWriter, r *http.Request) {
 	notifier, err := notify.NotifyFromContext(ctx)
 	assert.Assert(t, err == nil, err)
 
-	err = notifier.ErrorWithContext(errors.New("NPE"), ctx, types.Fields{
+	err = notifier.ErrorWithContext(errors.New("NPE"), ctx, log.Fields{
 		"user": "mike",
 		"pwd": "abc",     // should be filtered out in bugsnag
 		"age": 47,

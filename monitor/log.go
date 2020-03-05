@@ -6,7 +6,7 @@ import (
 	"github.com/cultureamp/glamplify/log"
 )
 
-// Logger is the interface that is used for logging in the go-agent.  Assign the
+// Logger is the interface that is used for logging in the New Relic go-agent.  Assign the
 // Config.Logger types to the Logger you wish to use.  Loggers must be safe for
 // use in multiple goroutines.  Two Logger implementations are included:
 // NewLogger, which logs at info level, and NewDebugLogger which logs at debug
@@ -31,11 +31,11 @@ func (logger monitorLogger) Error(msg string, context map[string]interface{}) {
 }
 
 func (logger monitorLogger) Warn(msg string, context map[string]interface{}) {
-	logger.fieldLogger.Print(msg, context)
+	logger.fieldLogger.Warn(msg, context)
 }
 
 func (logger monitorLogger) Info(msg string, context map[string]interface{}) {
-	logger.fieldLogger.Print(msg, context)
+	logger.fieldLogger.Info(msg, context)
 }
 
 func (logger monitorLogger) Debug(msg string, context map[string]interface{}) {
@@ -44,20 +44,4 @@ func (logger monitorLogger) Debug(msg string, context map[string]interface{}) {
 
 func (logger monitorLogger) DebugEnabled() bool {
 	return false
-}
-
-func (logger monitorLogger) merge(logFields log.Fields, fields ...Fields) log.Fields {
-	merged := log.Fields{}
-
-	for k, v := range logFields {
-		merged[k] = v
-	}
-
-	for _, f := range fields {
-		for k, v := range f {
-			merged[k] = v
-		}
-	}
-
-	return merged
 }
