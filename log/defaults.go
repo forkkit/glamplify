@@ -2,8 +2,6 @@ package log
 
 import (
 	"encoding/hex"
-	json2 "encoding/json"
-	"github.com/cultureamp/glamplify/types"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -13,37 +11,6 @@ import (
 	"sync"
 	"time"
 )
-
-
-type Fields types.Fields
-
-func (fields Fields) merge(other ...Fields) Fields {
-	merged := Fields{}
-
-	for k, v := range fields {
-		merged[k] = v
-	}
-
-	for _, f := range other {
-		for k, v := range f {
-			merged[k] = v
-		}
-	}
-
-	return merged
-}
-
-func (fields Fields) serialize() string {
-
-	bytes, err := json2.Marshal(fields)
-	if err != nil {
-		// REVISIT - panic?
-	}
-
-	return string(bytes)
-}
-
-
 
 func timeNow(format string) string {
 	return time.Now().UTC().Format(format)
