@@ -3,6 +3,7 @@ package log
 import (
 	"encoding/json"
 	"fmt"
+	systemLog "log"
 )
 
 // Fields type, used to pass to Debug, Print and Error.
@@ -28,6 +29,7 @@ func (fields Fields) Serialize() string {
 
 	bytes, err := json.Marshal(fields)
 	if err != nil {
+		systemLog.Printf("failed to serialize log fields to json. err: %s", err.Error())
 		// REVISIT - panic?
 	}
 

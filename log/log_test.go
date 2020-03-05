@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cultureamp/glamplify/constants"
+	"github.com/cultureamp/glamplify/helper"
 	"io/ioutil"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cultureamp/glamplify/log"
 	"gotest.tools/assert"
@@ -172,6 +174,36 @@ func TestScope(t *testing.T) {
 	assertContainsInt(t, msg, "requestID", 123)
 }
 
+func TestNamespace_Success(t *testing.T) {
+
+	t1 := time.Now()
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	time.Sleep(123 * time.Millisecond)
+	t2 := time.Now()
+	d := t2.Sub(t1)
+
+	logger.Error(errors.New("error"), log.Fields{
+		"string": "hello",
+		"int":    123,
+		"float":  42.48,
+		"reports_shared": log.Fields{
+			"report": "report1",
+			"user":   "userid",
+			"duration": helper.DurationAsISO8601(d),
+		},
+	})
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "report", "report1")
+	assertContainsString(t, msg, "user", "userid")
+
+	assert.Assert(t, strings.Contains(msg, "reports_shared\":{\"duration"), "Expected 'reports_shared' in '%s'", msg)
+}
+
 func TestLogSomeRealMessages(t *testing.T) {
 
 	// You should see these printed out, all correctly formatted.
@@ -201,13 +233,13 @@ func TestLogSomeRealMessages(t *testing.T) {
 
 	// multiple fields collections
 	log.Info("info", log.Fields{
-		"string1":        "hello",
-		"int1":           123,
-		"float1":         42.48,
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
 	}, log.Fields{
-		"string2":		"world",
-		"int2":			456,
-		"float2":		78.98,
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
 	})
 
 	scope := log.WithScope(log.Fields{"scopeID": 123})
