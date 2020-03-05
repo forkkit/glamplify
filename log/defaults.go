@@ -1,6 +1,7 @@
 package log
 
 import (
+	"github.com/cultureamp/glamplify/constants"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -21,7 +22,7 @@ func hostName() string {
 	hostOnce.Do(func() {
 		host, err = os.Hostname()
 		if err != nil {
-			host = "<unknown>"
+			host = constants.UnknownString
 		}
 	})
 

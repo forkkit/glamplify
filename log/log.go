@@ -168,14 +168,20 @@ func (logger *FieldLogger) write(str string) {
 }
 
 func (logger FieldLogger) getDefaults(message string, sev string) Fields {
-	return Fields{
+	fields :=  Fields{
 		constants.ArchitectureLog: targetArch(),
 		constants.HostLog:         hostName(),
-		constants.MessageLog:      message,
 		constants.OsLog:           targetOS(),
 		constants.PidLog:          processID(),
 		constants.ProcessLog:      processName(),
 		constants.SeverityLog:     sev,
 		constants.TimeLog:         timeNow(logger.timeFormat),
 	}
+
+	// if message is empty (from eventLog.Audit) then don't add it
+	if message != constants.EmptyString {
+		fields[constants.MessageLog] = message
+	}
+
+	return fields
 }

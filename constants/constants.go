@@ -3,8 +3,11 @@ package constants
 type EventCtxKey int
 
 const (
+	UnknownString = "unknown"
+	EmptyString   = ""
+
 	// RFC3339Milli is the standard RFC3339 format with added milliseconds
-	RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
+	RFC3339Milli  = "2006-01-02T15:04:05.000Z07:00"
 
 	// JSON LOG KEYS
 	// List of standard keys used for logging as per https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging
@@ -30,7 +33,7 @@ const (
 	MemoryAvailLog         = "memory_available"
 	ItemsProcessedLog      = "items_processed"
 	TotalItemsProcessedLog = "total_items_processed"
-	TotalItemsReqestedLog  = "total_items_requested"
+	TotalItemsRequestedLog  = "total_items_requested"
 
 	MessageLog = "message"
 

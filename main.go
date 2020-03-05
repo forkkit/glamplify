@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"errors"
+	"github.com/cultureamp/glamplify/constants"
+	http2 "github.com/cultureamp/glamplify/http"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/cultureamp/glamplify/config"
-	http2 "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"github.com/cultureamp/glamplify/notify"
@@ -86,7 +87,7 @@ func main() {
 		conf.Logging = true
 		conf.ServerlessMode = false
 		conf.Labels = monitor.Labels{
-			"asset":          "unknown",
+			"asset":          constants.UnknownString,
 			"classification": "restricted",
 			"workload":       "development",
 			"camp":           "amplify",
