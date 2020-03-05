@@ -63,8 +63,8 @@ func Audit(event string, success bool, ctx context.Context, fields log.Fields) {
 func (eventlog EventLog) Audit(event string, success bool, ctx context.Context, fields log.Fields) {
 
 	// add event and success fields
-	fields[constants.EventLog] = event
-	fields[constants.StatusLog] = success
+	fields[constants.EventLogField] = event
+	fields[constants.StatusLogField] = success
 
 	// add config defaults
 	fields = eventlog.addConfigDefaults(fields)
@@ -80,14 +80,14 @@ func (eventlog EventLog) Audit(event string, success bool, ctx context.Context, 
 }
 
 func (eventlog EventLog) addConfigDefaults(fields log.Fields) log.Fields {
-	if _, ok := fields[constants.ProductLog]; !ok {
+	if _, ok := fields[constants.ProductLogField]; !ok {
 		if eventlog.product != "" {
-			fields[constants.ProductLog] = eventlog.product
+			fields[constants.ProductLogField] = eventlog.product
 		}
 	}
-	if _, ok := fields[constants.AppLog]; !ok {
+	if _, ok := fields[constants.AppLogField]; !ok {
 		if eventlog.application != "" {
-			fields[constants.AppLog] = eventlog.application
+			fields[constants.AppLogField] = eventlog.application
 		}
 	}
 
@@ -96,12 +96,12 @@ func (eventlog EventLog) addConfigDefaults(fields log.Fields) log.Fields {
 
 func (eventlog EventLog) addIfMissing(ctx context.Context, fields log.Fields) log.Fields {
 
-	fields = eventlog.addFieldIfMissingOrDefault(constants.ProductLog, constants.ProductEnv, constants.ProductCtx, ctx, fields, constants.UnknownString)
-	fields = eventlog.addFieldIfMissingOrDefault(constants.AppLog, constants.AppEnv, constants.AccountCtx, ctx, fields, constants.UnknownString)
-	fields = eventlog.addFieldIfMissingOrDefault(constants.TraceIdLog, constants.TraceIdEnv, constants.TraceIdCtx, ctx, fields, helper.NewTraceID())
-	fields = eventlog.addFieldIfMissingOrDefault(constants.ModuleLog, constants.ModuleEnv, constants.ModuleCtx, ctx, fields, constants.UnknownString)
-	fields = eventlog.addFieldIfMissingOrDefault(constants.AccountLog, constants.AccountEnv, constants.AccountCtx, ctx, fields, constants.UnknownString)
-	fields = eventlog.addFieldIfMissingOrDefault(constants.UserLog, constants.UserEnv, constants.UserCtx, ctx, fields, constants.UnknownString)
+	fields = eventlog.addFieldIfMissingOrDefault(constants.ProductLogField, constants.ProductEnv, constants.ProductCtx, ctx, fields, constants.UnknownString)
+	fields = eventlog.addFieldIfMissingOrDefault(constants.AppLogField, constants.AppEnv, constants.AccountCtx, ctx, fields, constants.UnknownString)
+	fields = eventlog.addFieldIfMissingOrDefault(constants.TraceIdLogField, constants.TraceIdEnv, constants.TraceIdCtx, ctx, fields, helper.NewTraceID())
+	fields = eventlog.addFieldIfMissingOrDefault(constants.ModuleLogField, constants.ModuleEnv, constants.ModuleCtx, ctx, fields, constants.UnknownString)
+	fields = eventlog.addFieldIfMissingOrDefault(constants.AccountLogField, constants.AccountEnv, constants.AccountCtx, ctx, fields, constants.UnknownString)
+	fields = eventlog.addFieldIfMissingOrDefault(constants.UserLogField, constants.UserEnv, constants.UserCtx, ctx, fields, constants.UnknownString)
 
 	return fields
 }

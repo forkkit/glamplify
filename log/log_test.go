@@ -101,7 +101,7 @@ func TestPrintWithDuplicateFields_Success(t *testing.T) {
 	})
 
 	logger.Info("info", log.Fields{
-		constants.ArchitectureLog: "myarch", // set a standard types, this should overwrite the default
+		constants.ArchitectureLogField: "myarch", // set a standard types, this should overwrite the default
 	})
 
 	msg := memBuffer.String()

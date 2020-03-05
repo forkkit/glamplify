@@ -87,16 +87,16 @@ func Test_EventLog_Examples(t *testing.T) {
 
 	duration := time.Millisecond * 234
 	Audit("report_shared", true, context.TODO(), log.Fields{
-		constants.AppLog: "engagement",
-		constants.ProductLog: "service",
-		constants.TraceIdLog: helper.NewTraceID(),
-		constants.AccountLog: "hooli",
-		constants.ModuleLog: "report_shared",
-		constants.UserLog: "abc-123",
+		constants.AppLogField:     "engagement",
+		constants.ProductLogField: "service",
+		constants.TraceIdLogField: helper.NewTraceID(),
+		constants.AccountLogField: "hooli",
+		constants.ModuleLogField:  "report_shared",
+		constants.UserLogField:    "abc-123",
 		"report_shared" : log.Fields{
-			constants.TimeTakenLog: helper.DurationAsISO8601(duration),
-			constants.UserLog: "xyz-456",
-			"survey":  "MLPIOASHF98D8",
+			constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
+			constants.UserLogField:      "xyz-456",
+			"survey":                    "MLPIOASHF98D8",
 		},
 	})
 }
@@ -109,14 +109,14 @@ func Test_EventLog_Examples2(t *testing.T) {
 
 	duration := time.Millisecond * 234
 	eventLog.Audit("report_shared", true, context.TODO(), log.Fields{
-		constants.TraceIdLog: helper.NewTraceID(),
-		constants.AccountLog: "hooli",
-		constants.ModuleLog: "report_shared",
-		constants.UserLog: "abc-123",
+		constants.TraceIdLogField: helper.NewTraceID(),
+		constants.AccountLogField: "hooli",
+		constants.ModuleLogField:  "report_shared",
+		constants.UserLogField:    "abc-123",
 		"report_shared" : log.Fields{
-			constants.TimeTakenLog: helper.DurationAsISO8601(duration),
-			constants.UserLog: "xyz-456",
-			"survey":  "MLPIOASHF98D8",
+			constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
+			constants.UserLogField:      "xyz-456",
+			"survey":                    "MLPIOASHF98D8",
 		},
 	})
 }

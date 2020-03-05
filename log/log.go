@@ -72,7 +72,7 @@ func Debug(message string, fields ...Fields) {
 // when hunting down incorrect behaviour.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Debug(message string, fields ...Fields) {
-	meta := logger.getDefaults(message, constants.DebugSevLog)
+	meta := logger.getDefaults(message, constants.DebugSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -87,7 +87,7 @@ func Info(message string, fields ...Fields) {
 // Useful form normal tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Info(message string, fields ...Fields) {
-	meta := logger.getDefaults(message, constants.InfoSevLog)
+	meta := logger.getDefaults(message, constants.InfoSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -102,7 +102,7 @@ func Warn(message string, fields ...Fields) {
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Warn(message string, fields ...Fields) {
-	meta := logger.getDefaults(message, constants.InfoSevLog)
+	meta := logger.getDefaults(message, constants.InfoSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -117,7 +117,7 @@ func Error(err error, fields ...Fields) {
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
-	meta := logger.getDefaults(strings.TrimSpace(err.Error()), constants.ErrorSevLog)
+	meta := logger.getDefaults(strings.TrimSpace(err.Error()), constants.ErrorSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -135,7 +135,7 @@ func Fatal(err error, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Fatal(err error, fields ...Fields) {
 	message := strings.TrimSpace(err.Error())
-	meta := logger.getDefaults(message, constants.FatalSevLog)
+	meta := logger.getDefaults(message, constants.FatalSevLogValue)
 	logger.writeFields(meta, fields...)
 	panic(message)
 }
@@ -169,18 +169,18 @@ func (logger *FieldLogger) write(str string) {
 
 func (logger FieldLogger) getDefaults(message string, sev string) Fields {
 	fields :=  Fields{
-		constants.ArchitectureLog: targetArch(),
-		constants.HostLog:         hostName(),
-		constants.OsLog:           targetOS(),
-		constants.PidLog:          processID(),
-		constants.ProcessLog:      processName(),
-		constants.SeverityLog:     sev,
-		constants.TimeLog:         timeNow(logger.timeFormat),
+		constants.ArchitectureLogField: targetArch(),
+		constants.HostLogField:         hostName(),
+		constants.OsLogField:           targetOS(),
+		constants.PidLogField:          processID(),
+		constants.ProcessLogField:      processName(),
+		constants.SeverityLogField:     sev,
+		constants.TimeLogField:         timeNow(logger.timeFormat),
 	}
 
 	// if message is empty (from eventLog.Audit) then don't add it
 	if message != constants.EmptyString {
-		fields[constants.MessageLog] = message
+		fields[constants.MessageLogField] = message
 	}
 
 	return fields
