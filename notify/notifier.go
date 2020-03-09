@@ -3,8 +3,8 @@ package notify
 import (
 	"context"
 	"github.com/bugsnag/bugsnag-go"
-	"github.com/cultureamp/glamplify/field"
 	"github.com/cultureamp/glamplify/helper"
+	"github.com/cultureamp/glamplify/log"
 	"net/http"
 	"os"
 	"time"
@@ -87,11 +87,11 @@ func (notify *Notifier) wrapHTTPHandler(pattern string, handler http.Handler) (s
 	return pattern, bugsnag.Handler(handler)
 }
 
-func Error(err error, fields field.Fields) error {
+func Error(err error, fields log.Fields) error {
 	return internal.Error(err, fields)
 }
 
-func (notify Notifier) Error(err error, fields field.Fields) error {
+func (notify Notifier) Error(err error, fields log.Fields) error {
 	if !notify.conf.Enabled { return nil}
 
 	ctx := bugsnag.StartSession(context.Background())
@@ -100,11 +100,11 @@ func (notify Notifier) Error(err error, fields field.Fields) error {
 	return notify.ErrorWithContext(err, ctx, fields)
 }
 
-func ErrorWithContext(err error, ctx context.Context, fields field.Fields) error {
+func ErrorWithContext(err error, ctx context.Context, fields log.Fields) error {
 	return internal.ErrorWithContext(err, ctx, fields)
 }
 
-func (notify Notifier) ErrorWithContext(err error, ctx context.Context, fields field.Fields) error {
+func (notify Notifier) ErrorWithContext(err error, ctx context.Context, fields log.Fields) error {
 	if !notify.conf.Enabled { return nil}
 
 	meta := fieldsAsMetaData(fields)
@@ -120,7 +120,7 @@ func (notify *Notifier) addToContext(ctx context.Context) context.Context {
 	return context.WithValue(ctx, notifyContextKey, notify)
 }
 
-func fieldsAsMetaData(fields field.Fields) bugsnag.MetaData {
+func fieldsAsMetaData(fields log.Fields) bugsnag.MetaData {
 	meta := make(bugsnag.MetaData)
 	for k, v := range fields {
 		meta.Add("app context", k, v)

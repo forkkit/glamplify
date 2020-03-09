@@ -52,7 +52,7 @@ import (
 func main() {
 
     // You can either get a new logger, or just use the public functions which internally use an internal logger
-    // eg. log.Debug(), log.Print() and log.Error()
+    // eg. log.Debug(), log.Info(), log.Warn(), log.Error() and log.Fatal()
 
     // Example below shows usage with the package level logger (sensible default), but can 
     // use an instance of a logger by calling mylogger := log.New()
@@ -68,11 +68,11 @@ func main() {
         "aFloat":  42.48,
      })
 
-    // Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
-    log.Print("Executing main")
+    // Typically Info will be sent onto 3rd party aggregation tools (eg. Splunk)
+    log.Info("Executing main")
 
     // Fields can contain any type of variables
-    log.Print("Executing main", log.Fields{
+    log.Info("Executing main", log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
         "user":  "admin",
@@ -80,11 +80,11 @@ func main() {
 
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
     err := errors.New("missing database connection string")
-    log.Error(err, "Main program stopped unexpectedly")
+    log.Error(err)
 
     // Fields can contain any type of variables
     err = errors.New("missing database connection string")
-    log.Error(err, "Executing main", log.Fields{
+    log.Error(err, log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
         "user":  "admin",
@@ -94,7 +94,7 @@ func main() {
     scope := log.WithScope(log.Fields { "requestID" : 123 })
 
     // then just use the scope as you would a normal logger
-    scope.Print("Starting web request", log.Fields { "auth": "oauth" })
+    scope.Info("Starting web request", log.Fields { "auth": "oauth" })
 
     // If you want to change the output or time format you can only do this for an
     // instance of the logger you create (not the internal one) by doing this:
@@ -103,7 +103,6 @@ func main() {
     logger := log.New(func(conf *log.Config) {
         conf.Output = memBuffer                     // can be set to anything that support io.Write
         conf.TimeFormat = "2006-01-02T15:04:05"     // any valid time format
-        conf.debugForwardLogTo = "splunk"           // send debug messages to "splunk"
     })
 
     // The internal logger will always use these default values:
@@ -131,8 +130,10 @@ Alternatively, you can read it from another environment variable and pass it int
 package main
 
 import (
-    "net/http"
-    "github.com/cultureamp/glamplify/monitor"
+
+"github.com/cultureamp/glamplify/log"
+"github.com/cultureamp/glamplify/monitor"
+"net/http"
 )
 
 func main() {
@@ -159,7 +160,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     txn, err := monitor.TxnFromRequest(w, r)
     if err != nil {
-        txn.AddAttributes(monitor.Fields{
+        txn.AddAttributes(log.Fields{
             "aString": "hello world",
             "aInt":    123,
         })
@@ -168,7 +169,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
     // Do more things
 
     if err != nil {
-        txn.AddAttributes(monitor.Fields{
+        txn.AddAttributes(log.Fields{
             "aString2": "goodbye",
             "aInt2":    456,
         })
@@ -182,8 +183,10 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 package main
 
 import (
-    "net/http"
-    "github.com/cultureamp/glamplify/monitor"
+
+"github.com/cultureamp/glamplify/log"
+"github.com/cultureamp/glamplify/monitor"
+"net/http"
 )
 
 func main() {
@@ -209,7 +212,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
     // Do things
     app, err := monitor.AppFromRequest(w, r)
 
-    err = app.RecordEvent("mycustomEvent", monitor.Fields{
+    err = app.RecordEvent("mycustomEvent", log.Fields{
         "aString": "hello world",
         "aInt":    123,
     })
@@ -223,9 +226,11 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 package main
 
 import (
-    "context"
-    "net/http"
-    "github.com/cultureamp/glamplify/monitor"
+
+"context"
+"github.com/cultureamp/glamplify/log"
+"github.com/cultureamp/glamplify/monitor"
+"net/http"
 )
 
 func main() {
@@ -244,7 +249,7 @@ func handler(ctx context.Context) {
 
     txn, err := monitor.TxnFromContext(ctx)
     if err != nil {
-        txn.AddAttributes(monitor.Fields{
+        txn.AddAttributes(log.Fields{
             "aString": "hello world",
             "aInt":    123,
         })
@@ -253,7 +258,7 @@ func handler(ctx context.Context) {
     // Do more things
 
     if err != nil {
-        txn.AddAttributes(monitor.Fields{
+        txn.AddAttributes(log.Fields{
             "aString2": "goodbye",
             "aInt2":    456,
         })
@@ -266,9 +271,11 @@ func handler(ctx context.Context) {
 package main
 
 import (
-    "context"
-    "net/http"
-    "github.com/cultureamp/glamplify/monitor"
+
+"context"
+"github.com/cultureamp/glamplify/log"
+"github.com/cultureamp/glamplify/monitor"
+"net/http"
 )
 
 func main() {
@@ -287,11 +294,11 @@ func handler(ctx context.Context) {
 
     app, err := monitor.AppFromContext(ctx)
     if err != nil {
-        err = app.RecordEvent("mycustomEvent", monitor.Fields{
+        err = app.RecordEvent("mycustomEvent", log.Fields{
             "aString": "hello world",
             "aInt":    123,
         })
-
+    }
     // Do more things
 }
 ```
@@ -305,11 +312,11 @@ Alternatively, you can read it from another environment variable and pass it int
 package main
 
 import (
-    "net/http"
-    "errors"
-    "github.com/cultureamp/glamplify/log"
-    "github.com/cultureamp/glamplify/field"
-    "github.com/cultureamp/glamplify/notify"
+
+"errors"
+"github.com/cultureamp/glamplify/log"
+"github.com/cultureamp/glamplify/notify"
+"net/http"
 )
 
 func main() {
@@ -341,15 +348,86 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
         log.Error(err)
     }
 
-    notifier.ErrorWithContext(err, r.Context(), field.Fields {
+    notifier.ErrorWithContext(err, r.Context(), log.Fields {
         "key": "value",
     })
 
 }
 ```
 
-## Both Monitor and Notify
+## Event Logging for Audit
 
-Best practise is to have both Monitor and Notify
+So we can generate audit logs, there is a new sensible default for logging [here](https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging)
 
-Example coming soon!
+The eventLog in glamplify implements this by wrapping the logger.
+
+```Go
+package main
+
+import (
+    "context"
+    "github.com/cultureamp/glamplify/constants"
+    "github.com/cultureamp/glamplify/events"
+    "github.com/cultureamp/glamplify/helper"
+    "github.com/cultureamp/glamplify/log"
+    "time"
+)
+
+func main() {
+
+    // use the default internal event log Audit
+    duration := time.Millisecond * 234
+    events.Audit("report_shared", true, context.TODO(), log.Fields{
+        constants.AppLogField:     "engagement",
+        constants.ProductLogField: "service",
+        constants.TraceIdLogField: helper.NewTraceID(),
+        constants.AccountLogField: "hooli",
+        constants.ModuleLogField:  "report_shared",
+        constants.UserLogField:    "abc-123",
+        "report_shared" : log.Fields{
+            constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
+            constants.UserLogField:      "xyz-456",
+            "survey":                    "MLPIOASHF98D8",
+        },
+    })
+
+    // Or if you want to create your own instance and set up some defaults
+    eventLog := events.NewEventLog(func(config *events.Config) {
+		config.Product =  "engagement"
+		config.Application = "service"
+	})
+
+	duration = time.Millisecond * 567
+	eventLog.Audit("report_shared", true, context.TODO(), log.Fields{
+		constants.TraceIdLogField: helper.NewTraceID(),
+		constants.AccountLogField: "hooli",
+		constants.ModuleLogField:  "report_shared",
+		constants.UserLogField:    "abc-123",
+		"report_shared" : log.Fields{
+			constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
+			constants.UserLogField:      "xyz-456",
+			"survey":                    "MLPIOASHF98D8",
+		},
+	})
+
+    // you can also add some values to the context and then they will be automatically added to the event
+    ctx := context.Background()
+    ctx = context.WithValue(ctx, constants.TraceIdCtx, "current_trace_id")
+    ctx = context.WithValue(ctx, constants.UserCtx, "current_user_id")
+    // see constants for other Ctx constant keys
+    eventLog.Audit("report_shared", true, ctx, log.Fields{
+		constants.AccountLogField: "hooli",
+		constants.ModuleLogField:  "report_shared",
+		"report_shared" : log.Fields{
+			constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
+			constants.UserLogField:      "xyz-456",
+			"survey":                    "MLPIOASHF98D8",
+		},
+	})
+
+    // values can also be read form the ENV, the most useful being 
+    // constants.ProductEnv and constants.AppEnv
+    // see constants for other Env constant keys
+}
+```
+

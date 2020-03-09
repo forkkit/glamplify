@@ -47,7 +47,7 @@ func LoadFrom(paths []string, configName string) *Configuration {
 		return config
 	}
 
-	_ = viper.Unmarshal(config)
+	err = viper.Unmarshal(config)
 	if err != nil {
 		config = createDefaultConfig()
 		return config

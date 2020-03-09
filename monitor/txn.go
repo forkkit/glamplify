@@ -23,7 +23,7 @@ func (txn Transaction) GetApplication() *Application {
 }
 
 // AddAttributes adds customer data (key-value) to a current transaction (ie. http web request)
-func (txn Transaction) AddAttributes(fields Fields) error {
+func (txn Transaction) AddAttributes(fields log.Fields) error {
 
 	var err error
 	for k, v := range fields {
@@ -40,7 +40,7 @@ func (txn Transaction) ReportError(err error) error {
 	return txn.impl.NoticeError(err)
 }
 
-func (txn Transaction) ReportErrorDetails(msg string, class string, fields Fields) error {
+func (txn Transaction) ReportErrorDetails(msg string, class string, fields log.Fields) error {
 	return txn.impl.NoticeError(newrelic.Error{
 		Message:    msg,
 		Class:      class,

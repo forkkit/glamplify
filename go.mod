@@ -1,6 +1,6 @@
 module github.com/cultureamp/glamplify
 
-go 1.13
+go 1.14
 
 require (
 	github.com/aws/aws-lambda-go v1.13.2

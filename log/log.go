@@ -1,40 +1,29 @@
 package log
 
 import (
+	"github.com/cultureamp/glamplify/constants"
 	"io"
 	"os"
 	"strings"
 	"sync"
 )
 
-// RFC3339Milli is the standard RFC3339 format with added milliseconds
-const RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
-
 // Config for setting initial values for Logger
 type Config struct {
-	Output            io.Writer
-	TimeFormat        string
-	debugForwardLogTo string
-	printForwardLogTo string
-	errorForwardLogTo string
+	Output     io.Writer
+	TimeFormat string
 }
 
-// FieldLogger wraps the standard library logger and add structured field as quoted key value pairs
+// FieldLogger wraps the standard library logger and add structured types as quoted key value pairs
 type FieldLogger struct {
-	mutex             sync.Mutex
-	output            io.Writer
-	timeFormat        string
-	debugForwardLogTo string
-	printForwardLogTo string
-	errorForwardLogTo string
+	mutex      sync.Mutex
+	output     io.Writer
+	timeFormat string
 }
 
 // So that you don't even need to create a new logger
 var (
-		internal = New(func(conf *Config) {
-		conf.debugForwardLogTo = "none"
-		conf.printForwardLogTo = "splunk"
-		conf.errorForwardLogTo = "splunk"
+	internal = New(func(conf *Config) {
 	})
 )
 
@@ -44,11 +33,8 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 
 	logger := &FieldLogger{}
 	conf := Config{
-		Output:            os.Stdout,
-		TimeFormat:        RFC3339Milli,
-		debugForwardLogTo: "none",
-		printForwardLogTo: "splunk",
-		errorForwardLogTo: "splunk",
+		Output:     os.Stdout,
+		TimeFormat: constants.RFC3339Milli,
 	}
 	for _, config := range configure {
 		config(&conf)
@@ -59,117 +45,104 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 
 	logger.output = conf.Output
 	logger.timeFormat = conf.TimeFormat
-	logger.debugForwardLogTo = conf.debugForwardLogTo
-	logger.printForwardLogTo = conf.printForwardLogTo
-	logger.errorForwardLogTo = conf.errorForwardLogTo
 
 	return logger
 }
 
-// WithScope lets you add field to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
+// WithScope lets you add types to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
 func WithScope(fields Fields) *Scope {
 	return newScope(internal, fields)
 }
 
-// WithScope lets you add field to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
+// WithScope lets you add types to a scoped logger. Useful for Http Web Request where you want to track user, requestid, etc.
 func (logger *FieldLogger) WithScope(fields Fields) *Scope {
 	return newScope(logger, fields)
 }
 
-// Debug writes a debug message with optional field to the underlying standard logger.
+// Debug writes a debug message with optional types to the underlying standard logger.
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="debug", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
 // Use lower-case keys and values if possible.
 func Debug(message string, fields ...Fields) {
 	internal.Debug(message, fields...)
 }
 
-// Debug writes a debug message with optional field to the underlying standard logger.
+// Debug writes a debug message with optional types to the underlying standard logger.
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="debug", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Debug(message string, fields ...Fields) {
-	meta := Fields{
-		HOST:     hostName(),
-		MESSAGE:  message,
-		PID:      processID(),
-		PROCESS:  processName(),
-		SEVERITY: DEBUG_SEV,
-		TIME:     timeNow(logger.timeFormat),
-		FORWARD:  logger.debugForwardLogTo,
-	}
-
-	merged := meta.merge(fields...)
-	str := merged.serialize()
-	logger.write(str)
+	meta := logger.getDefaults(message, constants.DebugSevLogValue)
+	logger.writeFields(meta, fields...)
 }
 
-// Print writes a message with optional field to the underlying standard logger.
-// Useful to normal tracing that should be captured during standard operating behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// Info writes a message with optional types to the underlying standard logger.
+// Useful for normal tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
-func Print(message string, fields ...Fields) {
-	internal.Print(message, fields...)
+func Info(message string, fields ...Fields) {
+	internal.Info(message, fields...)
 }
 
-// Print writes a message with optional field to the underlying standard logger.
-// Useful to normal tracing that should be captured during standard operating behaviour.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// Info writes a message with optional types to the underlying standard logger.
+// Useful form normal tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
-func (logger *FieldLogger) Print(message string, fields ...Fields) {
-	meta := Fields{
-		MESSAGE:  message,
-		SEVERITY: INFO_SEV,
-		TIME:     timeNow(logger.timeFormat),
-		FORWARD:  logger.printForwardLogTo,
-	}
-
-	merged := meta.merge(fields...)
-	str := merged.serialize()
-	logger.write(str)
+func (logger *FieldLogger) Info(message string, fields ...Fields) {
+	meta := logger.getDefaults(message, constants.InfoSevLogValue)
+	logger.writeFields(meta, fields...)
 }
 
-// Error writes a error message with optional field to the underlying standard logger.
-// Useful to trace errors should be captured always.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="error", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// Warn writes a message with optional types to the underlying standard logger.
+// Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
+// Use lower-case keys and values if possible.
+func Warn(message string, fields ...Fields) {
+	internal.Warn(message, fields...)
+}
+
+// Warn writes a message with optional types to the underlying standard logger.
+// Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
+// Use lower-case keys and values if possible.
+func (logger *FieldLogger) Warn(message string, fields ...Fields) {
+	meta := logger.getDefaults(message, constants.InfoSevLogValue)
+	logger.writeFields(meta, fields...)
+}
+
+// Error writes a error message with optional types to the underlying standard logger.
+// Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func Error(err error, fields ...Fields) {
 	internal.Error(err, fields...)
 }
 
-// Error writes a error message with optional field to the underlying standard logger.
-// Useful to trace errors should be captured always.
-// All field values will be automatically quoted (keys will not be).
-// Debug adds field {level="error", time="2006-01-02T15:04:05Z07:00"}
-// and prints output in the format "field message"
+// Error writes a error message with optional types to the underlying standard logger.
+// Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
-	meta := Fields{
-		ARCHITECTURE: targetArch(),
-		ERROR:        strings.TrimSpace(err.Error()),
-		HOST:         hostName(),
-		OS:           targetOS(),
-		PID:          processID(),
-		PROCESS:      processName(),
-		SEVERITY:     ERROR_SEV,
-		TIME:         timeNow(logger.timeFormat),
-		FORWARD:      logger.errorForwardLogTo,
-	}
+	meta := logger.getDefaults(strings.TrimSpace(err.Error()), constants.ErrorSevLogValue)
+	logger.writeFields(meta, fields...)
+}
 
-	merged := meta.merge(fields...)
-	str := merged.serialize()
+// Fatal writes a error message with optional types to the underlying standard logger and then calls panic!
+// Panic will terminate the current go routine.
+// Useful to trace catastrophic errors that are not recoverable. These should always be logged.
+// Use lower-case keys and values if possible.
+func Fatal(err error, fields ...Fields) {
+	internal.Fatal(err, fields...)
+}
+
+// Fatal writes a error message with optional types to the underlying standard logger and then calls panic!
+// Panic will terminate the current go routine.
+// Useful to trace catastrophic errors that are not recoverable. These should always be logged.
+// Use lower-case keys and values if possible.
+func (logger *FieldLogger) Fatal(err error, fields ...Fields) {
+	message := strings.TrimSpace(err.Error())
+	meta := logger.getDefaults(message, constants.FatalSevLogValue)
+	logger.writeFields(meta, fields...)
+	panic(message)
+}
+
+func (logger *FieldLogger) writeFields(meta Fields, fields ...Fields) {
+	merged := meta.Merge(fields...)
+	str := merged.Serialize()
 	logger.write(str)
 }
 
@@ -192,4 +165,23 @@ func (logger *FieldLogger) write(str string) {
 
 	// This can return an error, but we just swallow it here as what can we or a client really do? Try and log it? :)
 	logger.output.Write(buffer)
+}
+
+func (logger FieldLogger) getDefaults(message string, sev string) Fields {
+	fields :=  Fields{
+		constants.ArchitectureLogField: targetArch(),
+		constants.HostLogField:         hostName(),
+		constants.OsLogField:           targetOS(),
+		constants.PidLogField:          processID(),
+		constants.ProcessLogField:      processName(),
+		constants.SeverityLogField:     sev,
+		constants.TimeLogField:         timeNow(logger.timeFormat),
+	}
+
+	// if message is empty (from eventLog.Audit) then don't add it
+	if message != constants.EmptyString {
+		fields[constants.MessageLogField] = message
+	}
+
+	return fields
 }

@@ -1,42 +1,15 @@
 package log
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/cultureamp/glamplify/field"
-	"os"
-	"path/filepath"
-	"runtime"
-	"sort"
-	"strings"
-	"sync"
-	"time"
+	systemLog "log"
 )
 
-const (
-	// List of standard keys used for logging
-	ARCHITECTURE = "arch"
-	ERROR        = "error"
-	HOST         = "host"
-	MESSAGE      = "msg"
-	OS           = "os"
-	PID          = "pid"
-	PROCESS      = "process"
-	SEVERITY     = "severity"
-	TIME         = "time"
-	FORWARD      = "forward-log"
+// Fields type, used to pass to Debug, Print and Error.
+type Fields map[string]interface{}
 
-	// Severity Values
-	DEBUG_SEV = "DEBUG"
-	INFO_SEV  = "INFO"
-	ERROR_SEV = "ERROR"
-)
-
-type Fields field.Fields
-
-var first = []string{TIME, SEVERITY, OS, ARCHITECTURE, HOST, PID, PROCESS, FORWARD}
-var last = []string{MESSAGE, ERROR}
-
-func (fields Fields) merge(other ...Fields) Fields {
+func (fields Fields) Merge(other ...Fields) Fields {
 	merged := Fields{}
 
 	for k, v := range fields {
@@ -52,127 +25,36 @@ func (fields Fields) merge(other ...Fields) Fields {
 	return merged
 }
 
-func (fields Fields) serialize() string {
-	var pairs []string
+func (fields Fields) Serialize() string {
 
-	// Do 'first' feids
-	pairs = fields.accumulate(pairs, first)
+	bytes, err := json.Marshal(fields)
+	if err != nil {
+		systemLog.Printf("failed to serialize log fields to json. err: %s", err.Error())
+		// REVISIT - panic?
+	}
 
-	// everything else in the middle - sorted
-	pairs = fields.sortMiddle(pairs)
-
-	// finish with 'last' field
-	pairs = fields.accumulate(pairs, last)
-
-	return strings.Join(pairs, " ")
+	return string(bytes)
 }
 
-func (fields Fields) sortMiddle(pairs []string) []string {
-	var middle []string
+// Validate checks that Entries are valid before processing
+func (fields Fields) ValidateNewRelic() (bool, error) {
+	// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
+
 	for k, v := range fields {
-		if !stringInSlice(k, last) {
-			middle = appendTo(middle, k, v)
+
+		switch s := v.(type) {
+		case nil:
+			return false, fmt.Errorf("key '%v' cannot have 'nil' value", k)
+		case string:
+			if len(s) > 254 {
+				return false, fmt.Errorf("key '%v' too long, must be less than 255 characters", k)
+			}
+		case float32, float64, int32, int64, int:
+			continue
+		default:
+			return false, fmt.Errorf("key '%v' must be string, float or int data type", k)
 		}
 	}
-	if len(middle) > 0 {
-		sort.Strings(middle)
-		pairs = append(pairs, middle...)
-	}
 
-	return pairs
-}
-
-func (fields Fields) accumulate(pairs []string, from []string) []string {
-	for _, k := range from {
-		v, ok := fields[k]
-		if ok {
-			pairs = appendTo(pairs, k, v)
-			delete(fields, k)
-		}
-	}
-	return pairs
-}
-
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-func appendTo(pairs []string, key string, val interface{}) []string {
-	vs, ok := val.(string)
-	if !ok {
-		// only Sptrinf non-strings
-		vs = fmt.Sprintf("%v", val)
-	}
-
-	return append(pairs, quoteIfRequired(key)+"="+quoteIfRequired(vs))
-}
-
-func quoteIfRequired(input string) string {
-	if strings.Contains(input, " ") {
-		// strconv.Quote is slow(ish) and does a lot of extra work we don't need
-		// input = strconv.Quote(input)
-
-		var sb strings.Builder
-
-		sb.Grow(len(input) + 2)
-		sb.WriteString("\"")
-		sb.WriteString(input)
-		sb.WriteString("\"")
-
-		input = sb.String()
-	}
-	return input
-}
-
-func timeNow(format string) string {
-	return time.Now().UTC().Format(format)
-}
-
-var host string
-var hostOnce sync.Once
-
-func hostName() string {
-
-	var err error
-	hostOnce.Do(func() {
-		host, err = os.Hostname()
-		if err != nil {
-			host = "<unknown>"
-		}
-	})
-
-	return host
-}
-
-func processName() string {
-	name := os.Args[0]
-	if len(name) > 0 {
-		name = filepath.Base(name)
-	}
-
-	return name
-}
-
-var pid int
-var pidOnce sync.Once
-
-func processID() int {
-	pidOnce.Do(func() {
-		pid = os.Getpid()
-	})
-
-	return pid
-}
-
-func targetArch() string {
-	return runtime.GOARCH
-}
-
-func targetOS() string {
-	return runtime.GOOS
+	return true, nil
 }

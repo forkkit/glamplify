@@ -3,9 +3,13 @@ package log_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"github.com/cultureamp/glamplify/constants"
+	"github.com/cultureamp/glamplify/helper"
 	"io/ioutil"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cultureamp/glamplify/log"
 	"gotest.tools/assert"
@@ -21,9 +25,8 @@ func TestDebug_Success(t *testing.T) {
 	logger.Debug("details")
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "msg=details")
-	assertKV(t, msg, "severity=DEBUG")
-	assertKV(t, msg, "forward-log=none")
+	assertContainsString(t, msg, "message", "details")
+	assertContainsString(t, msg, "severity", "DEBUG")
 }
 
 func TestDebugWithFields_Success(t *testing.T) {
@@ -42,14 +45,13 @@ func TestDebugWithFields_Success(t *testing.T) {
 	})
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "msg=details")
-	assertKV(t, msg, "severity=DEBUG")
-	assertKV(t, msg, "forward-log=none")
-	assertKV(t, msg, "string=hello")
-	assertKV(t, msg, "int=123")
-	assertKV(t, msg, "float=42.48")
-	assertKV(t, msg, "string2=\"hello world\"")
-	assertKV(t, msg, "\"string3 space\"=world")
+	assertContainsString(t, msg, "message", "details")
+	assertContainsString(t, msg, "severity", "DEBUG")
+	assertContainsString(t, msg, "string", "hello")
+	assertContainsInt(t, msg, "int", 123)
+	assertContainsFloat(t, msg, "float", 42.48)
+	assertContainsString(t, msg, "string2", "hello world")
+	assertContainsString(t, msg, "string3 space", "world")
 }
 
 func TestPrint_Success(t *testing.T) {
@@ -59,12 +61,11 @@ func TestPrint_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	logger.Print("info")
+	logger.Info("info")
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "msg=info")
-	assertKV(t, msg, "severity=INFO")
-	assertKV(t, msg, "forward-log=splunk")
+	assertContainsString(t, msg, "message", "info")
+	assertContainsString(t, msg, "severity", "INFO")
 }
 
 func TestPrintWithFields_Success(t *testing.T) {
@@ -74,7 +75,7 @@ func TestPrintWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	logger.Print("info", log.Fields{
+	logger.Info("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -83,14 +84,13 @@ func TestPrintWithFields_Success(t *testing.T) {
 	})
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "msg=info")
-	assertKV(t, msg, "severity=INFO")
-	assertKV(t, msg, "forward-log=splunk")
-	assertKV(t, msg, "string=hello")
-	assertKV(t, msg, "int=123")
-	assertKV(t, msg, "float=42.48")
-	assertKV(t, msg, "string2=\"hello world\"")
-	assertKV(t, msg, "\"string3 space\"=world")
+	assertContainsString(t, msg, "message", "info")
+	assertContainsString(t, msg, "severity", "INFO")
+	assertContainsString(t, msg, "string", "hello")
+	assertContainsInt(t, msg, "int", 123)
+	assertContainsFloat(t, msg, "float", 42.48)
+	assertContainsString(t, msg, "string2", "hello world")
+	assertContainsString(t, msg, "string3 space", "world")
 }
 
 func TestPrintWithDuplicateFields_Success(t *testing.T) {
@@ -100,14 +100,14 @@ func TestPrintWithDuplicateFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	logger.Print("info", log.Fields{
-		log.FORWARD: "sumo", // set a standard field, this should overwrite the default
+	logger.Info("info", log.Fields{
+		constants.ArchitectureLogField: "myarch", // set a standard types, this should overwrite the default
 	})
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "msg=info")
-	assertKV(t, msg, "severity=INFO")
-	assertKV(t, msg, "forward-log=sumo") // by default this would normally be set to "splunk"
+	assertContainsString(t, msg, "message", "info")
+	assertContainsString(t, msg, "severity", "INFO")
+	assertContainsString(t, msg, "arch", "myarch") // by default this would normally be set to "splunk"
 }
 
 func TestError_Success(t *testing.T) {
@@ -120,9 +120,8 @@ func TestError_Success(t *testing.T) {
 	logger.Error(errors.New("error"))
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "error=error")
-	assertKV(t, msg, "severity=ERROR")
-	assertKV(t, msg, "forward-log=splunk")
+	assertContainsString(t, msg, "message", "error")
+	assertContainsString(t, msg, "severity", "ERROR")
 }
 
 func TestErrorWithFields_Success(t *testing.T) {
@@ -141,14 +140,13 @@ func TestErrorWithFields_Success(t *testing.T) {
 	})
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "error=error")
-	assertKV(t, msg, "severity=ERROR")
-	assertKV(t, msg, "forward-log=splunk")
-	assertKV(t, msg, "string=hello")
-	assertKV(t, msg, "int=123")
-	assertKV(t, msg, "float=42.48")
-	assertKV(t, msg, "string2=\"hello world\"")
-	assertKV(t, msg, "\"string3 space\"=world")
+	assertContainsString(t, msg, "message", "error")
+	assertContainsString(t, msg, "severity", "ERROR")
+	assertContainsString(t, msg, "string", "hello")
+	assertContainsInt(t, msg, "int", 123)
+	assertContainsFloat(t, msg, "float", 42.48)
+	assertContainsString(t, msg, "string2", "hello world")
+	assertContainsString(t, msg, "string3 space", "world")
 }
 
 func TestScope(t *testing.T) {
@@ -164,18 +162,46 @@ func TestScope(t *testing.T) {
 	scope.Debug("details")
 
 	msg := memBuffer.String()
-	assertKV(t, msg, "forward-log=none")
-	assertKV(t, msg, "msg=details")
-	assertKV(t, msg, "requestID=123")
+	assertContainsString(t, msg, "message", "details")
+	assertContainsInt(t, msg, "requestID", 123)
 
 	memBuffer.Reset()
 
-	scope.Print("info")
+	scope.Info("info")
 
 	msg = memBuffer.String()
-	assertKV(t, msg, "forward-log=splunk")
-	assertKV(t, msg, "msg=info")
-	assertKV(t, msg, "requestID=123")
+	assertContainsString(t, msg, "message", "info")
+	assertContainsInt(t, msg, "requestID", 123)
+}
+
+func TestNamespace_Success(t *testing.T) {
+
+	t1 := time.Now()
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	time.Sleep(123 * time.Millisecond)
+	t2 := time.Now()
+	d := t2.Sub(t1)
+
+	logger.Error(errors.New("error"), log.Fields{
+		"string": "hello",
+		"int":    123,
+		"float":  42.48,
+		"reports_shared": log.Fields{
+			"report": "report1",
+			"user":   "userid",
+			"duration": helper.DurationAsISO8601(d),
+		},
+	})
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "report", "report1")
+	assertContainsString(t, msg, "user", "userid")
+
+	assert.Assert(t, strings.Contains(msg, "reports_shared\":{\"duration"), "Expected 'reports_shared' in '%s'", msg)
 }
 
 func TestLogSomeRealMessages(t *testing.T) {
@@ -189,7 +215,7 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	log.Print("info", log.Fields{
+	log.Info("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -205,6 +231,17 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"string3 space": "world",
 	})
 
+	// multiple fields collections
+	log.Info("info", log.Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, log.Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
 	scope := log.WithScope(log.Fields{"scopeID": 123})
 	assert.Assert(t, scope != nil)
 
@@ -216,7 +253,7 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	scope.Print("info", log.Fields{
+	scope.Info("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -247,11 +284,25 @@ func BenchmarkLogging(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		logger.Print("test details", fields)
+		logger.Info("test details", fields)
 	}
 
 }
 
-func assertKV(t *testing.T, log string, kv string) {
-	assert.Assert(t, strings.Contains(log, kv), "Expected '%s' in '%s'", kv, log)
+func assertContainsString(t *testing.T, log string, key string, val string) {
+	// Check that the keys and values are in the log line
+	find := fmt.Sprintf("\"%s\":\"%s\"", key, val)
+	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
+}
+
+func assertContainsInt(t *testing.T, log string, key string, val int) {
+	// Check that the keys and values are in the log line
+	find := fmt.Sprintf("\"%s\":%v", key, val)
+	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
+}
+
+func assertContainsFloat(t *testing.T, log string, key string, val float32) {
+	// Check that the keys and values are in the log line
+	find := fmt.Sprintf("\"%s\":%v", key, val)
+	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
 }

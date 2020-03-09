@@ -20,5 +20,5 @@ func newNotifyLogger() *notifyLogger {
 
 func (logger notifyLogger) Printf(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
-	logger.fieldLogger.Print(msg)
+	logger.fieldLogger.Info(msg)
 }

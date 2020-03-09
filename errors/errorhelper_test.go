@@ -3,14 +3,15 @@ package errors_test
 import (
 	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/field"
+	gerror "github.com/cultureamp/glamplify/errors"
+	"github.com/cultureamp/glamplify/log"
 	"testing"
 	"time"
 )
 
 func TestHandler_Error_Success(t *testing.T) {
 
-	HandleError(errors.New("NPE"), field.Fields{
+	gerror.HandleError(errors.New("NPE"), log.Fields{
 		"user": "mike",
 		"pwd": "abc",     // should be filtered out in bugsnag
 		"age": 47,
@@ -22,7 +23,7 @@ func TestHandler_Error_Success(t *testing.T) {
 
 func TestHandler_ErrorWithContext_Success(t *testing.T) {
 
-	HandleErrorWithContext(errors.New("NPE"), context.TODO(), field.Fields{
+	gerror.HandleErrorWithContext(errors.New("NPE"), context.TODO(), log.Fields{
 		"user": "mike",
 		"pwd": "abc",     // should be filtered out in bugsnag
 		"age": 47,

@@ -3,6 +3,7 @@ package monitor_test
 import (
 	"context"
 	"errors"
+	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"net/http"
 	"net/http/httptest"
@@ -34,7 +35,7 @@ func TestTxn_AddAttribute_Server_Success(t *testing.T) {
 func addAttribute(w http.ResponseWriter, r *http.Request) {
 	txn, err := monitor.TxnFromRequest(w, r)
 	if err == nil {
-		txn.AddAttributes(monitor.Entries{
+		txn.AddAttributes(log.Fields{
 			"aString": "hello world",
 			"aInt":    123,
 		})
@@ -74,7 +75,7 @@ func reportError(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		err = txn.ReportError(errors.New("standard error message"))
 		assert.Assert(t, err == nil, err )
-		txn.ReportErrorDetails("detailed error", "txn_test", monitor.Entries{
+		txn.ReportErrorDetails("detailed error", "txn_test", log.Fields{
 			"aString": "hello world",
 		})
 		assert.Assert(t, err == nil, err )
