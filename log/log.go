@@ -4,6 +4,7 @@ import (
 	"github.com/cultureamp/glamplify/constants"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 	"sync"
 )
@@ -117,7 +118,7 @@ func Error(err error, fields ...Fields) {
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
-	meta := logger.getDefaults(strings.TrimSpace(err.Error()), constants.ErrorSevLogValue)
+	meta := logger.getErrorAndDefaults(err, constants.ErrorSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -134,10 +135,9 @@ func Fatal(err error, fields ...Fields) {
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Fatal(err error, fields ...Fields) {
-	message := strings.TrimSpace(err.Error())
-	meta := logger.getDefaults(message, constants.FatalSevLogValue)
+	meta := logger.getErrorAndDefaults(err, constants.FatalSevLogValue)
 	logger.writeFields(meta, fields...)
-	panic(message)
+	panic(strings.TrimSpace(err.Error()))
 }
 
 func (logger *FieldLogger) writeFields(meta Fields, fields ...Fields) {
@@ -165,6 +165,28 @@ func (logger *FieldLogger) write(str string) {
 
 	// This can return an error, but we just swallow it here as what can we or a client really do? Try and log it? :)
 	logger.output.Write(buffer)
+}
+
+func (logger FieldLogger) getErrorAndDefaults(err error, sev string) Fields {
+	errorMessage := strings.TrimSpace(err.Error())
+	meta := logger.getDefaults(errorMessage, constants.ErrorSevLogValue)
+
+	stats := &debug.GCStats{}
+	buf := debug.Stack()
+	info, ok := debug.ReadBuildInfo()
+	debug.ReadGCStats(stats)
+
+	exception := Fields {
+		"error": errorMessage,
+		"trace": string(buf),
+		"gc_stats": stats,
+	}
+	if ok {
+		exception["build_info"] = info
+	}
+
+	meta[constants.ExceptionLogField] = exception
+	return meta
 }
 
 func (logger FieldLogger) getDefaults(message string, sev string) Fields {

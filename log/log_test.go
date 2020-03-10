@@ -223,6 +223,14 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"string3 space": "world",
 	})
 
+	log.Warn("info", log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
 	log.Error(errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
@@ -254,6 +262,14 @@ func TestLogSomeRealMessages(t *testing.T) {
 	})
 
 	scope.Info("info", log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	scope.Warn("info", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,

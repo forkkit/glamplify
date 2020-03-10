@@ -24,6 +24,7 @@ const (
 	OsLogField           = "os"
 	PidLogField          = "pid"
 	ProcessLogField      = "process"
+	ExceptionLogField      = "exception"
 
 	AccountLogField = "account"
 	UserLogField    = "user"
@@ -47,7 +48,7 @@ const (
 	// ENVIRONMENT VARIABLES
 	// List of  Environment Variables keys
 	ProductEnv = "PRODUCT"
-	AppEnv     = "APPL"
+	AppEnv     = "APP"
 	TraceIdEnv = "TRACE_ID"
 	ModuleEnv  = "MODULE"
 	AccountEnv = "ACCOUNT"
@@ -58,7 +59,7 @@ const (
 		MEMORY_AVAIL	= "memory_available"
 		ITEMS_PROCESSED	= "items_processed"
 		TOTAL_ITEMS_PROCESSED = "total_items_processed"
-		TOTAL_ITEMS_REQESTED = "total_items_requested"
+		TOTAL_ITEMS_REQUESTED = "total_items_requested"
 
 	*/
 
