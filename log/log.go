@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"github.com/cultureamp/glamplify/constants"
 	"io"
 	"os"
@@ -118,7 +119,7 @@ func Error(err error, fields ...Fields) {
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
-	meta := logger.getErrorAndDefaults(err, constants.ErrorSevLogValue)
+	meta := logger.getErrorDefaults(err, constants.ErrorSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -135,9 +136,17 @@ func Fatal(err error, fields ...Fields) {
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Fatal(err error, fields ...Fields) {
-	meta := logger.getErrorAndDefaults(err, constants.FatalSevLogValue)
+	meta := logger.getErrorDefaults(err, constants.FatalSevLogValue)
 	logger.writeFields(meta, fields...)
 	panic(strings.TrimSpace(err.Error()))
+}
+
+func Audit(ctx context.Context, event string, success bool, fields ...Fields) {
+	internal.Audit(ctx, event, success, fields...)
+}
+
+func (logger *FieldLogger) Audit(ctx context.Context, event string, success bool, fields ...Fields) {
+
 }
 
 func (logger *FieldLogger) writeFields(meta Fields, fields ...Fields) {
@@ -167,30 +176,8 @@ func (logger *FieldLogger) write(str string) {
 	logger.output.Write(buffer)
 }
 
-func (logger FieldLogger) getErrorAndDefaults(err error, sev string) Fields {
-	errorMessage := strings.TrimSpace(err.Error())
-	meta := logger.getDefaults(errorMessage, constants.ErrorSevLogValue)
-
-	stats := &debug.GCStats{}
-	buf := debug.Stack()
-	info, ok := debug.ReadBuildInfo()
-	debug.ReadGCStats(stats)
-
-	exception := Fields {
-		"error": errorMessage,
-		"trace": string(buf),
-		"gc_stats": stats,
-	}
-	if ok {
-		exception["build_info"] = info
-	}
-
-	meta[constants.ExceptionLogField] = exception
-	return meta
-}
-
 func (logger FieldLogger) getDefaults(message string, sev string) Fields {
-	fields :=  Fields{
+	fields := Fields{
 		constants.ArchitectureLogField: targetArch(),
 		constants.HostLogField:         hostName(),
 		constants.OsLogField:           targetOS(),
@@ -200,9 +187,93 @@ func (logger FieldLogger) getDefaults(message string, sev string) Fields {
 		constants.TimeLogField:         timeNow(logger.timeFormat),
 	}
 
-	// if message is empty (from eventLog.Audit) then don't add it
+	// if message is empty (from log.Audit) then don't add it
 	if message != constants.EmptyString {
 		fields[constants.MessageLogField] = message
+	}
+
+	fields = logger.addEnvFieldIfMissing(constants.ProductLogField, constants.ProductEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.AppLogField, constants.AppEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.TraceIdLogField, constants.TraceIdEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.ModuleLogField, constants.ModuleEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.AccountLogField, constants.AccountEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.UserLogField, constants.UserEnv, fields)
+
+	return fields
+}
+
+func (logger FieldLogger) getErrorDefaults(err error, fields Fields) Fields {
+	errorMessage := strings.TrimSpace(err.Error())
+
+	stats := &debug.GCStats{}
+	buf := debug.Stack()
+	info, ok := debug.ReadBuildInfo()
+	debug.ReadGCStats(stats)
+
+	exception := Fields{
+		"error":    errorMessage,
+		"trace":    string(buf),
+		"gc_stats": stats,
+	}
+	if ok {
+		exception["build_info"] = info
+	}
+
+	fields[constants.ExceptionLogField] = exception
+	return fields
+}
+
+
+
+func (logger FieldLogger) getEnvDefaults(fields Fields) Fields {
+
+	fields = logger.addEnvFieldIfMissing(constants.ProductLogField, constants.ProductEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.AppLogField, constants.AppEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.TraceIdLogField, constants.TraceIdEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.ModuleLogField, constants.ModuleEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.AccountLogField, constants.AccountEnv, fields)
+	fields = logger.addEnvFieldIfMissing(constants.UserLogField, constants.UserEnv, fields)
+
+	return fields
+}
+
+func (logger FieldLogger) getCtxDefault(ctx context.Context, fields Fields) Fields {
+	fields = logger.addCtxFieldIfMissing(ctx, constants.ProductLogField, constants.ProductCtx, fields)
+	fields = logger.addCtxFieldIfMissing(ctx, constants.AppLogField, constants.AppCtx, fields)
+	fields = logger.addCtxFieldIfMissing(ctx, constants.TraceIdLogField, constants.TraceIdCtx, fields)
+	fields = logger.addCtxFieldIfMissing(ctx, constants.ModuleLogField, constants.ModuleCtx, fields)
+	fields = logger.addCtxFieldIfMissing(ctx, constants.AccountLogField, constants.AccountCtx, fields)
+	fields = logger.addCtxFieldIfMissing(ctx, constants.UserLogField, constants.UserCtx, fields)
+
+	return fields
+}
+
+func (logger FieldLogger) addEnvFieldIfMissing(fieldName string, osVar string, fields Fields) Fields {
+
+	// If it contains it already, all good!
+	if _, ok := fields[fieldName]; ok {
+		return fields
+	}
+
+	// next, check env
+	if prod, ok := os.LookupEnv(osVar); ok {
+		fields[fieldName] = prod
+		return fields
+	}
+
+	return fields
+}
+
+func (logger FieldLogger) addCtxFieldIfMissing(ctx context.Context, fieldName string, ctxKey constants.EventCtxKey, fields Fields) Fields {
+
+	// If it contains it already, all good!
+	if _, ok := fields[fieldName]; ok {
+		return fields
+	}
+
+	if prod, ok := ctx.Value(ctxKey).(string); ok {
+		fields[fieldName] = prod
+		return fields
 	}
 
 	return fields
