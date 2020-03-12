@@ -7,36 +7,34 @@ const (
 	EmptyString   = ""
 
 	// RFC3339Milli is the standard RFC3339 format with added milliseconds
-	RFC3339Milli  = "2006-01-02T15:04:05.000Z07:00"
+	RFC3339Milli = "2006-01-02T15:04:05.000Z07:00"
 
 	// JSON LOG KEYS
 	// List of standard keys used for logging as per https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging
-	TimeLogField         = "time"
-	ProductLogField      = "product"
-	AppLogField          = "app"
-	EventLogField        = "event"
-	SeverityLogField     = "severity"
-	TraceIdLogField      = "trace_id"
-	ModuleLogField       = "module"
-	StatusLogField       = "status"
-	ArchitectureLogField = "arch"
-	HostLogField         = "host"
-	OsLogField           = "os"
-	PidLogField          = "pid"
-	ProcessLogField      = "process"
-	ExceptionLogField      = "exception"
-
-	AccountLogField = "account"
-	UserLogField    = "user"
-
+	TimeLogField                = "time"
+	ProductLogField             = "product"
+	AppLogField                 = "app"
+	EventLogField               = "event"
+	SeverityLogField            = "severity"
+	TraceIdLogField             = "trace_id"
+	ModuleLogField              = "module"
+	StatusLogField              = "status"
+	ArchitectureLogField        = "arch"
+	HostLogField                = "host"
+	OsLogField                  = "os"
+	PidLogField                 = "pid"
+	ProcessLogField             = "process"
+	ExceptionLogField           = "exception"
+	RegionLogField              = "region"
+	AccountLogField             = "account"
+	UserLogField                = "user"
 	TimeTakenLogField           = "time_taken"
 	MemoryUsedLogField          = "memory_used"
 	MemoryAvailLogField         = "memory_available"
 	ItemsProcessedLogField      = "items_processed"
 	TotalItemsProcessedLogField = "total_items_processed"
 	TotalItemsRequestedLogField = "total_items_requested"
-
-	MessageLogField = "message"
+	MessageLogField             = "message"
 
 	// Severity Values
 	DebugSevLogValue = "DEBUG"
@@ -44,6 +42,7 @@ const (
 	WarnSevLogValue  = "WARN"
 	ErrorSevLogValue = "ERROR"
 	FatalSevLogValue = "FATAL"
+	AuditSevLogValue = "AUDIT"
 
 	// ENVIRONMENT VARIABLES
 	// List of  Environment Variables keys
@@ -53,6 +52,7 @@ const (
 	ModuleEnv  = "MODULE"
 	AccountEnv = "ACCOUNT"
 	UserEnv    = "USER"
+	RegionEnv  = "REGION"
 	/*
 		TIME_TAKEN	= "time_taken"
 		MEMORY_USED	= "memory_used"
@@ -70,4 +70,5 @@ const (
 	ModuleCtx  EventCtxKey = iota
 	AccountCtx EventCtxKey = iota
 	UserCtx    EventCtxKey = iota
+	RegionCtx  EventCtxKey = iota
 )

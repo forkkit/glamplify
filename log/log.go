@@ -5,7 +5,6 @@ import (
 	"github.com/cultureamp/glamplify/constants"
 	"io"
 	"os"
-	"runtime/debug"
 	"strings"
 	"sync"
 )
@@ -21,6 +20,7 @@ type FieldLogger struct {
 	mutex      sync.Mutex
 	output     io.Writer
 	timeFormat string
+	defValues  *DefaultValues
 }
 
 // So that you don't even need to create a new logger
@@ -47,6 +47,7 @@ func New(configure ...func(*Config)) *FieldLogger { // https://dave.cheney.net/2
 
 	logger.output = conf.Output
 	logger.timeFormat = conf.TimeFormat
+	logger.defValues = NewDefaultValues(logger.timeFormat)
 
 	return logger
 }
@@ -74,7 +75,7 @@ func Debug(message string, fields ...Fields) {
 // when hunting down incorrect behaviour.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Debug(message string, fields ...Fields) {
-	meta := logger.getDefaults(message, constants.DebugSevLogValue)
+	meta := logger.defValues.GetDefaults(message, constants.DebugSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -89,7 +90,7 @@ func Info(message string, fields ...Fields) {
 // Useful form normal tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Info(message string, fields ...Fields) {
-	meta := logger.getDefaults(message, constants.InfoSevLogValue)
+	meta := logger.defValues.GetDefaults(message, constants.InfoSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -104,7 +105,7 @@ func Warn(message string, fields ...Fields) {
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Warn(message string, fields ...Fields) {
-	meta := logger.getDefaults(message, constants.InfoSevLogValue)
+	meta := logger.defValues.GetDefaults(message, constants.WarnSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -119,7 +120,7 @@ func Error(err error, fields ...Fields) {
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
-	meta := logger.getErrorDefaults(err, constants.ErrorSevLogValue)
+	meta := logger.defValues.GetErrorDefaults(err, constants.ErrorSevLogValue)
 	logger.writeFields(meta, fields...)
 }
 
@@ -136,7 +137,7 @@ func Fatal(err error, fields ...Fields) {
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Fatal(err error, fields ...Fields) {
-	meta := logger.getErrorDefaults(err, constants.FatalSevLogValue)
+	meta := logger.defValues.GetErrorDefaults(err, constants.FatalSevLogValue)
 	logger.writeFields(meta, fields...)
 	panic(strings.TrimSpace(err.Error()))
 }
@@ -146,7 +147,10 @@ func Audit(ctx context.Context, event string, success bool, fields ...Fields) {
 }
 
 func (logger *FieldLogger) Audit(ctx context.Context, event string, success bool, fields ...Fields) {
+	meta := logger.defValues.GetAuditDefaults(ctx)
+	// TODO - add sensible defaults for mandatory missing fields!
 
+	logger.writeFields(meta, fields...)
 }
 
 func (logger *FieldLogger) writeFields(meta Fields, fields ...Fields) {
@@ -174,107 +178,4 @@ func (logger *FieldLogger) write(str string) {
 
 	// This can return an error, but we just swallow it here as what can we or a client really do? Try and log it? :)
 	logger.output.Write(buffer)
-}
-
-func (logger FieldLogger) getDefaults(message string, sev string) Fields {
-	fields := Fields{
-		constants.ArchitectureLogField: targetArch(),
-		constants.HostLogField:         hostName(),
-		constants.OsLogField:           targetOS(),
-		constants.PidLogField:          processID(),
-		constants.ProcessLogField:      processName(),
-		constants.SeverityLogField:     sev,
-		constants.TimeLogField:         timeNow(logger.timeFormat),
-	}
-
-	// if message is empty (from log.Audit) then don't add it
-	if message != constants.EmptyString {
-		fields[constants.MessageLogField] = message
-	}
-
-	fields = logger.addEnvFieldIfMissing(constants.ProductLogField, constants.ProductEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.AppLogField, constants.AppEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.TraceIdLogField, constants.TraceIdEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.ModuleLogField, constants.ModuleEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.AccountLogField, constants.AccountEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.UserLogField, constants.UserEnv, fields)
-
-	return fields
-}
-
-func (logger FieldLogger) getErrorDefaults(err error, fields Fields) Fields {
-	errorMessage := strings.TrimSpace(err.Error())
-
-	stats := &debug.GCStats{}
-	buf := debug.Stack()
-	info, ok := debug.ReadBuildInfo()
-	debug.ReadGCStats(stats)
-
-	exception := Fields{
-		"error":    errorMessage,
-		"trace":    string(buf),
-		"gc_stats": stats,
-	}
-	if ok {
-		exception["build_info"] = info
-	}
-
-	fields[constants.ExceptionLogField] = exception
-	return fields
-}
-
-
-
-func (logger FieldLogger) getEnvDefaults(fields Fields) Fields {
-
-	fields = logger.addEnvFieldIfMissing(constants.ProductLogField, constants.ProductEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.AppLogField, constants.AppEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.TraceIdLogField, constants.TraceIdEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.ModuleLogField, constants.ModuleEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.AccountLogField, constants.AccountEnv, fields)
-	fields = logger.addEnvFieldIfMissing(constants.UserLogField, constants.UserEnv, fields)
-
-	return fields
-}
-
-func (logger FieldLogger) getCtxDefault(ctx context.Context, fields Fields) Fields {
-	fields = logger.addCtxFieldIfMissing(ctx, constants.ProductLogField, constants.ProductCtx, fields)
-	fields = logger.addCtxFieldIfMissing(ctx, constants.AppLogField, constants.AppCtx, fields)
-	fields = logger.addCtxFieldIfMissing(ctx, constants.TraceIdLogField, constants.TraceIdCtx, fields)
-	fields = logger.addCtxFieldIfMissing(ctx, constants.ModuleLogField, constants.ModuleCtx, fields)
-	fields = logger.addCtxFieldIfMissing(ctx, constants.AccountLogField, constants.AccountCtx, fields)
-	fields = logger.addCtxFieldIfMissing(ctx, constants.UserLogField, constants.UserCtx, fields)
-
-	return fields
-}
-
-func (logger FieldLogger) addEnvFieldIfMissing(fieldName string, osVar string, fields Fields) Fields {
-
-	// If it contains it already, all good!
-	if _, ok := fields[fieldName]; ok {
-		return fields
-	}
-
-	// next, check env
-	if prod, ok := os.LookupEnv(osVar); ok {
-		fields[fieldName] = prod
-		return fields
-	}
-
-	return fields
-}
-
-func (logger FieldLogger) addCtxFieldIfMissing(ctx context.Context, fieldName string, ctxKey constants.EventCtxKey, fields Fields) Fields {
-
-	// If it contains it already, all good!
-	if _, ok := fields[fieldName]; ok {
-		return fields
-	}
-
-	if prod, ok := ctx.Value(ctxKey).(string); ok {
-		fields[fieldName] = prod
-		return fields
-	}
-
-	return fields
 }
