@@ -2,11 +2,15 @@ package log
 
 import (
 	"context"
+	"encoding/hex"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/cultureamp/glamplify/constants"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,8 +21,8 @@ type DefaultValues struct {
 	timeFormat string
 }
 
-func NewDefaultValues(timeFormat string) *DefaultValues{
-	return &DefaultValues{timeFormat:timeFormat}
+func NewDefaultValues(timeFormat string) *DefaultValues {
+	return &DefaultValues{timeFormat: timeFormat}
 }
 
 func (df DefaultValues) GetDefaults(message string, sev string) Fields {
@@ -42,14 +46,11 @@ func (df DefaultValues) GetDefaults(message string, sev string) Fields {
 	return fields
 }
 
-func (df DefaultValues) GetErrorDefaults(err error, sev string) Fields {
+func (df DefaultValues) GetErrorDefaults(err error, fields Fields) Fields {
 	errorMessage := strings.TrimSpace(err.Error())
-
-	fields := df.GetDefaults(errorMessage, sev)
 
 	stats := &debug.GCStats{}
 	buf := debug.Stack()
-	info, ok := debug.ReadBuildInfo()
 	debug.ReadGCStats(stats)
 
 	exception := Fields{
@@ -57,7 +58,8 @@ func (df DefaultValues) GetErrorDefaults(err error, sev string) Fields {
 		"trace":    string(buf),
 		"gc_stats": stats,
 	}
-	if ok {
+
+	if info, ok := debug.ReadBuildInfo(); ok {
 		exception["build_info"] = info
 	}
 
@@ -65,12 +67,12 @@ func (df DefaultValues) GetErrorDefaults(err error, sev string) Fields {
 	return fields
 }
 
-func (df DefaultValues) GetAuditDefaults(ctx context.Context) Fields {
-	fields := df.GetDefaults("audit", constants.AuditSevLogValue)
-	fields = df.getCtxDefault(ctx, fields)
-	fields = df.getEnvDefaults(fields)
+func (df DefaultValues) GetAuditDefaults(ctx context.Context, event string, fields Fields) Fields {
+	fields = df.getCtxDefaults(ctx, fields)
 
-	// TODO - add sensible defaults for mandatory missing fields!
+	// add sensible defaults for mandatory missing fields!
+	fields = df.addMandatoryAuditFieldsIfMissing(ctx, fields)
+	fields[constants.EventLogField] = event
 
 	return fields
 }
@@ -79,22 +81,43 @@ func (df DefaultValues) getEnvDefaults(fields Fields) Fields {
 
 	fields = df.addEnvFieldIfMissing(constants.ProductLogField, constants.ProductEnv, fields)
 	fields = df.addEnvFieldIfMissing(constants.AppLogField, constants.AppEnv, fields)
-	fields = df.addEnvFieldIfMissing(constants.TraceIdLogField, constants.TraceIdEnv, fields)
-	fields = df.addEnvFieldIfMissing(constants.ModuleLogField, constants.ModuleEnv, fields)
-	fields = df.addEnvFieldIfMissing(constants.AccountLogField, constants.AccountEnv, fields)
-	fields = df.addEnvFieldIfMissing(constants.UserLogField, constants.UserEnv, fields)
 	fields = df.addEnvFieldIfMissing(constants.RegionLogField, constants.RegionEnv, fields)
 
 	return fields
 }
 
-func (df DefaultValues) getCtxDefault(ctx context.Context, fields Fields) Fields {
+func (df DefaultValues) getCtxDefaults(ctx context.Context, fields Fields) Fields {
+
 	fields = df.addCtxFieldIfMissing(ctx, constants.ProductLogField, constants.ProductCtx, fields)
 	fields = df.addCtxFieldIfMissing(ctx, constants.AppLogField, constants.AppCtx, fields)
 	fields = df.addCtxFieldIfMissing(ctx, constants.TraceIdLogField, constants.TraceIdCtx, fields)
 	fields = df.addCtxFieldIfMissing(ctx, constants.ModuleLogField, constants.ModuleCtx, fields)
 	fields = df.addCtxFieldIfMissing(ctx, constants.AccountLogField, constants.AccountCtx, fields)
 	fields = df.addCtxFieldIfMissing(ctx, constants.UserLogField, constants.UserCtx, fields)
+	fields = df.addCtxFieldIfMissing(ctx, constants.RegionLogField, constants.RegionCtx, fields)
+
+	return fields
+}
+
+func (df DefaultValues) addMandatoryAuditFieldsIfMissing(ctx context.Context, fields Fields) Fields {
+	// Trace_Id
+	fields = df.addTraceIdIfMissing(ctx, fields)
+
+	return fields
+}
+
+func (df DefaultValues) addTraceIdIfMissing(ctx context.Context, fields Fields) Fields {
+
+	// If it contains it already, all good!
+	if _, ok := fields[constants.TraceIdLogField]; ok {
+		return fields
+	}
+
+	if xray.RequestWasTraced(ctx) {
+		fields[constants.TraceIdLogField] = xray.TraceID(ctx)
+	} else {
+		fields[constants.TraceIdLogField] = df.NewTraceID()
+	}
 
 	return fields
 }
@@ -129,6 +152,8 @@ func (df DefaultValues) addCtxFieldIfMissing(ctx context.Context, fieldName stri
 
 	return fields
 }
+
+
 
 func (df DefaultValues) timeNow(format string) string {
 	return time.Now().UTC().Format(format)
@@ -177,4 +202,33 @@ func (df DefaultValues) targetArch() string {
 func (df DefaultValues) targetOS() string {
 	return runtime.GOOS
 }
+
+var randG = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+func (df DefaultValues) NewTraceID() string {
+	epoch := time.Now().Unix()
+	hex := df.randHexString(24)
+
+	var sb strings.Builder
+
+	sb.Grow(+40)
+
+	sb.WriteString("1-")
+	sb.WriteString(strconv.FormatInt(epoch, 10))
+	sb.WriteString("-")
+	sb.WriteString(hex)
+
+	return sb.String()
+}
+
+func (df DefaultValues) randHexString(n int) string {
+	b := make([]byte, (n+1)/2) // can be simplified to n/2 if n is always even
+
+	if _, err := randG.Read(b); err != nil {
+		panic(err)
+	}
+
+	return hex.EncodeToString(b)[:n]
+}
+
 

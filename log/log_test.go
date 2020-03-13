@@ -2,11 +2,12 @@ package log_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/cultureamp/glamplify/constants"
-	"github.com/cultureamp/glamplify/helper"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -54,7 +55,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3 space", "world")
 }
 
-func TestPrint_Success(t *testing.T) {
+func TestInfo_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	logger := log.New(func(conf *log.Config) {
@@ -68,7 +69,7 @@ func TestPrint_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "INFO")
 }
 
-func TestPrintWithFields_Success(t *testing.T) {
+func TestInfoWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	logger := log.New(func(conf *log.Config) {
@@ -93,7 +94,7 @@ func TestPrintWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3 space", "world")
 }
 
-func TestPrintWithDuplicateFields_Success(t *testing.T) {
+func TestInfoWithDuplicateFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	logger := log.New(func(conf *log.Config) {
@@ -108,6 +109,45 @@ func TestPrintWithDuplicateFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "message", "info")
 	assertContainsString(t, msg, "severity", "INFO")
 	assertContainsString(t, msg, "arch", "myarch") // by default this would normally be set to "splunk"
+}
+
+func TestWarn_Success(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	logger.Warn("warn")
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "message", "warn")
+	assertContainsString(t, msg, "severity", "WARN")
+}
+
+func TestWarnWithFields_Success(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	logger.Warn("warn", log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "message", "warn")
+	assertContainsString(t, msg, "severity", "WARN")
+	assertContainsString(t, msg, "string", "hello")
+	assertContainsInt(t, msg, "int", 123)
+	assertContainsFloat(t, msg, "float", 42.48)
+	assertContainsString(t, msg, "string2", "hello world")
+	assertContainsString(t, msg, "string3 space", "world")
 }
 
 func TestError_Success(t *testing.T) {
@@ -147,6 +187,133 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3 space", "world")
+}
+
+func TestFatal_Success(t *testing.T) {
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	defer func() {
+		if r := recover(); r != nil {
+			msg := memBuffer.String()
+			assertContainsString(t, msg, "message", "fatal")
+			assertContainsString(t, msg, "severity", "FATAL")
+		}
+	}()
+
+	logger.Fatal(errors.New("fatal")) // will call panic!
+}
+
+func TestFatalWithFields_Success(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	defer func() {
+		if r := recover(); r != nil {
+			msg := memBuffer.String()
+			assertContainsString(t, msg, "message", "fatal")
+			assertContainsString(t, msg, "severity", "FATAL")
+			assertContainsString(t, msg, "string", "hello")
+			assertContainsInt(t, msg, "int", 123)
+			assertContainsFloat(t, msg, "float", 42.48)
+			assertContainsString(t, msg, "string2", "hello world")
+			assertContainsString(t, msg, "string3 space", "world")
+		}
+	}()
+
+	// this will call panic!
+	logger.Fatal(errors.New("fatal"), log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+}
+
+func TestAudit_Success(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	ctx := context.Background()
+	logger.Audit(ctx, "event", nil)
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "event", "event")
+	assertContainsString(t, msg, "severity", "AUDIT")
+}
+
+func TestAudit_Error(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	err := errors.New("error")
+	ctx := context.Background()
+	logger.Audit(ctx, "event", err)
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "event", "event")
+	assertContainsString(t, msg, "severity", "AUDIT")
+	assertContainsSubDoc(t, msg, "exception", "error")
+}
+
+func TestAuditWithFields_Success(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	ctx := context.Background()
+	logger.Audit(ctx, "report shared", nil, log.Fields{
+		"product": "engagement",
+		"app":  "murmur",
+		"report_shared": log.Fields{
+			"time_taken": "P0.0012S",
+			"user": "MMLKSN443FN",
+			"report":  "NVJKSJFJ34NBFN44",
+		},
+	})
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "severity", "AUDIT")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsSubDoc(t, msg, "report_shared", "report")
+}
+
+func TestAudit_Success_WithContext(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	logger := log.New(func(conf *log.Config) {
+		conf.Output = memBuffer
+	})
+
+	df := log.NewDefaultValues(constants.RFC3339Milli)
+	id := df.NewTraceID()
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, constants.TraceIdCtx, id)
+
+	os.Setenv(constants.ProductEnv, "product")
+
+	logger.Audit(ctx, "event", nil)
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "event", "event")
+	assertContainsString(t, msg, "severity", "AUDIT")
+	assertContainsString(t, msg, "trace_id", id)
+	assertContainsString(t, msg, "product", "product")
 }
 
 func TestScope(t *testing.T) {
@@ -193,7 +360,7 @@ func TestNamespace_Success(t *testing.T) {
 		"reports_shared": log.Fields{
 			"report": "report1",
 			"user":   "userid",
-			"duration": helper.DurationAsISO8601(d),
+			"duration": fmt.Sprintf("P%gS", d.Seconds()),
 		},
 	})
 
@@ -237,6 +404,17 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
+	})
+
+	ctx := context.Background()
+	log.Audit(ctx, "report shared", nil, log.Fields{
+		"product": "engagement",
+		"app":  "murmur",
+		"report_shared": log.Fields{
+			"time_taken": "P0.0012S",
+			"user": "MMLKSN443FN",
+			"report":  "NVJKSJFJ34NBFN44",
+		},
 	})
 
 	// multiple fields collections
@@ -286,6 +464,18 @@ func TestLogSomeRealMessages(t *testing.T) {
 	})
 }
 
+
+func Test_DurationAsIso8601(t *testing.T) {
+
+	d := time.Millisecond * 456
+	s := log.DurationAsISO8601(d)
+	assert.Assert(t, s == "P0.456S", "was: %s", s)
+
+	d = time.Millisecond * 1456
+	s = log.DurationAsISO8601(d)
+	assert.Assert(t, s == "P1.456S", "was: %s", s)
+}
+
 func BenchmarkLogging(b *testing.B) {
 	logger := log.New(func(conf *log.Config) {
 		conf.Output = ioutil.Discard
@@ -302,7 +492,6 @@ func BenchmarkLogging(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		logger.Info("test details", fields)
 	}
-
 }
 
 func assertContainsString(t *testing.T, log string, key string, val string) {
@@ -321,4 +510,10 @@ func assertContainsFloat(t *testing.T, log string, key string, val float32) {
 	// Check that the keys and values are in the log line
 	find := fmt.Sprintf("\"%s\":%v", key, val)
 	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
+}
+
+func assertContainsSubDoc(t *testing.T, log string, key string, val string) {
+	find := fmt.Sprintf("\"%s\":{\"%s\"", key, val)
+	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
+
 }

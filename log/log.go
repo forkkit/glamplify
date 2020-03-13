@@ -2,11 +2,13 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"github.com/cultureamp/glamplify/constants"
 	"io"
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Config for setting initial values for Logger
@@ -120,7 +122,8 @@ func Error(err error, fields ...Fields) {
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Error(err error, fields ...Fields) {
-	meta := logger.defValues.GetErrorDefaults(err, constants.ErrorSevLogValue)
+	meta := logger.defValues.GetDefaults(strings.TrimSpace(err.Error()), constants.ErrorSevLogValue)
+	meta = logger.defValues.GetErrorDefaults(err, meta)
 	logger.writeFields(meta, fields...)
 }
 
@@ -137,21 +140,36 @@ func Fatal(err error, fields ...Fields) {
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger *FieldLogger) Fatal(err error, fields ...Fields) {
-	meta := logger.defValues.GetErrorDefaults(err, constants.FatalSevLogValue)
+	meta := logger.defValues.GetDefaults(strings.TrimSpace(err.Error()), constants.FatalSevLogValue)
+	meta = logger.defValues.GetErrorDefaults(err, meta)
 	logger.writeFields(meta, fields...)
+
+	// time to panic!
 	panic(strings.TrimSpace(err.Error()))
 }
 
-func Audit(ctx context.Context, event string, success bool, fields ...Fields) {
-	internal.Audit(ctx, event, success, fields...)
+func Audit(ctx context.Context, event string, err error, fields ...Fields) {
+	internal.Audit(ctx, event, err, fields...)
 }
 
-func (logger *FieldLogger) Audit(ctx context.Context, event string, success bool, fields ...Fields) {
-	meta := logger.defValues.GetAuditDefaults(ctx)
-	// TODO - add sensible defaults for mandatory missing fields!
-
+func (logger *FieldLogger) Audit(ctx context.Context, event string, err error, fields ...Fields) {
+	meta := logger.defValues.GetDefaults(constants.EmptyString, constants.AuditSevLogValue)
+	if err != nil {
+		meta = logger.defValues.GetErrorDefaults(err, meta)
+	}
+	meta = logger.defValues.GetAuditDefaults(ctx, event, meta)
 	logger.writeFields(meta, fields...)
 }
+
+
+func DurationAsISO8601(duration time.Duration) string {
+	return internal.DurationAsISO8601(duration)
+}
+
+func (logger FieldLogger) DurationAsISO8601(duration time.Duration) string {
+	return fmt.Sprintf("P%gS", duration.Seconds())
+}
+
 
 func (logger *FieldLogger) writeFields(meta Fields, fields ...Fields) {
 	merged := meta.Merge(fields...)
