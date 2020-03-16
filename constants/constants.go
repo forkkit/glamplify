@@ -11,30 +11,25 @@ const (
 
 	// JSON LOG KEYS
 	// List of standard keys used for logging as per https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging
+	TraceIdLogField             = "trace_id"
 	TimeLogField                = "time"
+	EventLogField               = "event"
 	ProductLogField             = "product"
 	AppLogField                 = "app"
-	EventLogField               = "event"
+	AppVerLogField              = "app_version"
 	SeverityLogField            = "severity"
-	TraceIdLogField             = "trace_id"
-	ModuleLogField              = "module"
-	StatusLogField              = "status"
-	ArchitectureLogField        = "arch"
-	HostLogField                = "host"
-	OsLogField                  = "os"
-	PidLogField                 = "pid"
-	ProcessLogField             = "process"
-	ExceptionLogField           = "exception"
 	RegionLogField              = "region"
-	AccountLogField             = "account"
+	ResourceLogField            = "resource"
+	OsLogField                  = "os"
+	CustomerLogField            = "customer"
 	UserLogField                = "user"
+	ExceptionLogField           = "exception"
 	TimeTakenLogField           = "time_taken"
 	MemoryUsedLogField          = "memory_used"
 	MemoryAvailLogField         = "memory_available"
 	ItemsProcessedLogField      = "items_processed"
 	TotalItemsProcessedLogField = "total_items_processed"
 	TotalItemsRequestedLogField = "total_items_requested"
-	MessageLogField             = "message"
 
 	// Severity Values
 	DebugSevLogValue = "DEBUG"
@@ -48,27 +43,11 @@ const (
 	// List of  Environment Variables keys
 	ProductEnv = "PRODUCT"
 	AppEnv     = "APP"
-	TraceIdEnv = "TRACE_ID"
-	ModuleEnv  = "MODULE"
-	AccountEnv = "ACCOUNT"
-	UserEnv    = "USER"
+	AppVerEnv  = "APP_VERSION"
 	RegionEnv  = "REGION"
-	/*
-		TIME_TAKEN	= "time_taken"
-		MEMORY_USED	= "memory_used"
-		MEMORY_AVAIL	= "memory_available"
-		ITEMS_PROCESSED	= "items_processed"
-		TOTAL_ITEMS_PROCESSED = "total_items_processed"
-		TOTAL_ITEMS_REQUESTED = "total_items_requested"
-
-	*/
 
 	// CONTEXT KEYS
-	ProductCtx EventCtxKey = iota
-	AppCtx     EventCtxKey = iota
-	TraceIdCtx EventCtxKey = iota
-	ModuleCtx  EventCtxKey = iota
-	AccountCtx EventCtxKey = iota
-	UserCtx    EventCtxKey = iota
-	RegionCtx  EventCtxKey = iota
+	TraceIdCtx  EventCtxKey = iota
+	CustomerCtx EventCtxKey = iota
+	UserCtx     EventCtxKey = iota
 )
