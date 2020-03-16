@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/cultureamp/glamplify/constants"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,34 @@ import (
 	"gotest.tools/assert"
 )
 
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	shutdown()
+	os.Exit(code)
+}
+
+var ctx context.Context
+
+func setup() {
+	ctx = context.Background()
+	ctx = log.AddTraceId(ctx, "1-2-3")
+	ctx = log.AddCustomer(ctx, "unilever")
+	ctx = log.AddUser(ctx, "user-123")
+
+	os.Setenv("PRODUCT", "engagement")
+	os.Setenv("APP", "murmur")
+	os.Setenv("APP_VERSION", "87.23.11")
+	os.Setenv("REGION", "us-west-02")
+}
+
+func shutdown() {
+	os.Unsetenv("PRODUCT")
+	os.Unsetenv("APP")
+	os.Unsetenv("APP_VERSION")
+	os.Unsetenv("REGION")
+}
+
 func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
@@ -22,12 +51,18 @@ func TestDebug_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Debug(ctx, "detail_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "detail_event")
 	assertContainsString(t, msg, "severity", "DEBUG")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestDebugWithFields_Success(t *testing.T) {
@@ -37,7 +72,6 @@ func TestDebugWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Debug(ctx, "detail_event", log.Fields{
 		"string":        "hello",
 		"int":           123,
@@ -54,6 +88,13 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestInfo_Success(t *testing.T) {
@@ -63,12 +104,18 @@ func TestInfo_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Info(ctx, "info_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "info_event")
 	assertContainsString(t, msg, "severity", "INFO")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestInfoWithFields_Success(t *testing.T) {
@@ -78,7 +125,6 @@ func TestInfoWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Info(ctx, "info_event", log.Fields{
 		"string":        "hello",
 		"int":           123,
@@ -95,6 +141,13 @@ func TestInfoWithFields_Success(t *testing.T) {
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestInfoWithDuplicateFields_Success(t *testing.T) {
@@ -104,7 +157,6 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Info(ctx, "info_event", log.Fields{
 		constants.ResourceLogField: "res_id", // set a standard types, this should overwrite the default
 	})
@@ -113,6 +165,13 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "event", "info_event")
 	assertContainsString(t, msg, "severity", "INFO")
 	assertContainsString(t, msg, "resource", "res_id") // by default this would normally be set to "host"
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestWarn_Success(t *testing.T) {
@@ -122,12 +181,18 @@ func TestWarn_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Warn(ctx, "warn_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "warn_event")
 	assertContainsString(t, msg, "severity", "WARN")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestWarnWithFields_Success(t *testing.T) {
@@ -137,7 +202,6 @@ func TestWarnWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Warn(ctx, "warn_event", log.Fields{
 		"string":        "hello",
 		"int":           123,
@@ -154,6 +218,13 @@ func TestWarnWithFields_Success(t *testing.T) {
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestError_Success(t *testing.T) {
@@ -163,12 +234,18 @@ func TestError_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Error(ctx, errors.New("error"))
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "error")
 	assertContainsString(t, msg, "severity", "ERROR")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestErrorWithFields_Success(t *testing.T) {
@@ -178,7 +255,6 @@ func TestErrorWithFields_Success(t *testing.T) {
 		conf.Output = memBuffer
 	})
 
-	ctx := context.Background()
 	logger.Error(ctx, errors.New("error"), log.Fields{
 		"string":        "hello",
 		"int":           123,
@@ -195,6 +271,13 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 }
 
 func TestFatal_Success(t *testing.T) {
@@ -208,10 +291,16 @@ func TestFatal_Success(t *testing.T) {
 			msg := memBuffer.String()
 			assertContainsString(t, msg, "event", "fatal")
 			assertContainsString(t, msg, "severity", "FATAL")
+			assertContainsString(t, msg, "trace_id", "1-2-3")
+			assertContainsString(t, msg, "customer", "unilever")
+			assertContainsString(t, msg, "user", "user-123")
+			assertContainsString(t, msg, "product", "engagement")
+			assertContainsString(t, msg, "app", "murmur")
+			assertContainsString(t, msg, "app_version", "87.23.11")
+			assertContainsString(t, msg, "region", "us-west-02")
 		}
 	}()
 
-	ctx := context.Background()
 	logger.Fatal(ctx, errors.New("fatal")) // will call panic!
 }
 
@@ -232,11 +321,17 @@ func TestFatalWithFields_Success(t *testing.T) {
 			assertContainsFloat(t, msg, "float", 42.48)
 			assertContainsString(t, msg, "string2", "hello world")
 			assertContainsString(t, msg, "string3 space", "world")
+			assertContainsString(t, msg, "trace_id", "1-2-3")
+			assertContainsString(t, msg, "customer", "unilever")
+			assertContainsString(t, msg, "user", "user-123")
+			assertContainsString(t, msg, "product", "engagement")
+			assertContainsString(t, msg, "app", "murmur")
+			assertContainsString(t, msg, "app_version", "87.23.11")
+			assertContainsString(t, msg, "region", "us-west-02")
 		}
 	}()
 
 	// this will call panic!
-	ctx := context.Background()
 	logger.Fatal(ctx, errors.New("fatal"), log.Fields{
 		"string":        "hello",
 		"int":           123,
@@ -258,7 +353,6 @@ func TestNamespace_Success(t *testing.T) {
 	t2 := time.Now()
 	d := t2.Sub(t1)
 
-	ctx := context.Background()
 	logger.Error(ctx, errors.New("error"), log.Fields{
 		"string": "hello",
 		"int":    123,
@@ -273,16 +367,21 @@ func TestNamespace_Success(t *testing.T) {
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "report", "report1")
 	assertContainsString(t, msg, "user", "userid")
+	assertContainsString(t, msg, "trace_id", "1-2-3")
+	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "product", "engagement")
+	assertContainsString(t, msg, "app", "murmur")
+	assertContainsString(t, msg, "app_version", "87.23.11")
+	assertContainsString(t, msg, "region", "us-west-02")
 
-	assert.Assert(t, strings.Contains(msg, "reports_shared\":{\"duration"), "Expected 'reports_shared' in '%s'", msg)
+	assertContainsSubDoc(t, msg, "reports_shared", "duration")
 }
 
-func TestLogSomeRealMessages(t *testing.T) {
-
-	ctx := context.Background()
+func Test_RealWorld(t *testing.T) {
 
 	// You should see these printed out, all correctly formatted.
-	log.Debug(ctx,"detail_event", log.Fields{
+	log.Debug(ctx, "detail_event", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -314,7 +413,32 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"string3 space": "world",
 	})
 
+	defer func() {
+		recover()
+	}()
+
+	log.Fatal(ctx, errors.New("fatal"), log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+}
+
+func Test_RealWorld_Combined(t *testing.T) {
+
 	// multiple fields collections
+	log.Debug(ctx, "detail_event", log.Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, log.Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
 	log.Info(ctx, "info_event", log.Fields{
 		"string1": "hello",
 		"int1":    123,
@@ -324,6 +448,43 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"int2":    456,
 		"float2":  78.98,
 	})
+
+	log.Warn(ctx, "warn_event", log.Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, log.Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	log.Error(ctx, errors.New("error"), log.Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, log.Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	log.Fatal(ctx, errors.New("fatal"), log.Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, log.Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+}
+
+func Test_RealWorld_Scope(t *testing.T) {
 
 	scope := log.WithScope(log.Fields{"scopeID": 123})
 	assert.Assert(t, scope != nil)
@@ -344,7 +505,7 @@ func TestLogSomeRealMessages(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	scope.Warn(ctx,"info_event", log.Fields{
+	scope.Warn(ctx, "info_event", log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -353,6 +514,18 @@ func TestLogSomeRealMessages(t *testing.T) {
 	})
 
 	scope.Error(ctx, errors.New("error"), log.Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	scope.Fatal(ctx, errors.New("fatal"), log.Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -387,7 +560,7 @@ func BenchmarkLogging(b *testing.B) {
 
 	ctx := context.Background()
 	for n := 0; n < b.N; n++ {
-		logger.Info(ctx,"test details", fields)
+		logger.Info(ctx, "test details", fields)
 	}
 }
 
