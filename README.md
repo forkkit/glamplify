@@ -39,17 +39,38 @@ If no config.yml or config.json can be found, or if it is corrupted, then a conf
 
 ### Logging
 
+Logging in GO supports the Culture Amp [sensible default](https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging) 
+
 ```Go
 package main
 
 import (
     "bytes"
+    "context"
     "errors"
-
+    "time"
+    "github.com/cultureamp/glamplify/constants"
     "github.com/cultureamp/glamplify/log"
 )
 
 func main() {
+
+	// If you aren't passed a context, then you need to create a new one and then you should add
+    // all the mandatory values to it so logging can retrieve them automatically
+    // Example:
+    ctx := context.Background()
+   
+    // AWS X-ray trace_id normally passed via http headers or by another method
+    traceId := "1-58406520-a006649127e371903a2de979"
+    ctx = log.AddTraceId(ctx, traceId)  
+   
+    // If this service deals with a particularly customer, then set that on the context as well
+    customer := "FNSNDCJDF343"
+    ctx = log.AddCustomer(ctx, customer)
+
+    // And finally if this service deals with a particular user, then set that on the context as well
+    user := "JFOSNDJF97S"
+    ctx = log.AddUser(ctx, user)
 
     // You can either get a new logger, or just use the public functions which internally use an internal logger
     // eg. log.Debug(), log.Info(), log.Warn(), log.Error() and log.Fatal()
@@ -59,42 +80,64 @@ func main() {
 
     // Emit debug trace
     // All messages must be static strings (as per Culture Amp Sensibile Default)
-    log.Debug("Something happened")
+    log.Debug(ctx, "something_happened_event")
 
     // Fields can contain any type of variables
-    log.Debug("Something happened", log.Fields{
-        "aString": "hello",
+    // there are a number of constants for common field names (see constants.go for full list)
+    // TraceIdLogField             = "trace_id"
+    // ResourceLogField            = "resource"
+    // CustomerLogField            = "customer"
+    // UserLogField                = "user"
+    // MessageLogField             = "message"
+    // TimeTakenLogField           = "time_taken"
+    // MemoryUsedLogField          = "memory_used"
+    // MemoryAvailLogField         = "memory_available"
+    // ItemsProcessedLogField      = "items_processed"
+    // TotalItemsProcessedLogField = "total_items_processed"
+    // TotalItemsRequestedLogField = "total_items_requested"
+ 
+    d := time.Millisecond * 123
+    log.Debug(ctx, "something_happened", log.Fields{
+        constants.MessageLogField: "the thing did what we expected it to do",
+        constants.TimeTakenLogField : log.DurationAsISO8601(d), // returns "P0.123S" 
+        constants.UserLogField: "MMLKSN443FN",
+        "report":  "NVJKSJFJ34NBFN44",
         "aInt":    123,
         "aFloat":  42.48,
+        "aString": "more info",
      })
 
     // Typically Info will be sent onto 3rd party aggregation tools (eg. Splunk)
-    log.Info("Executing main")
+    log.Info(ctx, "something_happened_event")
 
     // Fields can contain any type of variables
-    log.Info("Executing main", log.Fields{
+    d = time.Millisecond * 456
+    log.Info(ctx, "something_happened_event", log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
-        "user":  "admin",
+        constants.UserLogField:  "admin",
+         constants.MessageLogField: "the thing did what we expected it to do",
+        constants.TimeTakenLogField: log.DurationAsISO8601(d), // returns "P0.456S" 
     })
 
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
     err := errors.New("missing database connection string")
-    log.Error(err)
+    log.Error(ctx, err)
 
     // Fields can contain any type of variables
     err = errors.New("missing database connection string")
-    log.Error(err, log.Fields{
+    log.Error(ctx, err, log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
         "user":  "admin",
+        "message": "the thing did not do what we expected it to do",
      })
 
     // have a requestID for every log message within that scope) then you can use WithScope()
     scope := log.WithScope(log.Fields { "requestID" : 123 })
 
     // then just use the scope as you would a normal logger
-    scope.Info("Starting web request", log.Fields { "auth": "oauth" })
+    scope.Info(ctx, "something_happened_event", log.Fields { "auth": "oauth" })
 
     // If you want to change the output or time format you can only do this for an
     // instance of the logger you create (not the internal one) by doing this:
@@ -118,7 +161,9 @@ Use `log.Debug` for logging that will only be used when diving deep to uncover b
 
 Use `log.Print` for standard log messages that you want to see always. These will never be turned off and will likely be always sent to 3rd party systems for further analysis (eg. Spliunk).
 
-Use `log.Error` when you have encounter a GO error. This will NOT stop the program, it is up to you to call exit() or panic() if this is not recoverable. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
+Use `log.Error` when you have encounter a GO error. This will NOT stop the program, it is assumed that the system has recovered. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
+
+Use `log.Fatal` when you have encounter a GO error that is not recoverable. This will stop the program by calling panic(). All fatal messages will be forwarded to 3rd party systems for monitoring and further analysis.
 
 ### Monitor
 
@@ -345,89 +390,13 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
-        log.Error(err)
+        log.Error(r.Context(), err)
     }
 
     notifier.ErrorWithContext(err, r.Context(), log.Fields {
         "key": "value",
     })
 
-}
-```
-
-## Event Logging for Audit
-
-So we can generate audit logs, there is a new sensible default for logging [here](https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging)
-
-The eventLog in glamplify implements this by wrapping the logger.
-
-```Go
-package main
-
-import (
-    "context"
-    "github.com/cultureamp/glamplify/constants"
-    "github.com/cultureamp/glamplify/events"
-    "github.com/cultureamp/glamplify/helper"
-    "github.com/cultureamp/glamplify/log"
-    "time"
-)
-
-func main() {
-
-    // use the default internal event log Audit
-    duration := time.Millisecond * 234
-    events.Audit("report_shared", true, context.TODO(), log.Fields{
-        constants.AppLogField:     "engagement",
-        constants.ProductLogField: "service",
-        constants.TraceIdLogField: helper.NewTraceID(),
-        constants.AccountLogField: "hooli",
-        constants.ModuleLogField:  "report_shared",
-        constants.UserLogField:    "abc-123",
-        "report_shared" : log.Fields{
-            constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
-            constants.UserLogField:      "xyz-456",
-            "survey":                    "MLPIOASHF98D8",
-        },
-    })
-
-    // Or if you want to create your own instance and set up some defaults
-    eventLog := events.NewEventLog(func(config *events.Config) {
-		config.Product =  "engagement"
-		config.Application = "service"
-	})
-
-	duration = time.Millisecond * 567
-	eventLog.Audit("report_shared", true, context.TODO(), log.Fields{
-		constants.TraceIdLogField: helper.NewTraceID(),
-		constants.AccountLogField: "hooli",
-		constants.ModuleLogField:  "report_shared",
-		constants.UserLogField:    "abc-123",
-		"report_shared" : log.Fields{
-			constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
-			constants.UserLogField:      "xyz-456",
-			"survey":                    "MLPIOASHF98D8",
-		},
-	})
-
-    // you can also add some values to the context and then they will be automatically added to the event
-    ctx := context.Background()
-    ctx = context.WithValue(ctx, constants.TraceIdCtx, "current_trace_id")
-    ctx = context.WithValue(ctx, constants.UserCtx, "current_user_id")
-    // see constants for other Ctx constant keys
-    eventLog.Audit("report_shared", true, ctx, log.Fields{
-		constants.AccountLogField: "hooli",
-		constants.ModuleLogField:  "report_shared",
-		"report_shared" : log.Fields{
-			constants.TimeTakenLogField: helper.DurationAsISO8601(duration),
-			constants.UserLogField:      "xyz-456",
-			"survey":                    "MLPIOASHF98D8",
-		},
-	})
-
-    // values can also be read form the ENV, the most useful being 
-    // constants.ProductEnv and constants.AppEnv
-    // see constants for other Env constant keys
 }
 ```
 

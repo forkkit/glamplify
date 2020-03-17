@@ -24,6 +24,7 @@ const (
 	CustomerLogField            = "customer"
 	UserLogField                = "user"
 	ExceptionLogField           = "exception"
+	MessageLogField				= "message"
 	TimeTakenLogField           = "time_taken"
 	MemoryUsedLogField          = "memory_used"
 	MemoryAvailLogField         = "memory_available"
