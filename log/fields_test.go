@@ -33,6 +33,21 @@ func TestEntries_InvalidType_Failed(t *testing.T) {
 	assert.Assert(t, err != nil, err)
 }
 
+func TestEntries_NilValue_Failed(t *testing.T) {
+	dict := map[string]interface{}{
+		"key1": nil,
+	}
+	entries := log.Fields{
+		"aMap": dict,
+		"akey": nil,
+	}
+	assert.Assert(t, entries != nil, entries)
+
+	ok, err := entries.ValidateNewRelic()
+	assert.Assert(t, !ok, ok)
+	assert.Assert(t, err != nil, err)
+}
+
 func TestEntries_StringToLong_Failed(t *testing.T) {
 	entries := log.Fields{
 		"aString": "big_long_string_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890_1234567890",
