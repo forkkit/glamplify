@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	"context"
 	"errors"
 	"github.com/cultureamp/glamplify/constants"
 	http2 "github.com/cultureamp/glamplify/http"
@@ -30,19 +30,41 @@ func main() {
 	}
 
 	/* LOGGING */
-	// You can either get a new logger, or just use the public functions which internally use an internal logger
-	// eg. log.Debug(), log.Print() and log.Error()
 
-	// Example below shows usage with the package level logger (sensible default), but can
-	// use an instance of a logger by calling log.NewNotifier()
+	// If you aren't passed a context, then you need to create a new one and then you should add
+	// all the mandatory values to it so logging can retrieve them automatically
+	// Example:
+	ctx := context.Background()
+
+	// AWS X-ray trace_id normally passed via http headers or by another method
+	// if you need to create a new one because you are the "start" of a tree then DON'T PASS/SET ANYTHING
+	// and the logging system will create it automatically for you
+	traceId :=  "1-58406520-a006649127e371903a2de979" // otherwise get it from header, etc
+	ctx = log.AddTraceId(ctx, traceId)
+
+	// If this service deals with a particularly customer, then set that on the context as well
+	customer := "FNSNDCJDF343"
+	ctx = log.AddCustomer(ctx, customer)
+
+	// And finally if this service deals with a particular user, then set that on the context as well
+	user := "JFOSNDJF97S"
+	ctx = log.AddUser(ctx, user)
+
+	// Example below shows usage with the package level logger (sensible default)
+	logger := log.FromScope(ctx)
+
+	// If you want to set some types for a particular scope (eg. for a Web Request
+	// have a requestID for every log message for that logger) then you can use pass
+	// log.Fields{} when creating the logger
+	logger = log.FromScope(ctx, log.Fields{"requestID": 123})
 
 	// Emit debug trace
 	// All messages must be static strings (as per Culture Amp Sensibile Default)
-	log.Debug("Something happened")
+	logger.Debug("Something happened")
 
 	// Emit debug trace with types
 	// Fields can contain any type of variables
-	log.Debug("Something happened", log.Fields{
+	logger.Debug("Something happened", log.Fields{
 		"aString": "hello",
 		"aInt":    123,
 		"aFloat":  42.48,
@@ -50,35 +72,17 @@ func main() {
 
 	// Emit normal logging (can add optional types if required)
 	// Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
-	log.Info("Executing main")
+	logger.Info("Executing main")
 
 	// Emit Error (can add optional types if required)
 	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-	err := errors.New("main program stopped unexpectedly")
-	log.Error(err)
+	err := errors.New("failed to save record to db")
+	logger.Error(err)
 
-	// If you want to set some types for a particular scope (eg. for a Web Request
-	// have a requestID for every log message within that scope) then you can use WithScope()
-	scope := log.WithScope(log.Fields{"requestID": 123})
-
-	// then just use the scope as you would a normal logger
-	// Fields passed in the scope will be merged with any types passed in subsequent calls
-	// If duplicate keys, then types in Debug, Print, Error will overwrite those of the scope
-	scope.Info("Starting web request", log.Fields{"auth": "oauth"})
-
-	// If you want to change the output or time format you can only do this for an
-	// instance of the logger you create (not the internal one) by doing this:
-
-	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer                 // can be set to anything that support io.Write
-		conf.TimeFormat = "2006-01-02T15:04:05" // any valid time format
-	})
-
-	// The internal logger will always use these default values:
-	// output = os.Stderr
-	// time format = "2006-01-02T15:04:05.000Z07:00"
-	logger.Info("Something useful just happened")
+	// Emit Fatal (can add optional types if required) and PANIC!
+	// Fatal error will always be sent onto 3rd party aggregation tools (eg. Splunk)
+	//err = errors.New("program died")
+	//logger.Fatal(err)
 
 	/* Monitor & Notify */
 
@@ -94,7 +98,7 @@ func main() {
 		}
 	})
 	if appErr != nil {
-		log.Error(appErr)
+		logger.Error(appErr)
 	}
 
 	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func (conf *notify.Config) {
@@ -103,7 +107,7 @@ func main() {
 		conf.AppVersion = "1.0.0"
 	})
 	if notifyErr != nil {
-		log.Error(notifyErr)
+		logger.Error(notifyErr)
 	}
 
 	pattern, handler := http2.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)

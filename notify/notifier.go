@@ -62,7 +62,7 @@ func NewNotifier(name string, configure ...func(*Config)) (*Notifier, error) {
 	}
 
 	if conf.Logging {
-		cfg.Logger = newNotifyLogger()
+		cfg.Logger = newNotifyLogger(context.Background())
 	}
 
 	bugsnag.Configure(cfg)

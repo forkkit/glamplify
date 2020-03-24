@@ -10,7 +10,7 @@ import (
 func HandleError(err error, fields log.Fields) {
 
 	// call logger
-	scope := log.WithScope(context.Background())
+	scope := log.FromScope(context.Background())
 	scope.Error(err, log.Fields(fields))
 
 	// call newrelic
@@ -24,7 +24,7 @@ func HandleError(err error, fields log.Fields) {
 func HandleErrorWithContext(ctx context.Context, err error, fields log.Fields) {
 
 	// call logger
-	scope := log.WithScope(ctx)
+	scope := log.FromScope(ctx)
 	scope.Error(err, fields)
 
 	// call newrelic

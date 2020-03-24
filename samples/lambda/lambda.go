@@ -17,7 +17,7 @@ func main() {
 }
 
 func handler(ctx context.Context, input string) (string, error) {
-	scope := log.WithScope(ctx)
+	scope := log.FromScope(ctx)
 
 	fields := log.Fields{
 		"input": input,

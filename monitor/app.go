@@ -18,8 +18,8 @@ const (
 // Labels are key value pairs used to roll up applications into specific categoriess
 type Labels map[string]string
 
-// Config contains Application and Transaction behavior settings.
-// Use NewConfig to create a Config with proper defaults.
+// config contains Application and Transaction behavior settings.
+// Use NewConfig to create a config with proper defaults.
 type Config struct {
 
 	// Enabled controls whether the agent will communicate with the New Relic

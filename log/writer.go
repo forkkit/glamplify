@@ -1,0 +1,92 @@
+package log
+
+import (
+	"io"
+	"os"
+	"sync"
+)
+
+// config for setting initial values for Logger
+type config struct {
+	output io.Writer
+}
+
+// FieldWriter wraps the standard library writer and add structured types as quoted key value pairs
+type FieldWriter struct {
+	mutex      sync.Mutex
+	output     io.Writer
+}
+
+// New creates a new FieldWriter. The optional configure func lets you set values on the underlying standard writer.
+// eg. SetOutput
+func newWriter(configure ...func(*config)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+
+	logger := &FieldWriter{}
+	conf := config{
+		output: os.Stdout,
+	}
+	for _, config := range configure {
+		config(&conf)
+	}
+
+	logger.mutex.Lock()
+	defer logger.mutex.Unlock()
+
+	logger.output = conf.output
+
+	return logger
+}
+
+func (writer *FieldWriter) debug(event string, meta Fields, fields ...Fields) {
+	writer.writeFields(event, meta, fields...)
+}
+
+func (writer *FieldWriter) info(event string, meta Fields, fields ...Fields) {
+	writer.writeFields(event, meta, fields...)
+}
+
+func (writer *FieldWriter) warn(event string, meta Fields, fields ...Fields) {
+	writer.writeFields(event, meta, fields...)
+}
+
+func (writer *FieldWriter) error(event string, meta Fields, fields ...Fields) {
+	writer.writeFields(event, meta, fields...)
+}
+
+func (writer *FieldWriter) fatal(event string, meta Fields, fields ...Fields) {
+	writer.writeFields(event, meta, fields...)
+
+	// time to panic!
+	panic(event)
+}
+
+func (writer *FieldWriter) writeFields(event string, meta Fields, fields ...Fields) {
+	merged := Fields{}
+	user := merged.Merge(fields...)
+	if len(user) > 0 {
+		meta[event] = user
+	}
+	str := meta.Serialize()
+	writer.write(str)
+}
+
+func (writer *FieldWriter) write(str string) {
+
+	// Note: Making this faster is a good thing (while we are a sync writer - async writer is a different story)
+	// So we don't use the stdlib writer.Print(), but rather have our own optimized version
+	// Which does less, but is 3-10x faster
+
+	// alloc a slice to contain the string and possible '\n'
+	length := len(str)
+	buffer := make([]byte, length+1)
+	copy(buffer[:], str)
+	if len(str) == 0 || str[length-1] != '\n' {
+		copy(buffer[length:], "\n")
+	}
+
+	writer.mutex.Lock()
+	defer writer.mutex.Unlock()
+
+	// This can return an error, but we just swallow it here as what can we or a client really do? Try and log it? :)
+	writer.output.Write(buffer)
+}
