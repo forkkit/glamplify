@@ -17,24 +17,26 @@ func main() {
 }
 
 func handler(ctx context.Context, input string) (string, error) {
+	scope := log.WithScope(ctx)
+
 	fields := log.Fields{
 		"input": input,
 	}
-	log.Debug("Begin handler", fields)
+	scope.Debug("Begin_handler", fields)
 
 	app, err := monitor.AppFromContext(ctx)
 	if err != nil {
-		errors.HandleError(err, fields)
+		errors.HandleErrorWithContext(ctx, err, fields)
 		return "APP ERROR", err
 	}
 
 	txn, err := monitor.TxnFromContext(ctx)
 	if err != nil {
-		errors.HandleErrorWithContext(err, ctx, fields)
+		errors.HandleErrorWithContext(ctx, err, fields)
 		return "TXN ERROR", err
 	}
 
-	log.Debug("End handler", log.Fields{
+	scope.Debug("End_handler", log.Fields{
 		"app": app,
 		"txn": txn,
 	})

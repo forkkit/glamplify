@@ -92,7 +92,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
 		// So we have our own implementation that wraps our standard logger
 
-		conf.logger = newMonitorLogger()
+		conf.logger = newMonitorLogger(context.Background())
 		cfg.Logger = conf.logger
 
 		cfg.Logger.Debug("configuration", log.Fields{

@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/cultureamp/glamplify/constants"
 	"math/rand"
@@ -17,16 +18,20 @@ import (
 
 // DefaultValues
 type DefaultValues struct {
-	timeFormat string
+
 }
 
-func NewDefaultValues(timeFormat string) *DefaultValues {
-	return &DefaultValues{timeFormat: timeFormat}
+func DurationAsISO8601(duration time.Duration) string {
+	return fmt.Sprintf("P%gS", duration.Seconds())
 }
 
-func (df DefaultValues) GetDefaults(ctx context.Context, event string, sev string) Fields {
+func newDefaultValues() *DefaultValues {
+	return &DefaultValues{}
+}
+
+func (df DefaultValues) getDefaults(ctx context.Context, event string, sev string) Fields {
 	fields := Fields{
-		constants.TimeLogField:     df.timeNow(df.timeFormat),
+		constants.TimeLogField:     df.timeNow(constants.RFC3339Milli),
 		constants.EventLogField:    event,
 		constants.ResourceLogField: df.hostName(),
 		constants.OsLogField:       df.targetOS(),
@@ -40,7 +45,7 @@ func (df DefaultValues) GetDefaults(ctx context.Context, event string, sev strin
 	return fields
 }
 
-func (df DefaultValues) GetErrorDefaults(err error, fields Fields) Fields {
+func (df DefaultValues) getErrorDefaults(err error, fields Fields) Fields {
 	errorMessage := strings.TrimSpace(err.Error())
 
 	stats := &debug.GCStats{}
@@ -92,7 +97,7 @@ func (df DefaultValues) addTraceIdIfMissing(ctx context.Context, fields Fields) 
 	if xray.RequestWasTraced(ctx) {
 		fields[constants.TraceIdLogField] = xray.TraceID(ctx)
 	} else {
-		fields[constants.TraceIdLogField] = df.NewTraceID()
+		fields[constants.TraceIdLogField] = df.newTraceID()
 	}
 
 	return fields
@@ -155,7 +160,7 @@ func (df DefaultValues) targetOS() string {
 
 var randG = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-func (df DefaultValues) NewTraceID() string {
+func (df DefaultValues) newTraceID() string {
 	epoch := time.Now().Unix()
 	hex := df.randHexString(24)
 

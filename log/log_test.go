@@ -1,4 +1,4 @@
-package log_test
+package log
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cultureamp/glamplify/log"
 	"gotest.tools/assert"
 )
 
@@ -27,9 +26,9 @@ var ctx context.Context
 
 func setup() {
 	ctx = context.Background()
-	ctx = log.AddTraceId(ctx, "1-2-3")
-	ctx = log.AddCustomer(ctx, "unilever")
-	ctx = log.AddUser(ctx, "user-123")
+	ctx = AddTraceId(ctx, "1-2-3")
+	ctx = AddCustomer(ctx, "unilever")
+	ctx = AddUser(ctx, "user-123")
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -47,11 +46,12 @@ func shutdown() {
 func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Debug(ctx, "detail_event")
+	scope := logger.withScope(ctx)
+	scope.Debug( "detail_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "detail_event")
@@ -68,11 +68,12 @@ func TestDebug_Success(t *testing.T) {
 func TestDebugWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Debug(ctx, "detail_event", log.Fields{
+	scope := logger.withScope(ctx)
+	scope.Debug("detail_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -100,11 +101,12 @@ func TestDebugWithFields_Success(t *testing.T) {
 func TestInfo_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Info(ctx, "info_event")
+	scope := logger.withScope(ctx)
+	scope.Info("info_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "info_event")
@@ -121,11 +123,12 @@ func TestInfo_Success(t *testing.T) {
 func TestInfoWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Info(ctx, "info_event", log.Fields{
+	scope := logger.withScope(ctx)
+	scope.Info("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -153,11 +156,12 @@ func TestInfoWithFields_Success(t *testing.T) {
 func TestInfoWithDuplicateFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Info(ctx, "info_event", log.Fields{
+	scope := logger.withScope(ctx)
+	scope.Info("info_event", Fields{
 		constants.ResourceLogField: "res_id", // set a standard types, this should overwrite the default
 	})
 
@@ -177,11 +181,12 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 func TestWarn_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Warn(ctx, "warn_event")
+	scope := logger.withScope(ctx)
+	scope.Warn("warn_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "warn_event")
@@ -198,11 +203,12 @@ func TestWarn_Success(t *testing.T) {
 func TestWarnWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Warn(ctx, "warn_event", log.Fields{
+	scope := logger.withScope(ctx)
+	scope.Warn("warn_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -230,11 +236,12 @@ func TestWarnWithFields_Success(t *testing.T) {
 func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Error(ctx, errors.New("error"))
+	scope := logger.withScope(ctx)
+	scope.Error(errors.New("error"))
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "error")
@@ -251,11 +258,12 @@ func TestError_Success(t *testing.T) {
 func TestErrorWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
-	logger.Error(ctx, errors.New("error"), log.Fields{
+	scope := logger.withScope(ctx)
+	scope.Error(errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -282,7 +290,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 func TestFatal_Success(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
@@ -301,13 +309,14 @@ func TestFatal_Success(t *testing.T) {
 		}
 	}()
 
-	logger.Fatal(ctx, errors.New("fatal")) // will call panic!
+	scope := logger.withScope(ctx)
+	scope.Fatal(errors.New("fatal")) // will call panic!
 }
 
 func TestFatalWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
@@ -331,8 +340,8 @@ func TestFatalWithFields_Success(t *testing.T) {
 		}
 	}()
 
-	// this will call panic!
-	logger.Fatal(ctx, errors.New("fatal"), log.Fields{
+	scope := logger.withScope(ctx)
+	scope.Fatal(errors.New("fatal"), Fields{  // this will call panic!
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -345,7 +354,7 @@ func TestNamespace_Success(t *testing.T) {
 
 	t1 := time.Now()
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = memBuffer
 	})
 
@@ -353,11 +362,12 @@ func TestNamespace_Success(t *testing.T) {
 	t2 := time.Now()
 	d := t2.Sub(t1)
 
-	logger.Error(ctx, errors.New("error"), log.Fields{
+	scope := logger.withScope(ctx)
+	scope.Error(errors.New("error"), Fields{
 		"string": "hello",
 		"int":    123,
 		"float":  42.48,
-		"reports_shared": log.Fields{
+		"reports_shared": Fields{
 			"report":   "report1",
 			"user":     "userid",
 			"duration": fmt.Sprintf("P%gS", d.Seconds()),
@@ -380,8 +390,10 @@ func TestNamespace_Success(t *testing.T) {
 
 func Test_RealWorld(t *testing.T) {
 
+	scope := WithScope(ctx)
+
 	// You should see these printed out, all correctly formatted.
-	log.Debug(ctx, "detail_event", log.Fields{
+	scope.Debug("detail_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -389,7 +401,7 @@ func Test_RealWorld(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	log.Info(ctx, "info_event", log.Fields{
+	scope.Info("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -397,7 +409,7 @@ func Test_RealWorld(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	log.Warn(ctx, "info_event", log.Fields{
+	scope.Warn("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -405,7 +417,7 @@ func Test_RealWorld(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	log.Error(ctx, errors.New("error"), log.Fields{
+	scope.Error(errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -417,7 +429,8 @@ func Test_RealWorld(t *testing.T) {
 		recover()
 	}()
 
-	log.Fatal(ctx, errors.New("fatal"), log.Fields{
+	// this will call panic!
+	scope.Fatal(errors.New("fatal"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -428,42 +441,44 @@ func Test_RealWorld(t *testing.T) {
 
 func Test_RealWorld_Combined(t *testing.T) {
 
+	scope := WithScope(ctx)
+
 	// multiple fields collections
-	log.Debug(ctx, "detail_event", log.Fields{
+	scope.Debug("detail_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
 	})
 
-	log.Info(ctx, "info_event", log.Fields{
+	scope.Info("info_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
 	})
 
-	log.Warn(ctx, "warn_event", log.Fields{
+	scope.Warn("warn_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
 	})
 
-	log.Error(ctx, errors.New("error"), log.Fields{
+	scope.Error(errors.New("error"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
@@ -473,84 +488,35 @@ func Test_RealWorld_Combined(t *testing.T) {
 		recover()
 	}()
 
-	log.Fatal(ctx, errors.New("fatal"), log.Fields{
+	// this will call panic!
+	scope.Fatal(errors.New("fatal"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
-	})
-}
-
-func Test_RealWorld_Scope(t *testing.T) {
-
-	scope := log.WithScope(log.Fields{"scopeID": 123})
-	assert.Assert(t, scope != nil)
-
-	scope.Debug(ctx, "detail_event", log.Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	scope.Info(ctx, "info_event", log.Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	scope.Warn(ctx, "info_event", log.Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	scope.Error(ctx, errors.New("error"), log.Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	defer func() {
-		recover()
-	}()
-
-	scope.Fatal(ctx, errors.New("fatal"), log.Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
 	})
 }
 
 func Test_DurationAsIso8601(t *testing.T) {
 
 	d := time.Millisecond * 456
-	s := log.DurationAsISO8601(d)
+	s := DurationAsISO8601(d)
 	assert.Assert(t, s == "P0.456S", "was: %s", s)
 
 	d = time.Millisecond * 1456
-	s = log.DurationAsISO8601(d)
+	s = DurationAsISO8601(d)
 	assert.Assert(t, s == "P1.456S", "was: %s", s)
 }
 
 func BenchmarkLogging(b *testing.B) {
-	logger := log.New(func(conf *log.Config) {
+	logger := newLogger(func(conf *Config) {
 		conf.Output = ioutil.Discard
 	})
 
-	fields := log.Fields{
+	fields := Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -558,9 +524,9 @@ func BenchmarkLogging(b *testing.B) {
 		"string3 space": "world",
 	}
 
-	ctx := context.Background()
+	scope := logger.withScope(ctx)
 	for n := 0; n < b.N; n++ {
-		logger.Info(ctx, "test details", fields)
+		scope.Info("test details", fields)
 	}
 }
 

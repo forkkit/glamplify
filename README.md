@@ -61,7 +61,9 @@ func main() {
     ctx := context.Background()
    
     // AWS X-ray trace_id normally passed via http headers or by another method
-    traceId := "1-58406520-a006649127e371903a2de979"
+    // if you need to create a new one because you are the "start" of a tree then DON'T PASS/SET ANYTHING
+    // and the logging system will create it automatically for you  
+    traceId :=  "1-58406520-a006649127e371903a2de979" // otherwise get it from header, etc
     ctx = log.AddTraceId(ctx, traceId)  
    
     // If this service deals with a particularly customer, then set that on the context as well
@@ -72,15 +74,20 @@ func main() {
     user := "JFOSNDJF97S"
     ctx = log.AddUser(ctx, user)
 
-    // You can either get a new logger, or just use the public functions which internally use an internal logger
-    // eg. log.Debug(), log.Info(), log.Warn(), log.Error() and log.Fatal()
+    // To conform to the logging sensible default you have to create a scope object with a ctx
+    // create a new scope EVERY request/run - DO NOT reuse/cache as the values in the ctx will be old/stale
+    scope := log.WithScope(ctx)
+    // if you have other fields that you want to be written for all future calls for this scope you can
+    // pass in fields here as well
+    scope = log.WithScope(ctx, log.Fields{
+        "interesting_id": 123,
+         "requestID" : "456",    
+    })
 
-    // Example below shows usage with the package level logger (sensible default), but can 
-    // use an instance of a logger by calling mylogger := log.New()
+    // Once you have a scope then you can call scope.Debug/Info/Warn/Error/Fatal
 
     // Emit debug trace
-    // All messages must be static strings (as per Culture Amp Sensibile Default)
-    log.Debug(ctx, "something_happened_event")
+    scope.Debug("something_happened_event")
 
     // Fields can contain any type of variables
     // there are a number of constants for common field names (see constants.go for full list)
@@ -97,7 +104,7 @@ func main() {
     // TotalItemsRequestedLogField = "total_items_requested"
  
     d := time.Millisecond * 123
-    log.Debug(ctx, "something_happened", log.Fields{
+    scope.Debug("something_happened", log.Fields{
         constants.MessageLogField: "the thing did what we expected it to do",
         constants.TimeTakenLogField : log.DurationAsISO8601(d), // returns "P0.123S" 
         constants.UserLogField: "MMLKSN443FN",
@@ -108,11 +115,11 @@ func main() {
      })
 
     // Typically Info will be sent onto 3rd party aggregation tools (eg. Splunk)
-    log.Info(ctx, "something_happened_event")
+    scope.Info("something_happened_event")
 
     // Fields can contain any type of variables
     d = time.Millisecond * 456
-    log.Info(ctx, "something_happened_event", log.Fields{
+    scope.Info("something_happened_event", log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
         constants.UserLogField:  "admin",
@@ -122,48 +129,29 @@ func main() {
 
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
     err := errors.New("missing database connection string")
-    log.Error(ctx, err)
+    scope.Error(err)
 
     // Fields can contain any type of variables
     err = errors.New("missing database connection string")
-    log.Error(ctx, err, log.Fields{
+    scope.Error(err, log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
         "user":  "admin",
         "message": "the thing did not do what we expected it to do",
      })
 
-    // have a requestID for every log message within that scope) then you can use WithScope()
-    scope := log.WithScope(log.Fields { "requestID" : 123 })
-
-    // then just use the scope as you would a normal logger
-    scope.Info(ctx, "something_happened_event", log.Fields { "auth": "oauth" })
-
-    // If you want to change the output or time format you can only do this for an
-    // instance of the logger you create (not the internal one) by doing this:
-
-    memBuffer := &bytes.Buffer{}
-    logger := log.New(func(conf *log.Config) {
-        conf.Output = memBuffer                     // can be set to anything that support io.Write
-        conf.TimeFormat = "2006-01-02T15:04:05"     // any valid time format
-    })
-
-    // The internal logger will always use these default values:
-    // output = os.Stdout
-    // time format = "2006-01-02T15:04:05.000Z07:00"
-    // debugForwardLogTo = "none"
-    // printForwardLogTo = "splunk"
-    // errorForwardLogTo = "splunk"
 }
 
 ```
-Use `log.Debug` for logging that will only be used when diving deep to uncover bugs. Typically `log.Debug` messages will not automatically be sent to other 3rd party systems (eg. Splunk).
+Use `scope.Debug` for logging that will only be used when diving deep to uncover bugs. Typically `scope.Debug` messages will not automatically be sent to other 3rd party systems (eg. Splunk).
 
-Use `log.Print` for standard log messages that you want to see always. These will never be turned off and will likely be always sent to 3rd party systems for further analysis (eg. Spliunk).
+Use `scopelog.Print` for standard log messages that you want to see always. These will never be turned off and will likely be always sent to 3rd party systems for further analysis (eg. Spliunk).
 
-Use `log.Error` when you have encounter a GO error. This will NOT stop the program, it is assumed that the system has recovered. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
+Use `scope.Warnr` when you have encounter a warning that should be looked at by a human, but has been recovered. All warning messages will be forwarded to 3rd party systems for monitoring and further analysis.
 
-Use `log.Fatal` when you have encounter a GO error that is not recoverable. This will stop the program by calling panic(). All fatal messages will be forwarded to 3rd party systems for monitoring and further analysis.
+Use `scope.Error` when you have encountered a GO error. This will NOT stop the program, it is assumed that the system has recovered. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
+
+Use `log.Fatal` when you have encountered a GO error that is not recoverable. This will stop the program by calling panic(). All fatal messages will be forwarded to 3rd party systems for monitoring and further analysis.
 
 ### Monitor
 
@@ -200,11 +188,13 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+    scope := log.WithScope(r.Context())
 
     // Do things
 
     txn, err := monitor.TxnFromRequest(w, r)
     if err != nil {
+        scope.Error(err)
         txn.AddAttributes(log.Fields{
             "aString": "hello world",
             "aInt":    123,
@@ -214,6 +204,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
     // Do more things
 
     if err != nil {
+        scope.Error(err)
         txn.AddAttributes(log.Fields{
             "aString2": "goodbye",
             "aInt2":    456,
@@ -253,15 +244,21 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+    scope := log.WithScope(r.Context())
 
     // Do things
     app, err := monitor.AppFromRequest(w, r)
+    if err != nil {
+        scope.Error(err)
+    }   
 
     err = app.RecordEvent("mycustomEvent", log.Fields{
         "aString": "hello world",
         "aInt":    123,
     })
-
+    if err != nil {
+        scope.Error(err)
+    }  
     // Do more things
 }
 ```
@@ -289,11 +286,13 @@ func main() {
 }
 
 func handler(ctx context.Context) {
+    scope := log.WithScope(ctx)
 
     // Do things
 
     txn, err := monitor.TxnFromContext(ctx)
     if err != nil {
+        scope.Error(err)
         txn.AddAttributes(log.Fields{
             "aString": "hello world",
             "aInt":    123,
@@ -303,6 +302,7 @@ func handler(ctx context.Context) {
     // Do more things
 
     if err != nil {
+        scope.Error(err)
         txn.AddAttributes(log.Fields{
             "aString2": "goodbye",
             "aInt2":    456,
@@ -334,11 +334,13 @@ func main() {
 }
 
 func handler(ctx context.Context) {
+    scope := log.WithScope(ctx)
 
     // Do things
 
     app, err := monitor.AppFromContext(ctx)
     if err != nil {
+        scope.Error(err)
         err = app.RecordEvent("mycustomEvent", log.Fields{
             "aString": "hello world",
             "aInt":    123,
@@ -382,6 +384,7 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+   scope := log.WithScope(r.Context())
 
     // Do things
 
@@ -390,7 +393,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
-        log.Error(r.Context(), err)
+        scope.Error(err)
     }
 
     notifier.ErrorWithContext(err, r.Context(), log.Fields {

@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"context"
 	"errors"
 
 	"github.com/cultureamp/glamplify/log"
@@ -14,32 +15,32 @@ import (
 // https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogrus and
 // https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogxi/v1.
 type monitorLogger struct {
-	fieldLogger *log.FieldLogger
+	scope *log.Scope
 }
 
-func newMonitorLogger() *monitorLogger {
-	logger := log.New()
+func newMonitorLogger(ctx context.Context) *monitorLogger {
+	scope := log.WithScope(ctx)
 
 	return &monitorLogger{
-		fieldLogger: logger,
+		scope: scope,
 	}
 }
 
 func (logger monitorLogger) Error(msg string, context map[string]interface{}) {
 	err := errors.New(msg)
-	logger.fieldLogger.Error(err, context)
+	logger.scope.Error(err, context)
 }
 
 func (logger monitorLogger) Warn(msg string, context map[string]interface{}) {
-	logger.fieldLogger.Warn(msg, context)
+	logger.scope.Warn(msg, context)
 }
 
 func (logger monitorLogger) Info(msg string, context map[string]interface{}) {
-	logger.fieldLogger.Info(msg, context)
+	logger.scope.Info(msg, context)
 }
 
 func (logger monitorLogger) Debug(msg string, context map[string]interface{}) {
-	logger.fieldLogger.Debug(msg, context)
+	logger.scope.Debug(msg, context)
 }
 
 func (logger monitorLogger) DebugEnabled() bool {
