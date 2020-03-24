@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 	"errors"
+	"github.com/cultureamp/glamplify/constants"
 
 	"github.com/cultureamp/glamplify/log"
 )
@@ -15,32 +16,38 @@ import (
 // https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogrus and
 // https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogxi/v1.
 type monitorLogger struct {
-	scope *log.Logger
+	logger *log.Logger
 }
 
 func newMonitorLogger(ctx context.Context) *monitorLogger {
 	scope := log.FromScope(ctx)
 
 	return &monitorLogger{
-		scope: scope,
+		logger: scope,
 	}
 }
 
 func (logger monitorLogger) Error(msg string, context map[string]interface{}) {
 	err := errors.New(msg)
-	logger.scope.Error(err, context)
+	logger.logger.Error(err, context)
 }
 
 func (logger monitorLogger) Warn(msg string, context map[string]interface{}) {
-	logger.scope.Warn(msg, context)
+	logger.logger.Warn("monitor_warn", context, log.Fields{
+		constants.MessageLogField: msg,
+	})
 }
 
 func (logger monitorLogger) Info(msg string, context map[string]interface{}) {
-	logger.scope.Info(msg, context)
+	logger.logger.Info("monitor_info", context, context, log.Fields{
+		constants.MessageLogField: msg,
+	})
 }
 
 func (logger monitorLogger) Debug(msg string, context map[string]interface{}) {
-	logger.scope.Debug(msg, context)
+	logger.logger.Debug("monitor_debug", context, context, log.Fields{
+		constants.MessageLogField: msg,
+	})
 }
 
 func (logger monitorLogger) DebugEnabled() bool {

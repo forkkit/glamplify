@@ -17,12 +17,12 @@ func main() {
 }
 
 func handler(ctx context.Context, input string) (string, error) {
-	scope := log.FromScope(ctx)
+	logger := log.FromScope(ctx)
 
 	fields := log.Fields{
 		"input": input,
 	}
-	scope.Debug("Begin_handler", fields)
+	logger.Debug("Begin_handler", fields)
 
 	app, err := monitor.AppFromContext(ctx)
 	if err != nil {
@@ -36,7 +36,7 @@ func handler(ctx context.Context, input string) (string, error) {
 		return "TXN ERROR", err
 	}
 
-	scope.Debug("End_handler", log.Fields{
+	logger.Debug("End_handler", log.Fields{
 		"app": app,
 		"txn": txn,
 	})

@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"fmt"
+	"github.com/cultureamp/glamplify/constants"
 
 	"github.com/cultureamp/glamplify/log"
 )
@@ -22,7 +23,7 @@ func newNotifyLogger(ctx context.Context) *notifyLogger {
 func (logger notifyLogger) Printf(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	fields := log.Fields{
-		"message" : msg,
+		constants.MessageLogField : msg,
 	}
 	logger.logger.Info("notified", fields)
 }
