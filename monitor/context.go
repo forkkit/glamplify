@@ -3,7 +3,7 @@ package monitor
 import (
 	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/constants"
+	"github.com/cultureamp/glamplify/log"
 	"net/http"
 
 	newrelic "github.com/newrelic/go-agent"
@@ -36,7 +36,7 @@ func TxnFromContext(ctx context.Context) (*Transaction, error) {
 
 	// 2. So likely a serverless/lambda call, so try and get the CA lambdaHandler so we can get the txnName & app
 	// It should be there as we added it before calling "Invoke".
-	txnName := constants.UnknownString
+	txnName := log.Unknown
 	handler, err := handlerFromContext(ctx)
 	if err != nil || handler == nil {
 		return nil, err

@@ -65,7 +65,7 @@ func main() {
     // and the logging system will create it automatically for you  
     traceId :=  "1-58406520-a006649127e371903a2de979" // otherwise get it from header, etc
     ctx = log.AddTraceId(ctx, traceId)  
-   
+
     // If this service deals with a particularly customer, then set that on the context as well
     customer := "FNSNDCJDF343"
     ctx = log.AddCustomer(ctx, customer)
@@ -77,12 +77,12 @@ func main() {
     // To conform to the logging sensible default you have to create a logger from a ctx.
     // DO NOT CACHE or REUSE loggers across requests! Instead create a new logger EVERY request/run.
     // Loggers are cheap to create and we do NOT old/stale values from a previous ctx. 
-    logger := log.FromScope(ctx)
+    logger := log.New(ctx)
     // if you have other fields that you want to be written for all future calls for this scope you can
     // pass in fields here as well
-    logger = log.FromScope(ctx, log.Fields{
+    logger = log.New(ctx, log.Fields{
         "interesting_id": 123,
-         "requestID" : "456",    
+        "request_id" : "456",    
     })
 
     // Once you have a logger then you can call logger.Debug/Info/Warn/Error/Fatal
@@ -191,7 +191,7 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
-    logger := log.FromScope(r.Context())
+    logger := log.New(r.Context())
 
     // Do things
 
@@ -247,7 +247,7 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
-    logger := log.FromScope(r.Context())
+    logger := log.New(r.Context())
 
     // Do things
     app, err := monitor.AppFromRequest(w, r)
@@ -289,7 +289,7 @@ func main() {
 }
 
 func handler(ctx context.Context) {
-    logger := log.FromScope(ctx)
+    logger := log.New(ctx)
 
     // Do things
 
@@ -337,7 +337,7 @@ func main() {
 }
 
 func handler(ctx context.Context) {
-    logger := log.FromScope(ctx)
+    logger := log.New(ctx)
 
     // Do things
 
@@ -387,7 +387,7 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
-   logger := log.FromScope(r.Context())
+   logger := log.New(r.Context())
 
     // Do things
 

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cultureamp/glamplify/constants"
 	"gotest.tools/assert"
 	"io/ioutil"
 	"os"
@@ -161,7 +160,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	logger := newLogger(ctx, writer)
 
 	logger.Info("info_event", Fields{
-		constants.ResourceLogField: "res_id", // set a standard types, this should overwrite the default
+		Resource: "res_id", // set a standard types, this should overwrite the default
 	})
 
 	msg := memBuffer.String()
@@ -389,7 +388,7 @@ func TestNamespace_Success(t *testing.T) {
 
 func Test_RealWorld(t *testing.T) {
 
-	logger := FromScope(ctx)
+	logger := New(ctx)
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("detail_event", Fields{
@@ -440,7 +439,7 @@ func Test_RealWorld(t *testing.T) {
 
 func Test_RealWorld_Combined(t *testing.T) {
 
-	logger := FromScope(ctx)
+	logger := New(ctx)
 
 	// multiple fields collections
 	logger.Debug("detail_event", Fields{
@@ -600,7 +599,7 @@ func TestScope_Overwrite(t *testing.T) {
 
 func Test_RealWorld_Scope(t *testing.T) {
 
-	logger := FromScope(ctx, Fields{"scopeID": 123})
+	logger := New(ctx, Fields{"scopeID": 123})
 	assert.Assert(t, logger != nil)
 
 	logger.Debug("detail_event", Fields{

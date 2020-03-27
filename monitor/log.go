@@ -3,8 +3,6 @@ package monitor
 import (
 	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/constants"
-
 	"github.com/cultureamp/glamplify/log"
 )
 
@@ -20,7 +18,7 @@ type monitorLogger struct {
 }
 
 func newMonitorLogger(ctx context.Context) *monitorLogger {
-	scope := log.FromScope(ctx)
+	scope := log.New(ctx)
 
 	return &monitorLogger{
 		logger: scope,
@@ -34,19 +32,19 @@ func (logger monitorLogger) Error(msg string, context map[string]interface{}) {
 
 func (logger monitorLogger) Warn(msg string, context map[string]interface{}) {
 	logger.logger.Warn("monitor_warn", context, log.Fields{
-		constants.MessageLogField: msg,
+		log.Message: msg,
 	})
 }
 
 func (logger monitorLogger) Info(msg string, context map[string]interface{}) {
 	logger.logger.Info("monitor_info", context, context, log.Fields{
-		constants.MessageLogField: msg,
+		log.Message: msg,
 	})
 }
 
 func (logger monitorLogger) Debug(msg string, context map[string]interface{}) {
 	logger.logger.Debug("monitor_debug", context, context, log.Fields{
-		constants.MessageLogField: msg,
+		log.Message: msg,
 	})
 }
 

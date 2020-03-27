@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/constants"
 	http2 "github.com/cultureamp/glamplify/http"
 	"net/http"
 	"net/http/httptest"
@@ -51,12 +50,12 @@ func main() {
 	ctx = log.AddUser(ctx, user)
 
 	// Example below shows usage with the package level logger (sensible default)
-	logger := log.FromScope(ctx)
+	logger := log.New(ctx)
 
 	// If you want to set some types for a particular scope (eg. for a Web Request
 	// have a requestID for every log message for that logger) then you can use pass
 	// log.Fields{} when creating the logger
-	logger = log.FromScope(ctx, log.Fields{"requestID": 123})
+	logger = log.New(ctx, log.Fields{"requestID": 123})
 
 	// Emit debug trace
 	// All messages must be static strings (as per Culture Amp Sensibile Default)
@@ -91,7 +90,7 @@ func main() {
 		conf.Logging = true
 		conf.ServerlessMode = false
 		conf.Labels = monitor.Labels{
-			"asset":          constants.UnknownString,
+			"asset":          log.Unknown,
 			"classification": "restricted",
 			"workload":       "development",
 			"camp":           "amplify",

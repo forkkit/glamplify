@@ -2,7 +2,7 @@ package log
 
 import (
 	"context"
-	"github.com/cultureamp/glamplify/constants"
+	"github.com/cultureamp/glamplify/helper"
 	"strings"
 )
 
@@ -15,18 +15,17 @@ type Logger struct {
 }
 
 var (
-	internal = newWriter(func(conf *config) {
-	})
+	internal = newWriter(func(conf *config) {})
 )
 
-// FromScope lets you add types to a scoped writer. Useful for Http Web Request where you want to track user, requestid, etc.
-func FromScope(ctx context.Context, fields ...Fields) *Logger {
+// New lets you add types to a scoped writer. Useful for Http Web Request where you want to track user, requestid, etc.
+func New(ctx context.Context, fields ...Fields) *Logger {
 	return newLogger(ctx, internal, fields...)
 }
 
 func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logger {
 	merged := Fields{}
-	merged = merged.Merge(fields...)
+	merged = merged.Merge(fields...).ToSnakeCase()
 	scope := &Logger{
 		ctx:    ctx,
 		writer: writer,
@@ -41,8 +40,9 @@ func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logg
 // when hunting down incorrect behaviour.
 // Use lower-case keys and values if possible.
 func (logger Logger) Debug(event string, fields ...Fields) {
-	meta := logger.defValues.getDefaults(logger.ctx, event, constants.DebugSevLogValue)
-	merged := logger.fields.Merge(fields...)
+	event = helper.ToSnakeCase(event)
+	meta := logger.defValues.getDefaults(logger.ctx, event, DebugSev)
+	merged := logger.fields.Merge(fields...).ToSnakeCase()
 	logger.writer.debug(event, meta, merged)
 }
 
@@ -50,8 +50,9 @@ func (logger Logger) Debug(event string, fields ...Fields) {
 // Useful for normal tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
 func (logger Logger) Info(event string, fields ...Fields) {
-	meta := logger.defValues.getDefaults(logger.ctx, event, constants.InfoSevLogValue)
-	merged := logger.fields.Merge(fields...)
+	event = helper.ToSnakeCase(event)
+	meta := logger.defValues.getDefaults(logger.ctx, event, InfoSev)
+	merged := logger.fields.Merge(fields...).ToSnakeCase()
 	logger.writer.info(event, meta, merged)
 }
 
@@ -59,8 +60,9 @@ func (logger Logger) Info(event string, fields ...Fields) {
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
 // Use lower-case keys and values if possible.
 func (logger Logger) Warn(event string, fields ...Fields) {
-	meta := logger.defValues.getDefaults(logger.ctx, event, constants.WarnSevLogValue)
-	merged := logger.fields.Merge(fields...)
+	event = helper.ToSnakeCase(event)
+	meta := logger.defValues.getDefaults(logger.ctx, event, WarnSev)
+	merged := logger.fields.Merge(fields...).ToSnakeCase()
 	logger.writer.warn(event, meta, merged)
 }
 
@@ -69,9 +71,10 @@ func (logger Logger) Warn(event string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger Logger) Error(err error, fields ...Fields) {
 	event := strings.TrimSpace(err.Error())
-	meta := logger.defValues.getDefaults(logger.ctx, event, constants.ErrorSevLogValue)
+	event = helper.ToSnakeCase(event)
+	meta := logger.defValues.getDefaults(logger.ctx, event, ErrorSev)
 	meta = logger.defValues.getErrorDefaults(err, meta)
-	merged := logger.fields.Merge(fields...)
+	merged := logger.fields.Merge(fields...).ToSnakeCase()
 	logger.writer.error(event, meta, merged)
 }
 
@@ -81,8 +84,9 @@ func (logger Logger) Error(err error, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger Logger) Fatal(err error, fields ...Fields) {
 	event := strings.TrimSpace(err.Error())
-	meta := logger.defValues.getDefaults(logger.ctx, event, constants.FatalSevLogValue)
+	event = helper.ToSnakeCase(event)
+	meta := logger.defValues.getDefaults(logger.ctx, event, FatalSev)
 	meta = logger.defValues.getErrorDefaults(err, meta)
-	merged := logger.fields.Merge(fields...)
+	merged := logger.fields.Merge(fields...).ToSnakeCase()
 	logger.writer.fatal(event, meta, merged)
 }
