@@ -1,27 +1,31 @@
 package helper
 
 import (
-	"github.com/iancoleman/strcase"
-	"regexp"
-	"sync"
+	"strings"
+	"unicode"
 )
 
-var camelSnakeCaseRE *regexp.Regexp
-var camelSnakeCaseREOnce sync.Once
-
-func IsSnakeCase(s string) bool {
-
-	camelSnakeCaseREOnce.Do(func() {
-		camelSnakeCaseRE = regexp.MustCompile("^[A-Z][a-z]+(_[A-Z][a-z]+)*$")
-	})
-
-	return camelSnakeCaseRE.MatchString(s)
-}
-
 func ToSnakeCase(s string) string {
-	if !IsSnakeCase(s) {
-		return strcase.ToSnake(s)
-	}
-	return s
-}
 
+	var sb strings.Builder
+
+	in := []rune(strings.TrimSpace(s))
+	for i, r := range in {
+
+		if unicode.IsUpper(r) {
+			if i > 0 && unicode.IsLower(in[i-1]) {
+				sb.WriteRune('_')
+			}
+			sb.WriteRune(unicode.ToLower(r))
+
+		} else if unicode.IsSpace(r) {
+			if !unicode.IsSpace(in[i-1]) {
+				sb.WriteRune('_')
+			}
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+
+	return sb.String()
+}

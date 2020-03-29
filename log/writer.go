@@ -66,7 +66,7 @@ func (writer *FieldWriter) writeFields(event string, meta Fields, fields ...Fiel
 	if len(user) > 0 {
 		meta[event] = user
 	}
-	str := meta.serialize()
+	str := meta.ToSnakeCase().serialize()
 	writer.write(str)
 }
 

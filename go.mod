@@ -14,7 +14,6 @@ require (
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/djhworld/go-lambda-invoke v0.0.3
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
-	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/newrelic/go-agent v2.14.1+incompatible
 	github.com/spf13/viper v1.4.0

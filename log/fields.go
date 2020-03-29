@@ -30,6 +30,11 @@ func (fields Fields) ToSnakeCase() Fields {
 	snaked := Fields{}
 
 	for k, v := range fields {
+		switch f := v.(type) {
+		case Fields:
+			v = f.ToSnakeCase()
+		}
+
 		sc := helper.ToSnakeCase(k)
 		snaked[sc] = v
 	}

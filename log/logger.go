@@ -3,7 +3,6 @@ package log
 import (
 	"context"
 	"github.com/cultureamp/glamplify/helper"
-	"strings"
 )
 
 // Logger allows you to set types that can be re-used for subsequent log event. Useful for setting username, requestid etc for a Http Web Request.
@@ -25,7 +24,7 @@ func New(ctx context.Context, fields ...Fields) *Logger {
 
 func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logger {
 	merged := Fields{}
-	merged = merged.Merge(fields...).ToSnakeCase()
+	merged = merged.Merge(fields...)
 	scope := &Logger{
 		ctx:    ctx,
 		writer: writer,
@@ -42,7 +41,7 @@ func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logg
 func (logger Logger) Debug(event string, fields ...Fields) {
 	event = helper.ToSnakeCase(event)
 	meta := logger.defValues.getDefaults(logger.ctx, event, DebugSev)
-	merged := logger.fields.Merge(fields...).ToSnakeCase()
+	merged := logger.fields.Merge(fields...)
 	logger.writer.debug(event, meta, merged)
 }
 
@@ -52,7 +51,7 @@ func (logger Logger) Debug(event string, fields ...Fields) {
 func (logger Logger) Info(event string, fields ...Fields) {
 	event = helper.ToSnakeCase(event)
 	meta := logger.defValues.getDefaults(logger.ctx, event, InfoSev)
-	merged := logger.fields.Merge(fields...).ToSnakeCase()
+	merged := logger.fields.Merge(fields...)
 	logger.writer.info(event, meta, merged)
 }
 
@@ -62,7 +61,7 @@ func (logger Logger) Info(event string, fields ...Fields) {
 func (logger Logger) Warn(event string, fields ...Fields) {
 	event = helper.ToSnakeCase(event)
 	meta := logger.defValues.getDefaults(logger.ctx, event, WarnSev)
-	merged := logger.fields.Merge(fields...).ToSnakeCase()
+	merged := logger.fields.Merge(fields...)
 	logger.writer.warn(event, meta, merged)
 }
 
@@ -70,11 +69,10 @@ func (logger Logger) Warn(event string, fields ...Fields) {
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger Logger) Error(err error, fields ...Fields) {
-	event := strings.TrimSpace(err.Error())
-	event = helper.ToSnakeCase(event)
+	event := helper.ToSnakeCase(err.Error())
 	meta := logger.defValues.getDefaults(logger.ctx, event, ErrorSev)
 	meta = logger.defValues.getErrorDefaults(err, meta)
-	merged := logger.fields.Merge(fields...).ToSnakeCase()
+	merged := logger.fields.Merge(fields...)
 	logger.writer.error(event, meta, merged)
 }
 
@@ -83,10 +81,9 @@ func (logger Logger) Error(err error, fields ...Fields) {
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use lower-case keys and values if possible.
 func (logger Logger) Fatal(err error, fields ...Fields) {
-	event := strings.TrimSpace(err.Error())
-	event = helper.ToSnakeCase(event)
+	event := helper.ToSnakeCase(err.Error())
 	meta := logger.defValues.getDefaults(logger.ctx, event, FatalSev)
 	meta = logger.defValues.getErrorDefaults(err, meta)
-	merged := logger.fields.Merge(fields...).ToSnakeCase()
+	merged := logger.fields.Merge(fields...)
 	logger.writer.fatal(event, meta, merged)
 }
