@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/cultureamp/glamplify/aws"
 	http2 "github.com/cultureamp/glamplify/http"
+	"github.com/cultureamp/glamplify/jwt"
 	"net/http"
 	"net/http/httptest"
 
@@ -14,6 +16,11 @@ import (
 )
 
 func main() {
+
+	// If you aren't passed a context, then you need to create a new one and then you should add
+	// all the mandatory values to it so logging can retrieve them automatically
+	// Example:
+	ctx := context.Background()
 
 	/* CONFIG */
 
@@ -28,12 +35,14 @@ func main() {
 		// to do
 	}
 
-	/* LOGGING */
+	/* PARAMETER STORE / JWT */
+	ps := aws.NewParameterStore(ctx, "default")
+	pubKey, err := ps.Get("common/AUTH_PUBLIC_KEY")
 
-	// If you aren't passed a context, then you need to create a new one and then you should add
-	// all the mandatory values to it so logging can retrieve them automatically
-	// Example:
-	ctx := context.Background()
+	jwt := jwt.NewJWTFromBytes(ctx, []byte(pubKey))
+	payload, err := jwt.Decode("")
+
+	/* LOGGING */
 
 	// AWS X-ray trace_id normally passed via http headers or by another method
 	// if you need to create a new one because you are the "start" of a tree then DON'T PASS/SET ANYTHING
@@ -42,12 +51,12 @@ func main() {
 	ctx = log.AddTraceId(ctx, traceId)
 
 	// If this service deals with a particularly customer, then set that on the context as well
-	customer := "FNSNDCJDF343"
-	ctx = log.AddCustomer(ctx, customer)
+	//customer := "FNSNDCJDF343"
+	ctx = log.AddCustomer(ctx, payload.Customer)
 
 	// And finally if this service deals with a particular user, then set that on the context as well
-	user := "JFOSNDJF97S"
-	ctx = log.AddUser(ctx, user)
+	//user := "JFOSNDJF97S"
+	ctx = log.AddUser(ctx, payload.EffectiveUser)
 
 	// Example below shows usage with the package level logger (sensible default)
 	logger := log.New(ctx)
@@ -75,7 +84,7 @@ func main() {
 
 	// Emit Error (can add optional types if required)
 	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-	err := errors.New("failed to save record to db")
+	err = errors.New("failed to save record to db")
 	logger.Error(err)
 
 	// Emit Fatal (can add optional types if required) and PANIC!
