@@ -39,12 +39,12 @@ func main() {
 	ps := aws.NewParameterStore(ctx, "default")
 	pubKey, err := ps.Get("common/AUTH_PUBLIC_KEY")
 
-	jwt := jwt.NewJWTFromBytes(ctx, []byte(pubKey))
+	jwt := jwt.NewJWTDecoderFromBytes(ctx, []byte(pubKey))
 	payload, err := jwt.Decode("")
 
 	/* LOGGING */
 
-	// AWS X-ray trace_id normally passed via http headers or by another method
+	// AWS X-ray trace_id normally passed via http headers (_X_AMZN_TRACE_ID) or by another method
 	// if you need to create a new one because you are the "start" of a tree then DON'T PASS/SET ANYTHING
 	// and the logging system will create it automatically for you
 	traceId :=  "1-58406520-a006649127e371903a2de979" // otherwise get it from header, etc
