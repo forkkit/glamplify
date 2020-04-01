@@ -86,7 +86,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -141,7 +141,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -221,7 +221,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -276,7 +276,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -328,7 +328,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 			assertContainsInt(t, msg, "int", 123)
 			assertContainsFloat(t, msg, "float", 42.48)
 			assertContainsString(t, msg, "string2", "hello world")
-			assertContainsString(t, msg, "string3 space", "world")
+			assertContainsString(t, msg, "string3_space", "world")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
 			assertContainsString(t, msg, "customer", "unilever")
 			assertContainsString(t, msg, "user", "user-123")
@@ -511,25 +511,25 @@ func TestScope(t *testing.T) {
 	logger.Debug("detail_event")
 	msg := memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "detail_event")
-	assertScopeContainsInt(t, msg, "requestID", 123)
+	assertScopeContainsInt(t, msg, "request_id", 123)
 
 	memBuffer.Reset()
 	logger.Info("info_event")
 	msg = memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "info_event")
-	assertScopeContainsInt(t, msg, "requestID", 123)
+	assertScopeContainsInt(t, msg, "request_id", 123)
 
 	memBuffer.Reset()
 	logger.Warn("warn_event")
 	msg = memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "warn_event")
-	assertScopeContainsInt(t, msg, "requestID", 123)
+	assertScopeContainsInt(t, msg, "request_id", 123)
 
 	memBuffer.Reset()
 	logger.Error(errors.New("error"))
 	msg = memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "error")
-	assertScopeContainsInt(t, msg, "requestID", 123)
+	assertScopeContainsInt(t, msg, "request_id", 123)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -556,7 +556,7 @@ func TestScope_Overwrite(t *testing.T) {
 	})
 	msg := memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "detail_event")
-	assertScopeContainsInt(t, msg, "requestID", 456)
+	assertScopeContainsInt(t, msg, "request_id", 456)
 
 	memBuffer.Reset()
 	logger.Info("info_event", Fields {
@@ -564,7 +564,7 @@ func TestScope_Overwrite(t *testing.T) {
 	})
 	msg = memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "info_event")
-	assertScopeContainsInt(t, msg, "requestID", 456)
+	assertScopeContainsInt(t, msg, "request_id", 456)
 
 	memBuffer.Reset()
 	logger.Warn("warn_event", Fields {
@@ -572,7 +572,7 @@ func TestScope_Overwrite(t *testing.T) {
 	})
 	msg = memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "warn_event")
-	assertScopeContainsInt(t, msg, "requestID", 456)
+	assertScopeContainsInt(t, msg, "request_id", 456)
 
 	memBuffer.Reset()
 	logger.Error(errors.New("error"), Fields {
@@ -580,20 +580,20 @@ func TestScope_Overwrite(t *testing.T) {
 	})
 	msg = memBuffer.String()
 	assertScopeContainsString(t, msg, "event", "error")
-	assertScopeContainsInt(t, msg, "requestID", 456)
+	assertScopeContainsInt(t, msg, "request_id", 456)
 
 	defer func() {
 		if r := recover(); r != nil {
 			msg := memBuffer.String()
 			assertScopeContainsString(t, msg, "event", "fatal")
 			assertScopeContainsString(t, msg, "severity", "FATAL")
-			assertScopeContainsInt(t, msg, "requestID", 456)
+			assertScopeContainsInt(t, msg, "request_id", 456)
 		}
 	}()
 
 	// will call panic!
 	logger.Fatal(errors.New("fatal"), Fields {
-		"requestID": 456,
+		"request_id": 456,
 	})
 }
 

@@ -9,7 +9,8 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestApplication_Lambda_Success(t *testing.T) {
+// Change "T_est" to "Test" when you want to run lambda locally
+func T_estApplication_Lambda_Success(t *testing.T) {
 
 	response, err := golambdainvoke.Run(golambdainvoke.Input{
 		Port:    8001,

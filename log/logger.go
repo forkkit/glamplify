@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Logger allows you to set types that can be re-used for subsequent log event. Useful for setting username, requestid etc for a Http Web Request.
+// Logger
 type Logger struct {
 	ctx       context.Context
 	writer    *FieldWriter
@@ -55,7 +55,7 @@ func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (*Lo
 	return New(ctx, fields...), nil
 }
 
-// New lets you add types to a scoped writer. Useful for Http Web Request where you want to track user, requestid, etc.
+// New creates a *Logger with optional fields. Useful for when you want to add a field to all subsequent logging calls eg. request_id, etc.
 func New(ctx context.Context, fields ...Fields) *Logger {
 	return newLogger(ctx, internal, fields...)
 }
