@@ -2,7 +2,11 @@ package log
 
 import (
 	"context"
+	"github.com/cultureamp/glamplify/aws"
 	"github.com/cultureamp/glamplify/helper"
+	"github.com/cultureamp/glamplify/jwt"
+	"net/http"
+	"strings"
 )
 
 // Logger allows you to set types that can be re-used for subsequent log event. Useful for setting username, requestid etc for a Http Web Request.
@@ -16,6 +20,40 @@ type Logger struct {
 var (
 	internal = newWriter(func(conf *config) {})
 )
+
+// NewFromRequest creates a new logger and does all the good things
+// like setting the current user, customer, etc from decoding the JWT on the request (if present)
+// The error returned indicates a problem with decoding the JWT, but a new *Logger is always returned regardless of error
+func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (*Logger, error) {
+
+	token := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
+	if len(token) > 0 {
+
+		splitToken := strings.Split(token, "Bearer")
+		token = splitToken[1]
+
+		ps := aws.NewParameterStore("default")
+		pubKey, err := ps.Get("common/AUTH_PUBLIC_KEY")
+		if err != nil {
+			return  New(ctx, fields...), err
+		}
+
+		jwt, err := jwt.NewJWTDecoderFromBytes([]byte(pubKey))
+		if err != nil {
+			return New(ctx, fields...), err
+		}
+
+		payload, err := jwt.Decode(token)
+		if err != nil {
+			return  New(ctx, fields...), err
+		}
+
+		ctx = AddCustomer(ctx, payload.Customer)
+		ctx = AddUser(ctx, payload.EffectiveUser)
+	}
+
+	return New(ctx, fields...), nil
+}
 
 // New lets you add types to a scoped writer. Useful for Http Web Request where you want to track user, requestid, etc.
 func New(ctx context.Context, fields ...Fields) *Logger {

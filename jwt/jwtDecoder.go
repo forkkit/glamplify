@@ -1,46 +1,29 @@
 package jwt
 
 import (
-	"context"
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"github.com/cultureamp/glamplify/log"
 	jwtgo "github.com/dgrijalva/jwt-go"
 	"io/ioutil"
 )
 
 type JwtDecoder struct {
 	verifyKey *rsa.PublicKey
-	logger    *log.Logger
 }
 
-func NewJWTDecoderFromPath(ctx context.Context, pubKeyPath string) JwtDecoder {
+func NewJWTDecoderFromPath(pubKeyPath string) (JwtDecoder, error) {
 
-	logger := log.New(ctx)
-
-	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
-	if err != nil {
-		logger.Error(err, log.Fields{
-			"public_key_path": pubKeyPath,
-		})
-	}
-
-	return NewJWTDecoderFromBytes(ctx, verifyBytes)
+	verifyBytes, _ := ioutil.ReadFile(pubKeyPath)
+	return NewJWTDecoderFromBytes(verifyBytes)
 }
 
-func NewJWTDecoderFromBytes(ctx context.Context, verifyBytes []byte) JwtDecoder {
-	logger := log.New(ctx)
+func NewJWTDecoderFromBytes(verifyBytes []byte) (JwtDecoder, error) {
 
 	verifyKey, err := jwtgo.ParseRSAPublicKeyFromPEM(verifyBytes)
-	if err != nil {
-		logger.Error(err)
-	}
-
 	return JwtDecoder{
 		verifyKey: verifyKey,
-		logger:    logger,
-	}
+	}, err
 }
 
 func (jwt JwtDecoder) Decode(tokenString string) (Payload, error) {

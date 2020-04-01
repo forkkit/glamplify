@@ -3,24 +3,16 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/aws"
-	http2 "github.com/cultureamp/glamplify/http"
-	"github.com/cultureamp/glamplify/jwt"
-	"net/http"
-	"net/http/httptest"
-
 	"github.com/cultureamp/glamplify/config"
+	http2 "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"github.com/cultureamp/glamplify/notify"
+	"net/http"
+	"net/http/httptest"
 )
 
 func main() {
-
-	// If you aren't passed a context, then you need to create a new one and then you should add
-	// all the mandatory values to it so logging can retrieve them automatically
-	// Example:
-	ctx := context.Background()
 
 	/* CONFIG */
 
@@ -35,36 +27,67 @@ func main() {
 		// to do
 	}
 
-	/* PARAMETER STORE / JWT */
-	ps := aws.NewParameterStore(ctx, "default")
-	pubKey, err := ps.Get("common/AUTH_PUBLIC_KEY")
-
-	jwt := jwt.NewJWTDecoderFromBytes(ctx, []byte(pubKey))
-	payload, err := jwt.Decode("")
-
 	/* LOGGING */
-
-	// AWS X-ray trace_id normally passed via http headers (_X_AMZN_TRACE_ID) or by another method
-	// if you need to create a new one because you are the "start" of a tree then DON'T PASS/SET ANYTHING
-	// and the logging system will create it automatically for you
-	traceId :=  "1-58406520-a006649127e371903a2de979" // otherwise get it from header, etc
-	ctx = log.AddTraceId(ctx, traceId)
-
-	// If this service deals with a particularly customer, then set that on the context as well
-	//customer := "FNSNDCJDF343"
-	ctx = log.AddCustomer(ctx, payload.Customer)
-
-	// And finally if this service deals with a particular user, then set that on the context as well
-	//user := "JFOSNDJF97S"
-	ctx = log.AddUser(ctx, payload.EffectiveUser)
-
-	// Example below shows usage with the package level logger (sensible default)
+	// Creating loggers is cheap. Create them on every request/run
+	// DO NOT CACHE/REUSE THEM
+	ctx := context.Background()
 	logger := log.New(ctx)
 
-	// If you want to set some types for a particular scope (eg. for a Web Request
-	// have a requestID for every log message for that logger) then you can use pass
-	// log.Fields{} when creating the logger
-	logger = log.New(ctx, log.Fields{"requestID": 123})
+	// of if you want a field to be present on each subsequent logging call do this:
+	logger = log.New(ctx, log.Fields{"request_id": 123})
+
+	/* Monitor & Notify */
+	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
+		conf.Enabled = true
+		conf.Logging = true
+		conf.ServerlessMode = false
+		conf.Labels = monitor.Labels{
+			"asset":          log.Unknown,
+			"classification": "restricted",
+			"workload":       "development",
+			"camp":           "amplify",
+		}
+	})
+	if appErr != nil {
+		logger.Fatal(appErr)
+	}
+
+	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func (conf *notify.Config) {
+		conf.Enabled = true
+		conf.Logging = true
+		conf.AppVersion = "1.0.0"
+	})
+	if notifyErr != nil {
+		logger.Fatal(notifyErr)
+	}
+
+	pattern, handler := http2.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)
+	h := http.HandlerFunc(handler)
+
+	rr := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", pattern, nil)
+	h.ServeHTTP(rr, req)
+
+	app.Shutdown()
+}
+
+func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+
+	// Do things
+	ctx := r.Context()
+
+	/* REQUEST LOGGING */
+
+	// This helper does all the good things:
+	// Decoded JWT (if present) and set User/Customer on the context
+	// Can optionally pass in log.Fields{} if you have values you want to
+	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
+	logger, err := log.NewFromRequest(ctx, r)
+	if err != nil {
+		// Error here usually means missing public key or corrupted JWT or such like
+		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
+		logger.Error(err)
+	}
 
 	// Emit debug trace
 	// All messages must be static strings (as per Culture Amp Sensibile Default)
@@ -72,7 +95,7 @@ func main() {
 
 	// Emit debug trace with types
 	// Fields can contain any type of variables
-	logger.Debug("Something happened", log.Fields{
+	logger.Debug("Something else happened", log.Fields{
 		"aString": "hello",
 		"aInt":    123,
 		"aFloat":  42.48,
@@ -92,46 +115,7 @@ func main() {
 	//err = errors.New("program died")
 	//logger.Fatal(err)
 
-	/* Monitor & Notify */
-
-	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
-		conf.Enabled = true
-		conf.Logging = true
-		conf.ServerlessMode = false
-		conf.Labels = monitor.Labels{
-			"asset":          log.Unknown,
-			"classification": "restricted",
-			"workload":       "development",
-			"camp":           "amplify",
-		}
-	})
-	if appErr != nil {
-		logger.Error(appErr)
-	}
-
-	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func (conf *notify.Config) {
-		conf.Enabled = true
-		conf.Logging = true
-		conf.AppVersion = "1.0.0"
-	})
-	if notifyErr != nil {
-		logger.Error(notifyErr)
-	}
-
-	pattern, handler := http2.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)
-	h := http.HandlerFunc(handler)
-
-	rr := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", pattern, nil)
-	h.ServeHTTP(rr, req)
-
-	app.Shutdown()
-}
-
-func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
-
-	// Do things
-
+	/* NEW RELIC TRANSACTION */
 	txn, err := monitor.TxnFromRequest(w, r)
 	if err == nil {
 		txn.AddAttributes(log.Fields{
@@ -142,6 +126,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do more things
 
+	/* NEW RELIC Add Attributes */
 	if err == nil {
 		txn.AddAttributes(log.Fields{
 			"aString2": "goodbye",
