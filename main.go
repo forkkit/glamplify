@@ -33,7 +33,7 @@ func main() {
 	ctx := context.Background()
 	logger := log.New(ctx)
 
-	// of if you want a field to be present on each subsequent logging call do this:
+	// or if you want a field to be present on each subsequent logging call do this:
 	logger = log.New(ctx, log.Fields{"request_id": 123})
 
 	/* Monitor & Notify */

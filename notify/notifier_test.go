@@ -64,10 +64,10 @@ func rootRequest(w http.ResponseWriter, r *http.Request) {
 	notifier, err := notify.NotifyFromContext(ctx)
 	assert.Assert(t, err == nil, err)
 
-	err = notifier.ErrorWithContext(errors.New("NPE"), ctx, log.Fields{
+	err = notifier.ErrorWithContext(ctx, errors.New("NPE"), log.Fields{
 		"user": "mike",
-		"pwd": "abc",     // should be filtered out in bugsnag
-		"age": 47,
+		"pwd":  "abc", // should be filtered out in bugsnag
+		"age":  47,
 	})
 	assert.Assert(t, err == nil, err)
 }

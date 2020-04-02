@@ -97,14 +97,14 @@ func (notify Notifier) Error(err error, fields log.Fields) error {
 	ctx := bugsnag.StartSession(context.Background())
 	defer bugsnag.AutoNotify(ctx)
 
-	return notify.ErrorWithContext(err, ctx, fields)
+	return notify.ErrorWithContext(ctx, err, fields)
 }
 
-func ErrorWithContext(err error, ctx context.Context, fields log.Fields) error {
-	return internal.ErrorWithContext(err, ctx, fields)
+func ErrorWithContext(ctx context.Context, err error, fields log.Fields) error {
+	return internal.ErrorWithContext(ctx, err, fields)
 }
 
-func (notify Notifier) ErrorWithContext(err error, ctx context.Context, fields log.Fields) error {
+func (notify Notifier) ErrorWithContext(ctx context.Context, err error, fields log.Fields) error {
 	if !notify.conf.Enabled { return nil}
 
 	meta := fieldsAsMetaData(fields)

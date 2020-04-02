@@ -34,5 +34,5 @@ func HandleErrorWithContext(ctx context.Context, err error, fields log.Fields) {
 	}
 
 	// call bugsnag
-	notify.ErrorWithContext(err, ctx, fields)
+	notify.ErrorWithContext(ctx, err, fields)
 }

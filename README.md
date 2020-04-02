@@ -55,35 +55,32 @@ import (
 
 func main() {
 
-	// If you aren't passed a context, then you need to create a new one and then you should add
-    // all the mandatory values to it so logging can retrieve them automatically
-    // Example:
-    ctx := context.Background()
-   
-    // AWS X-ray trace_id normally passed via http headers or by another method
-    // if you need to create a new one because you are the "start" of a tree then DON'T PASS/SET ANYTHING
-    // and the logging system will create it automatically for you  
-    traceId :=  "1-58406520-a006649127e371903a2de979" // otherwise get it from header, etc
-    ctx = log.AddTraceId(ctx, traceId)  
+	// Creating loggers is cheap. Create them on every request/run
+	// DO NOT CACHE/REUSE THEM
+	ctx := context.Background()
+	logger := log.New(ctx)
 
-    // If this service deals with a particularly customer, then set that on the context as well
-    customer := "FNSNDCJDF343"
-    ctx = log.AddCustomer(ctx, customer)
+	// or if you want a field to be present on each subsequent logging call do this:
+	logger = log.New(ctx, log.Fields{"request_id": 123})
 
-    // And finally if this service deals with a particular user, then set that on the context as well
-    user := "JFOSNDJF97S"
-    ctx = log.AddUser(ctx, user)
+}
 
-    // To conform to the logging sensible default you have to create a logger from a ctx.
-    // DO NOT CACHE or REUSE loggers across requests! Instead create a new logger EVERY request/run.
-    // Loggers are cheap to create and we do NOT old/stale values from a previous ctx. 
-    logger := log.New(ctx)
-    // if you have other fields that you want to be written for all future calls for this scope you can
-    // pass in fields here as well
-    logger = log.New(ctx, log.Fields{
-        "interesting_id": 123,
-        "request_id" : "456",    
-    })
+func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	/* REQUEST LOGGING */
+
+	// This helper does all the good things:
+	// Decoded JWT (if present) and set User/Customer on the context
+	// Can optionally pass in log.Fields{} if you have values you want to
+	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
+	logger, err := log.NewFromRequest(ctx, r)
+	if err != nil {
+		// Error here usually means missing public key or corrupted JWT or such like
+		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
+		logger.Error(err)
+	}
 
     // Once you have a logger then you can call logger.Debug/Info/Warn/Error/Fatal
     // NOTE: unlike normal logging, the string you pass in SHOULD BE AN EVENT NAME (past tense)
@@ -93,7 +90,7 @@ func main() {
     
     // if you want to pass a detailed message then use
     logger.Debug("something_happed_event", log.Fields {
-        constants.MessageLogField: "something that I was expecting actually did happen!",
+        log.Message: "something that I was expecting actually did happen!",
     })
 
     // Fields can contain any type of variables, but here are some helpful predefined ones
@@ -108,9 +105,9 @@ func main() {
  
     d := time.Millisecond * 123
     logger.Debug("something_happened", log.Fields{
-        constants.MessageLogField: "the thing did what we expected it to do",
-        constants.TimeTakenLogField : log.DurationAsISO8601(d), // returns "P0.123S" as per sensible default 
-        constants.UserLogField: "MMLKSN443FN",
+        log.Message: "the thing did what we expected it to do",
+        log.TimeTaken : log.DurationAsISO8601(d), // returns "P0.123S" as per sensible default 
+        log.User: "MMLKSN443FN",
         "report":  "NVJKSJFJ34NBFN44",
         "aInt":    123,
         "aFloat":  42.48,
@@ -125,9 +122,9 @@ func main() {
     logger.Info("something_happened_event", log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
-        constants.UserLogField:  "admin",
-        constants.MessageLogField: "the thing did what we expected it to do",
-        constants.TimeTakenLogField: log.DurationAsISO8601(d), // returns "P0.456S" 
+        log.User:  "admin",
+        log.Message: "the thing did what we expected it to do",
+        log.TimeTaken: log.DurationAsISO8601(d), // returns "P0.456S" 
     })
 
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
@@ -139,13 +136,15 @@ func main() {
     logger.Error(err, log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
-        constants.UserLogField:  "admin",
-        constants.MessageLogField: "the thing did not do what we expected it to do",
+        log.User:  "admin",
+        log.Message: "the thing did not do what we expected it to do",
      })
 
 }
 
 ```
+Use `log.New()` for logging without a http request. Use `log.NewFromRequest()` when you do have a http request. This initializes a bunch of stuff for you (eg. JWT details are automatically logged for you). NewFromRequest always returns a valid Logger and an optional error (which usually describes problems decoding the JWT etc)
+
 Use `logger.Debug` for logging that will only be used when diving deep to uncover bugs. Typically `scope.Debug` messages will not automatically be sent to other 3rd party systems (eg. Splunk).
 
 Use `logger.Print` for standard log messages that you want to see always. These will never be turned off and will likely be always sent to 3rd party systems for further analysis (eg. Spliunk).
@@ -191,7 +190,11 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
-    logger := log.New(r.Context())
+    ctx := r.Context()
+    logger, err := log.NewFromRequest(ctx, r)
+    if err != nil {
+        logger.Error(err)
+    }
 
     // Do things
 
@@ -247,7 +250,11 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
-    logger := log.New(r.Context())
+     ctx := r.Context()
+     logger, err := log.NewFromRequest(ctx, r)
+     if err != nil {
+         logger.Error(err)
+     }
 
     // Do things
     app, err := monitor.AppFromRequest(w, r)
@@ -387,19 +394,22 @@ func main() {
 }
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
-   logger := log.New(r.Context())
-
-    // Do things
-
-    // pretend we got an error
-    err := errors.New("NPE") // 
+    ctx := r.Context()
+    logger, err := log.NewFromRequest(ctx, r)
+    if err != nil {
+       logger.Error(err)
+    }
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
         logger.Error(err)
     }
 
-    notifier.ErrorWithContext(err, r.Context(), log.Fields {
+    // Do things
+
+    // pretend we got an error
+    err = errors.New("NPE")  
+    notifier.ErrorWithContext(ctx, err, log.Fields {
         "key": "value",
     })
 
