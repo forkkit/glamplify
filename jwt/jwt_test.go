@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"fmt"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -22,6 +23,10 @@ func Test_JWT_Encode(t *testing.T) {
 
 	header := splitToken[0]
 	assert.Assert(t, header == "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9", header)
+
+	fmt.Print(token)
+
+	// Note: Hard to test payload/signature because there is a elapsed time field that always changes...
 }
 
 func Test_JWT_Decode(t *testing.T) {
@@ -29,7 +34,7 @@ func Test_JWT_Decode(t *testing.T) {
 	jwt, err := NewJWTDecoderFromPath("jwt.rs256.key.development.pub")
 	assert.Assert(t, err == nil, err)
 
-	payload, err := jwt.Decode("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0In0.oDXzd1tq5XRpENEcw7GxAglOpRWmL5ld7XYPeNlrF-IfWYYRy86rta9yG9ug5wS1GV7Lvv8EbufXk0DKTnd23oObWoJtXLUaHh2TG9sw9bsxNwLKu1eWw7MQtUYByN2QFpRGeMQo_yw5Y6bT76janQ1NZknopHHvttcLBFuSMdThMX-4gOlaCuVsr8MQ218WUC-rVrSAol57at_2gf8PkEik3bcOd4bvUpf-ThumkljyzSrxVBY57H1kYbYAST4CwcCrf2F3oTLa_xNbFycngVCvJLZtSQR5GxwpO_ERqFziEaQ07bW6Svcs0EvARjCB-4vYdKTFaw3J5qu2aWVHf9m3a4QPA5O91ODYFYq_7k6upmxQl074_MQ-ZsnDRt0cUyPJjObMjU99MuMLQNnAMU67iNYkOxocR1OCNzLL1ObpeoYVq8sZWQPVhrPFDnC-V5uIsoSl9NofwcApLfUV2WjcMHxPfJYqPo-BNq3P_p1G1WSJ7iLP1BMXAU_ZaK49YaWb3fwu4NzRSCjsulWjMiE1yQL_bQrj4crygAyCgG7hpgq9OdiVl7YElrOL-oY1_3XCvnVcZkCd5dQjSbTXx-cW8Xc_zeY1QGxiKaeI3Yg24XLSVSFMNX4XNXwtNlK-LSrWQU8S0bVZBRDNo0jM9hx7INjYc4tamu2sGcH-71Q")
+	payload, err := jwt.Decode("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0IiwiZXhwIjoxNTg1NzkzMDk1LCJpYXQiOjE1ODU3OTI0OTV9.AURdMTjJQwx4cUeuH_MiiBvIxQjUCAogWFELbTcOyi2oY5mGY3TY9kGjyxYHy2GS-2AQD7Kh7FHEaoWAsqn0c7YLsZWu2bYBbvlCs6Rxi_RX9SJ-RM8WbsW87dJYtQxrbZHDtZXAJXjjuUbBkVEaKH3hYtePSBDINpFPBrpFIBc8q0VBfaGf01r0A32bvd9ztOAQKA5nE6ZsgehKL8oPVc76z0-CykrRjjI4YFVuMiooXqMkCYjKe_5IN8fVVSS5GuOrVeyfqDZlDAVs9oOYKx9lXzqI0Vgvnu5Yd1loctoLtfZAcXHJA1wit033UCrlGjGqAW6E9lUY87Y65Ip4lLatEV2OW8E0_sGciovyFsd3bD06XbltQo4AxaKNcKfv4pE5-wffx7D5Pg4hPEptyicIr8Q37x4yORV7IyGGuuo7TSbxLjZx8SYAeCKsBArw0DTocB86NiuIJ3bKaJK3lFqu1OpQW_UXmyIRwvf0PGkN6PFtHmu2--dedtdaW-0vSKt69ie93Vv5JpFCy26WEvy4P2LaxMS-m8WBRa5L9RIpDY4UTRpFwoV0q5z7ae3Cx4zdkFkQDD4EIzMKdLM6m-6WjI5N8_7hxgvLc4u1rU0uWWxMN6bhpsv2As1I2S94IKjqL70q2SnjJnQhB5x65N7VJWKU0gFOR847yjYO4k0")
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, payload.Customer == "abc123", payload.Customer)
 	assert.Assert(t, payload.RealUser == "xyz234", payload.RealUser)

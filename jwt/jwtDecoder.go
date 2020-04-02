@@ -34,8 +34,8 @@ func NewJWTDecoderFromBytes(verifyBytes []byte) (Decoder, error) {
 }
 
 func (jwt Decoder) Decode(tokenString string) (Payload, error) {
-	// sample token string taken from the New example
-	//tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIiLCJuYmYiOjE0NDQ0Nzg0MDB9.u1riaD1rW97opCoAuRCTy4w58Br-Zk-bh7vLiRIsrpU"
+	// sample token string in the form "header.payload.signature"
+	//eg. "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIiLCJuYmYiOjE0NDQ0Nzg0MDB9.u1riaD1rW97opCoAuRCTy4w58Br-Zk-bh7vLiRIsrpU"
 
 	token, err := jwtgo.Parse(tokenString, func(token *jwtgo.Token) (interface{}, error) {
 		return jwt.verifyKey, nil
