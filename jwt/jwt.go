@@ -5,3 +5,4 @@ type Payload struct {
 	RealUser      string // uuid
 	EffectiveUser string // uid
 }
+

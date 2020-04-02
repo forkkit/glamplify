@@ -6,27 +6,34 @@ import (
 	"fmt"
 	jwtgo "github.com/dgrijalva/jwt-go"
 	"io/ioutil"
+	"os"
 )
 
-type JwtDecoder struct {
+type Decoder struct {
 	verifyKey *rsa.PublicKey
 }
 
-func NewJWTDecoderFromPath(pubKeyPath string) (JwtDecoder, error) {
+func NewJWTDecoder() (Decoder, error) {
+
+	pubKey := os.Getenv("AUTH_PUBLIC_KEY")
+	return NewJWTDecoderFromBytes([]byte(pubKey))
+}
+
+func NewJWTDecoderFromPath(pubKeyPath string) (Decoder, error) {
 
 	verifyBytes, _ := ioutil.ReadFile(pubKeyPath)
 	return NewJWTDecoderFromBytes(verifyBytes)
 }
 
-func NewJWTDecoderFromBytes(verifyBytes []byte) (JwtDecoder, error) {
+func NewJWTDecoderFromBytes(verifyBytes []byte) (Decoder, error) {
 
 	verifyKey, err := jwtgo.ParseRSAPublicKeyFromPEM(verifyBytes)
-	return JwtDecoder{
+	return Decoder{
 		verifyKey: verifyKey,
 	}, err
 }
 
-func (jwt JwtDecoder) Decode(tokenString string) (Payload, error) {
+func (jwt Decoder) Decode(tokenString string) (Payload, error) {
 	// sample token string taken from the New example
 	//tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIiLCJuYmYiOjE0NDQ0Nzg0MDB9.u1riaD1rW97opCoAuRCTy4w58Br-Zk-bh7vLiRIsrpU"
 
@@ -58,7 +65,7 @@ func (jwt JwtDecoder) Decode(tokenString string) (Payload, error) {
 	return data, errors.New("invalid claim token in jwt")
 }
 
-func (jwt JwtDecoder) extractKey(claims jwtgo.MapClaims, key string) (string, error) {
+func (jwt Decoder) extractKey(claims jwtgo.MapClaims, key string) (string, error) {
 
 	val, ok := claims[key].(string)
 	if !ok {

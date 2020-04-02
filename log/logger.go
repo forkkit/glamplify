@@ -2,7 +2,6 @@ package log
 
 import (
 	"context"
-	"github.com/cultureamp/glamplify/aws"
 	"github.com/cultureamp/glamplify/helper"
 	"github.com/cultureamp/glamplify/jwt"
 	"net/http"
@@ -32,13 +31,7 @@ func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (*Lo
 		splitToken := strings.Split(token, "Bearer")
 		token = splitToken[1]
 
-		ps := aws.NewParameterStore("default")
-		pubKey, err := ps.Get("common/AUTH_PUBLIC_KEY")
-		if err != nil {
-			return  New(ctx, fields...), err
-		}
-
-		jwt, err := jwt.NewJWTDecoderFromBytes([]byte(pubKey))
+		jwt, err := jwt.NewJWTDecoder()
 		if err != nil {
 			return New(ctx, fields...), err
 		}

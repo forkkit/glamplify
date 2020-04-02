@@ -17,6 +17,7 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/newrelic/go-agent v2.14.1+incompatible
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/viper v1.4.0
 	gotest.tools v2.2.0+incompatible
 )

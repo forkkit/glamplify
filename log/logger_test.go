@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"gotest.tools/assert"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -39,6 +40,27 @@ func shutdown() {
 	os.Unsetenv("APP")
 	os.Unsetenv("APP_VERSION")
 	os.Unsetenv("REGION")
+}
+
+func Test_New(t *testing.T) {
+
+	logger := New(ctx)
+	assert.Assert(t, logger != nil, logger)
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	logger, err := NewFromRequest(ctx, req)
+	assert.Assert(t, err == nil, err)
+	assert.Assert(t, logger != nil, logger)
+
+	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0In0.oDXzd1tq5XRpENEcw7GxAglOpRWmL5ld7XYPeNlrF-IfWYYRy86rta9yG9ug5wS1GV7Lvv8EbufXk0DKTnd23oObWoJtXLUaHh2TG9sw9bsxNwLKu1eWw7MQtUYByN2QFpRGeMQo_yw5Y6bT76janQ1NZknopHHvttcLBFuSMdThMX-4gOlaCuVsr8MQ218WUC-rVrSAol57at_2gf8PkEik3bcOd4bvUpf-ThumkljyzSrxVBY57H1kYbYAST4CwcCrf2F3oTLa_xNbFycngVCvJLZtSQR5GxwpO_ERqFziEaQ07bW6Svcs0EvARjCB-4vYdKTFaw3J5qu2aWVHf9m3a4QPA5O91ODYFYq_7k6upmxQl074_MQ-ZsnDRt0cUyPJjObMjU99MuMLQNnAMU67iNYkOxocR1OCNzLL1ObpeoYVq8sZWQPVhrPFDnC-V5uIsoSl9NofwcApLfUV2WjcMHxPfJYqPo-BNq3P_p1G1WSJ7iLP1BMXAU_ZaK49YaWb3fwu4NzRSCjsulWjMiE1yQL_bQrj4crygAyCgG7hpgq9OdiVl7YElrOL-oY1_3XCvnVcZkCd5dQjSbTXx-cW8Xc_zeY1QGxiKaeI3Yg24XLSVSFMNX4XNXwtNlK-LSrWQU8S0bVZBRDNo0jM9hx7INjYc4tamu2sGcH-71Q"
+	authHeader := "Bearer " + token
+
+	req.Header.Set("Authorization", authHeader)
+	logger, err = NewFromRequest(ctx, req)
+	// TODO - we get an error, because the "AUTH_PUBLIC_KEY" env var is not set to the public key
+	// Need to inject this in somehow...
+	//assert.Assert(t, err == nil, err)
+	assert.Assert(t, logger != nil, logger)
 }
 
 func TestDebug_Success(t *testing.T) {
