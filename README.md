@@ -55,18 +55,18 @@ import (
 
 func main() {
 
-	// Creating loggers is cheap. Create them on every request/run
-	// DO NOT CACHE/REUSE THEM
-	ctx := context.Background()
-
+    // Creating loggers is cheap. Create them on every request/run
+    // DO NOT CACHE/REUSE THEM
+    ctx := context.Background()
+    
     // This does all the good things - eg. reads the aws xray Trace_ID, or creates a new trace if missing
-	logger := log.New(ctx)
-
-	// or if you want a field to be present on each subsequent logging call do this:
-	logger = log.New(ctx, log.Fields{"request_id": 123})
-
+    logger := log.New(ctx)
+    
+    // or if you want a field to be present on each subsequent logging call do this:
+    logger = log.New(ctx, log.Fields{"request_id": 123})
+    
     h := http.HandlerFunc(requestHandler)
-
+    
     if err := http.ListenAndServe(":8080", h); err != nil {
         logger.Error(err)
     }
@@ -74,25 +74,25 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
-	ctx := r.Context()
-
-	/* REQUEST LOGGING */
-
-	// This helper does all the good things:
-	// Decoded JWT (if present) and set User/Customer on the context
+    ctx := r.Context()
+    
+    /* REQUEST LOGGING */
+    
+    // This helper does all the good things:
+    // Decoded JWT (if present) and set User/Customer on the context
     // Reads the aws xray Trace_ID or creates a new one if missing
-	// Can optionally pass in log.Fields{} if you have values you want to
-	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewFromRequest(ctx, r, log.Fields{"request_id": 123})
-	logger, err := log.NewFromRequest(ctx, r)
-	if err != nil {
-		// Error here usually means missing public key or corrupted JWT or such like
-		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
-		logger.Error(err)
-	}
-
+    // Can optionally pass in log.Fields{} if you have values you want to
+    // scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewFromRequest(ctx, r, log.Fields{"request_id": 123})
+    logger, err := log.NewFromRequest(ctx, r)
+    if err != nil {
+        // Error here usually means missing public key or corrupted JWT or such like
+        // But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
+        logger.Error(err)
+    }
+    
     // Once you have a logger then you can call logger.Debug/Info/Warn/Error/Fatal
     // NOTE: unlike normal logging, the string you pass in SHOULD BE AN EVENT NAME (past tense)
-
+    
     // Example
     logger.Debug("something_happened_event")
     
@@ -100,7 +100,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     logger.Debug("something_happed_event", log.Fields {
         log.Message: "something that I was expecting actually did happen!",
     })
-
+    
     // Fields can contain any type of variables, but here are some helpful predefined ones
     // (see constants.go for full list)
     // MessageLogField             = "message"
@@ -110,7 +110,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // ItemsProcessedLogField      = "items_processed"
     // TotalItemsProcessedLogField = "total_items_processed"
     // TotalItemsRequestedLogField = "total_items_requested"
- 
+    
     d := time.Millisecond * 123
     logger.Debug("something_happened", log.Fields{
         log.Message: "the thing did what we expected it to do",
@@ -121,10 +121,10 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
         "aFloat":  42.48,
         "aString": "more info",
      })
-
+    
     // Typically Info will be sent onto 3rd party aggregation tools (eg. Splunk)
     logger.Info("something_happened_event")
-
+    
     // Fields can contain any type of variables
     d = time.Millisecond * 456
     logger.Info("something_happened_event", log.Fields{
@@ -134,11 +134,11 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
         log.Message: "the thing did what we expected it to do",
         log.TimeTaken: log.DurationAsISO8601(d), // returns "P0.456S" 
     })
-
+    
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
     err = errors.New("missing database connection string")
     logger.Error(err)
-
+    
     // Fields can contain any type of variables
     err = errors.New("missing database connection string")
     logger.Error(err, log.Fields{
@@ -147,7 +147,6 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
         log.User:  "admin",
         log.Message: "the thing did not do what we expected it to do",
      })
-
 }
 
 ```
@@ -185,26 +184,27 @@ func main() {
         conf.Logging = true             // default = "false"
         conf.ServerlessMode = false     // default = "false"
      })
-
+    
     _, handler := app.WrapHTTPHandler("/", requestHandler)
     h := http.HandlerFunc(handler)
-
+    
     if err = http.ListenAndServe(":8080", h); err != nil {
         panic(err)
     }
-
+    
     app.Shutdown()
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+
     ctx := r.Context()
     logger, err := log.NewFromRequest(ctx, r)
     if err != nil {
         logger.Error(err)
     }
-
+    
     // Do things
-
+    
     txn, err := monitor.TxnFromRequest(w, r)
     if err != nil {
         logger.Error(err)
@@ -213,9 +213,9 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
             "aInt":    123,
         })
     }
-
+    
     // Do more things
-
+    
     if err != nil {
         logger.Error(err)
         txn.AddAttributes(log.Fields{
@@ -223,7 +223,6 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
             "aInt2":    456,
         })
     }
-
 }
 ```
 
@@ -240,14 +239,14 @@ import (
 func main() {
 
     app, err := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
-		conf.Enabled = true             // default = "false"
-		conf.Logging = true             // default = "false"
-		conf.ServerlessMode = false     // default = "false"
-	})
-
+        conf.Enabled = true             // default = "false"
+        conf.Logging = true             // default = "false"
+        conf.ServerlessMode = false     // default = "false"
+    })
+    
     _, handler := app.WrapHTTPHandler("/", requestHandler)
     h := http.HandlerFunc(handler)
-
+    
     if err = http.ListenAndServe(":8080", h); err != nil {
         panic(err)
     }
@@ -256,18 +255,19 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+
      ctx := r.Context()
      logger, err := log.NewFromRequest(ctx, r)
      if err != nil {
          logger.Error(err)
      }
-
+    
     // Do things
     app, err := monitor.AppFromRequest(w, r)
     if err != nil {
         logger.Error(err)
     }   
-
+    
     err = app.RecordEvent("mycustomEvent", log.Fields{
         "aString": "hello world",
         "aInt":    123,
@@ -291,20 +291,22 @@ import (
 )
 
 func main() {
-    app, err := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
+
+    app, _ := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
         conf.Enabled = true             // default = "false"
         conf.Logging = true             // default = "false"
         conf.ServerlessMode = true      // default = "false"
      })
-
+    
     monitor.Start(handler, app)
 }
 
 func handler(ctx context.Context) {
+   
     logger := log.New(ctx)
-
+    
     // Do things
-
+    
     txn, err := monitor.TxnFromContext(ctx)
     if err != nil {
         logger.Error(err)
@@ -313,9 +315,9 @@ func handler(ctx context.Context) {
             "aInt":    123,
         })
     }
-
+    
     // Do more things
-
+    
     if err != nil {
         logger.Error(err)
         txn.AddAttributes(log.Fields{
@@ -338,20 +340,22 @@ import (
 )
 
 func main() {
-    app, err := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
+
+    app, _ := monitor.NewApplication("GlamplifyDemo", func(conf *monitor.Config) {
         conf.Enabled = true             // default = "false"
         conf.Logging = true             // default = "false"
         conf.ServerlessMode = true      // default = "false"
     })
-
+    
     monitor.Start(handler, app)
 }
 
 func handler(ctx context.Context) {
+
     logger := log.New(ctx)
-
+    
     // Do things
-
+    
     app, err := monitor.AppFromContext(ctx)
     if err != nil {
         logger.Error(err)
@@ -385,31 +389,32 @@ func main() {
         conf.Enabled = true             // default = "false"
         conf.Logging = true             // default = "false"
      })
-
+    
     _, handler := notifier.WrapHTTPHandler("/", requestHandler)
     h := http.HandlerFunc(handler)
-
+    
     if err = http.ListenAndServe(":8080", h); err != nil {
         panic(err)
     }
-
+    
     notifier.Shutdown()
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+
     ctx := r.Context()
     logger, err := log.NewFromRequest(ctx, r)
     if err != nil {
        logger.Error(err)
     }
-
+    
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
         logger.Error(err)
     }
-
+    
     // Do things
-
+    
     // pretend we got an error
     err = errors.New("NPE")  
     notifier.ErrorWithContext(ctx, err, log.Fields {
