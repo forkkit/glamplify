@@ -48,9 +48,9 @@ import (
     "bytes"
     "context"
     "errors"
-    "time"
-    "github.com/cultureamp/glamplify/constants"
     "github.com/cultureamp/glamplify/log"
+    "net/http"
+    "time"
 )
 
 func main() {
@@ -58,14 +58,21 @@ func main() {
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
 	ctx := context.Background()
+
+    // This does all the good things - eg. reads the aws xray Trace_ID, or creates a new trace if missing
 	logger := log.New(ctx)
 
 	// or if you want a field to be present on each subsequent logging call do this:
 	logger = log.New(ctx, log.Fields{"request_id": 123})
 
+    h := http.HandlerFunc(requestHandler)
+
+    if err := http.ListenAndServe(":8080", h); err != nil {
+        logger.Error(err)
+    }
 }
 
-func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+func requestHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
@@ -73,8 +80,9 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// This helper does all the good things:
 	// Decoded JWT (if present) and set User/Customer on the context
+    // Reads the aws xray Trace_ID or creates a new one if missing
 	// Can optionally pass in log.Fields{} if you have values you want to
-	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
+	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewFromRequest(ctx, r, log.Fields{"request_id": 123})
 	logger, err := log.NewFromRequest(ctx, r)
 	if err != nil {
 		// Error here usually means missing public key or corrupted JWT or such like
@@ -128,7 +136,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
     })
 
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-    err := errors.New("missing database connection string")
+    err = errors.New("missing database connection string")
     logger.Error(err)
 
     // Fields can contain any type of variables
@@ -165,10 +173,9 @@ Alternatively, you can read it from another environment variable and pass it int
 package main
 
 import (
-
-"github.com/cultureamp/glamplify/log"
-"github.com/cultureamp/glamplify/monitor"
-"net/http"
+    "github.com/cultureamp/glamplify/log"
+    "github.com/cultureamp/glamplify/monitor"
+    "net/http"
 )
 
 func main() {
@@ -179,7 +186,7 @@ func main() {
         conf.ServerlessMode = false     // default = "false"
      })
 
-    _, handler := app.WrapHTTPHandler("/", rootRequestHandler)
+    _, handler := app.WrapHTTPHandler("/", requestHandler)
     h := http.HandlerFunc(handler)
 
     if err = http.ListenAndServe(":8080", h); err != nil {
@@ -189,7 +196,7 @@ func main() {
     app.Shutdown()
 }
 
-func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+func requestHandler(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
     logger, err := log.NewFromRequest(ctx, r)
     if err != nil {
@@ -225,10 +232,9 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 package main
 
 import (
-
-"github.com/cultureamp/glamplify/log"
-"github.com/cultureamp/glamplify/monitor"
-"net/http"
+    "github.com/cultureamp/glamplify/log"
+    "github.com/cultureamp/glamplify/monitor"
+    "net/http"
 )
 
 func main() {
@@ -239,7 +245,7 @@ func main() {
 		conf.ServerlessMode = false     // default = "false"
 	})
 
-    _, handler := app.WrapHTTPHandler("/", rootRequestHandler)
+    _, handler := app.WrapHTTPHandler("/", requestHandler)
     h := http.HandlerFunc(handler)
 
     if err = http.ListenAndServe(":8080", h); err != nil {
@@ -249,7 +255,7 @@ func main() {
     app.Shutdown()
 }
 
-func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+func requestHandler(w http.ResponseWriter, r *http.Request) {
      ctx := r.Context()
      logger, err := log.NewFromRequest(ctx, r)
      if err != nil {
@@ -278,11 +284,10 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 package main
 
 import (
-
-"context"
-"github.com/cultureamp/glamplify/log"
-"github.com/cultureamp/glamplify/monitor"
-"net/http"
+    "context"
+    "github.com/cultureamp/glamplify/log"
+    "github.com/cultureamp/glamplify/monitor"
+    "net/http"
 )
 
 func main() {
@@ -326,11 +331,10 @@ func handler(ctx context.Context) {
 package main
 
 import (
-
-"context"
-"github.com/cultureamp/glamplify/log"
-"github.com/cultureamp/glamplify/monitor"
-"net/http"
+    "context"
+    "github.com/cultureamp/glamplify/log"
+    "github.com/cultureamp/glamplify/monitor"
+    "net/http"
 )
 
 func main() {
@@ -369,11 +373,10 @@ Alternatively, you can read it from another environment variable and pass it int
 package main
 
 import (
-
-"errors"
-"github.com/cultureamp/glamplify/log"
-"github.com/cultureamp/glamplify/notify"
-"net/http"
+    "errors"
+    "github.com/cultureamp/glamplify/log"
+    "github.com/cultureamp/glamplify/notify"
+    "net/http"
 )
 
 func main() {
@@ -383,7 +386,7 @@ func main() {
         conf.Logging = true             // default = "false"
      })
 
-    _, handler := notifier.WrapHTTPHandler("/", rootRequestHandler)
+    _, handler := notifier.WrapHTTPHandler("/", requestHandler)
     h := http.HandlerFunc(handler)
 
     if err = http.ListenAndServe(":8080", h); err != nil {
@@ -393,7 +396,7 @@ func main() {
     notifier.Shutdown()
 }
 
-func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
+func requestHandler(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
     logger, err := log.NewFromRequest(ctx, r)
     if err != nil {
@@ -412,7 +415,6 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
     notifier.ErrorWithContext(ctx, err, log.Fields {
         "key": "value",
     })
-
 }
 ```
 
