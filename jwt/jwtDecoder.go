@@ -13,19 +13,19 @@ type Decoder struct {
 	verifyKey *rsa.PublicKey
 }
 
-func NewJWTDecoder() (Decoder, error) {
+func NewDecoder() (Decoder, error) {
 
 	pubKey := os.Getenv("AUTH_PUBLIC_KEY")
-	return NewJWTDecoderFromBytes([]byte(pubKey))
+	return NewDecoderFromBytes([]byte(pubKey))
 }
 
-func NewJWTDecoderFromPath(pubKeyPath string) (Decoder, error) {
+func NewDecoderFromPath(pubKeyPath string) (Decoder, error) {
 
 	verifyBytes, _ := ioutil.ReadFile(pubKeyPath)
-	return NewJWTDecoderFromBytes(verifyBytes)
+	return NewDecoderFromBytes(verifyBytes)
 }
 
-func NewJWTDecoderFromBytes(verifyBytes []byte) (Decoder, error) {
+func NewDecoderFromBytes(verifyBytes []byte) (Decoder, error) {
 
 	verifyKey, err := jwtgo.ParseRSAPublicKeyFromPEM(verifyBytes)
 	return Decoder{
