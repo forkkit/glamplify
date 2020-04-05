@@ -20,19 +20,19 @@ type claims struct {
 	jwtgo.StandardClaims
 }
 
-func NewJWTEncoder() (Encoder, error) {
+func NewEncoder() (Encoder, error) {
 
 	priKey := os.Getenv("AUTH_PRIVATE_KEY")
-	return NewJWTEncoderFromBytes([]byte(priKey))
+	return NewEncoderFromBytes([]byte(priKey))
 }
 
-func NewJWTEncoderFromPath(pemKeyPath string) (Encoder, error) {
+func NewEncoderFromPath(pemKeyPath string) (Encoder, error) {
 
 	pemBytes, _ := ioutil.ReadFile(pemKeyPath)
-	return NewJWTEncoderFromBytes(pemBytes)
+	return NewEncoderFromBytes(pemBytes)
 }
 
-func NewJWTEncoderFromBytes(pemBytes []byte) (Encoder, error) {
+func NewEncoderFromBytes(pemBytes []byte) (Encoder, error) {
 
 	pemKey, err := jwtgo.ParseRSAPrivateKeyFromPEM(pemBytes)
 	return Encoder{
@@ -40,14 +40,14 @@ func NewJWTEncoderFromBytes(pemBytes []byte) (Encoder, error) {
 	}, err
 }
 
-func (jwt Encoder) Encode(payload Payload) (string, error) {
+func (encoder Encoder) Encode(payload Payload) (string, error) {
 
-	claims := jwt.claims(payload)
+	claims := encoder.claims(payload)
 	token := jwtgo.NewWithClaims(jwtgo.SigningMethodRS256, claims)
-	return token.SignedString(jwt.pemKey)
+	return token.SignedString(encoder.pemKey)
 }
 
-func (jwt Encoder) claims(payload Payload) claims {
+func (encoder Encoder) claims(payload Payload) claims {
 	now := time.Now()
 	return claims{
 		AccountID:       payload.Customer,

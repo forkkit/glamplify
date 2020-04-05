@@ -31,7 +31,7 @@ func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (*Lo
 		splitToken := strings.Split(token, "Bearer")
 		token = splitToken[1]
 
-		jwt, err := jwt.NewJWTDecoder()
+		jwt, err := jwt.NewDecoder()
 		if err != nil {
 			return New(ctx, fields...), err
 		}
