@@ -11,13 +11,13 @@ import (
 )
 
 type Config struct {
-	Enabled bool
-	Logging bool
-	License string
-	AppName string
-	AppVersion string
-	ReleaseStage string
-	ProjectPackages []string
+	Enabled         bool     `yaml:"enabled"`
+	Logging         bool     `yaml:"logging"`
+	License         string   `yaml:"license"`
+	AppName         string   `yaml:"app_name"`
+	AppVersion      string   `yaml:"app_version"`
+	ReleaseStage    string   `yaml:"release_stage"`
+	ProjectPackages []string `yaml:"proejct_packages"`
 }
 
 type Notifier struct {
@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	internal, _ = NewNotifier(helper.GetEnvOrDefault("APP_NAME", "default"), func(conf *Config) {conf.Enabled = true})
+	internal, _ = NewNotifier(helper.GetEnvOrDefault("APP_NAME", "default"), func(conf *Config) { conf.Enabled = true })
 )
 
 func NewNotifier(name string, configure ...func(*Config)) (*Notifier, error) {
@@ -39,13 +39,13 @@ func NewNotifier(name string, configure ...func(*Config)) (*Notifier, error) {
 	}
 
 	conf := Config{
-		Enabled:        	false,
-		Logging:			false,
-		License:        	os.Getenv("BUGSNAG_LICENSE_KEY"),
-		AppName:			name,
-		AppVersion: 		helper.GetEnvOrDefault("APP_VERSION", "1.0.0"),
-		ReleaseStage:   	helper.GetEnvOrDefault("APP_ENV", "production"),
-		ProjectPackages: 	[]string{"github.com/cultureamp"},
+		Enabled:         false,
+		Logging:         false,
+		License:         os.Getenv("BUGSNAG_LICENSE_KEY"),
+		AppName:         name,
+		AppVersion:      helper.GetEnvOrDefault("APP_VERSION", "1.0.0"),
+		ReleaseStage:    helper.GetEnvOrDefault("APP_ENV", "production"),
+		ProjectPackages: []string{"github.com/cultureamp"},
 	}
 
 	for _, config := range configure {
@@ -54,11 +54,11 @@ func NewNotifier(name string, configure ...func(*Config)) (*Notifier, error) {
 
 	cfg := bugsnag.Configuration{
 		APIKey:          conf.License,
-		AppType: 		conf.AppName,
-		AppVersion: 	conf.AppVersion,
+		AppType:         conf.AppName,
+		AppVersion:      conf.AppVersion,
 		ReleaseStage:    conf.ReleaseStage,
 		ProjectPackages: conf.ProjectPackages,
-		ParamsFilters:[]string{"password", "pwd"}, // todo - add others
+		ParamsFilters:   []string{"password", "pwd"}, // todo - add others
 	}
 
 	if conf.Logging {
@@ -67,7 +67,7 @@ func NewNotifier(name string, configure ...func(*Config)) (*Notifier, error) {
 
 	bugsnag.Configure(cfg)
 
-	return &Notifier{conf:conf}, nil
+	return &Notifier{conf: conf}, nil
 }
 
 // Shutdown flushes any remaining data to the SAAS endpoint
@@ -92,7 +92,9 @@ func Error(err error, fields log.Fields) error {
 }
 
 func (notify Notifier) Error(err error, fields log.Fields) error {
-	if !notify.conf.Enabled { return nil}
+	if !notify.conf.Enabled {
+		return nil
+	}
 
 	ctx := bugsnag.StartSession(context.Background())
 	defer bugsnag.AutoNotify(ctx)
@@ -105,7 +107,9 @@ func ErrorWithContext(ctx context.Context, err error, fields log.Fields) error {
 }
 
 func (notify Notifier) ErrorWithContext(ctx context.Context, err error, fields log.Fields) error {
-	if !notify.conf.Enabled { return nil}
+	if !notify.conf.Enabled {
+		return nil
+	}
 
 	meta := fieldsAsMetaData(fields)
 	return bugsnag.Notify(err, ctx, meta)

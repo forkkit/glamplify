@@ -54,7 +54,14 @@ func (df DefaultValues) getErrorDefaults(err error, fields Fields) Fields {
 	fields[Exception] = Fields{
 		"error":    errorMessage,
 		"trace":    string(buf),
-		"gc_stats": stats,
+		"gc_stats": Fields{
+			"last_gc": stats.LastGC,
+			"num_gc": stats.NumGC,
+			"pause_total": stats.PauseTotal,
+			"pause_history": stats.Pause,
+			"pause_end": stats.PauseEnd,
+			"page_quantiles": stats.PauseQuantiles,
+		},
 	}
 
 	return fields
