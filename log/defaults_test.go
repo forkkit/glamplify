@@ -2,7 +2,6 @@ package log
 
 import (
 	"fmt"
-	"github.com/cultureamp/glamplify/constants"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -10,7 +9,7 @@ import (
 
 func Test_HostName(t *testing.T) {
 
-	df := NewDefaultValues(constants.RFC3339Milli)
+	df := newDefaultValues()
 	host := df.hostName()
 
 	assert.Assert(t, host != "", host)
@@ -19,8 +18,8 @@ func Test_HostName(t *testing.T) {
 
 func Test_TraceID(t *testing.T) {
 
-	df := NewDefaultValues(constants.RFC3339Milli)
-	id := df.NewTraceID()
+	df := newDefaultValues()
+	id := df.newTraceID()
 	fmt.Println(id)
 
 	assert.Assert(t, strings.Contains(id, "-"))

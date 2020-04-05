@@ -18,33 +18,33 @@ const (
 // Labels are key value pairs used to roll up applications into specific categoriess
 type Labels map[string]string
 
-// Config contains Application and Transaction behavior settings.
-// Use NewConfig to create a Config with proper defaults.
+// config contains Application and Transaction behavior settings.
+// Use NewConfig to create a config with proper defaults.
 type Config struct {
 
 	// Enabled controls whether the agent will communicate with the New Relic
 	// servers and spawn goroutines.  Setting this to be false is useful in
 	// testing and staging situations.
-	Enabled bool
+	Enabled bool `yaml:"enabled"`
 
 	// License is your New Relic license key.
 	//
 	// https://docs.newrelic.com/docs/accounts/install-new-relic/account-setup/license-key
-	License string
+	License string `yaml:"license"`
 
 	// Logging controls whether Event logging is sent to StdOut or not
-	Logging bool
+	Logging bool `yaml:"logging"`
 
 	// Labels are key value pairs used to roll up applications into specific categories.
 	//
 	// https://docs.newrelic.com/docs/using-new-relic/user-interface-functions/organize-your-data/labels-categories-organize-apps-monitors
-	Labels Labels
+	Labels Labels `yaml:"labels"`
 
 	// ServerlessMode contains types which control behavior when running in
 	// AWS Lambda.
 	//
 	// https://docs.newrelic.com/docs/serverless-function-monitoring/aws-lambda-monitoring/get-started/introduction-new-relic-monitoring-aws-lambda
-	ServerlessMode bool
+	ServerlessMode bool `yaml:"serverless_mode"`
 
 	// internal logger
 	logger *monitorLogger
@@ -92,14 +92,14 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
 		// So we have our own implementation that wraps our standard logger
 
-		conf.logger = newMonitorLogger()
+		conf.logger = newMonitorLogger(context.Background())
 		cfg.Logger = conf.logger
 
 		cfg.Logger.Debug("configuration", log.Fields{
-			"enabled":        conf.Enabled,
-			"logging":        conf.Logging,
-			"labels":         conf.Labels,
-			"ServerlessMode": conf.ServerlessMode,
+			"enabled":         conf.Enabled,
+			"logging":         conf.Logging,
+			"labels":          conf.Labels,
+			"serverless_mode": conf.ServerlessMode,
 		})
 	}
 
@@ -127,7 +127,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 
 // RecordEvent sends a custom event with the associated data to the underlying implementation
 func (app Application) RecordEvent(eventType string, fields log.Fields) error {
-	app.log("Begin RecordEvent", log.Fields{"eventType": eventType}, fields)
+	app.log("record_event_begin", log.Fields{"event_type": eventType}, fields)
 
 	// NewRelic has limits on number and size of entries
 	// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
@@ -136,14 +136,14 @@ func (app Application) RecordEvent(eventType string, fields log.Fields) error {
 
 	ok, err := fields.ValidateNewRelic()
 	if !ok {
-		app.logError("RecordEvent", err)
-		app.log("End RecordEvent", log.Fields{"eventType": eventType}, fields)
+		app.logError("record_event_error", err)
+		app.log("record_event_end", log.Fields{"event_type": eventType}, fields)
 		return err
 	}
 
 	err = app.impl.RecordCustomEvent(eventType, fields)
-	app.logError("RecordEvent", err)
-	app.log("End RecordEvent", log.Fields{"eventType": eventType}, fields)
+	app.logError("record_event_error", err)
+	app.log("record_event_end", log.Fields{"event_type": eventType}, fields)
 
 	return err
 }
@@ -180,8 +180,8 @@ func (app *Application) wrapHTTPHandler(pattern string, handler http.Handler) (s
 }
 
 func (app *Application) startTransaction(name string, w http.ResponseWriter, r *http.Request) Transaction {
-	app.log("Starting Transaction", log.Fields{
-		"txnName": name,
+	app.log("transaction_start", log.Fields{
+		"txn_name": name,
 	})
 
 	// Create our wrapper txn and add it to the HTTP ctx

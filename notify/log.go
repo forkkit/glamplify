@@ -1,24 +1,27 @@
 package notify
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/cultureamp/glamplify/log"
 )
 
 type notifyLogger struct {
-	fieldLogger *log.FieldLogger
+	logger *log.Logger
 }
 
-func newNotifyLogger() *notifyLogger {
-	logger := log.New()
+func newNotifyLogger(ctx context.Context) *notifyLogger {
+	logger := log.New(ctx)
 
 	return &notifyLogger{
-		fieldLogger: logger,
+		logger: logger,
 	}
 }
 
 func (logger notifyLogger) Printf(format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
-	logger.fieldLogger.Info(msg)
+	fields := log.Fields{
+		log.Message: msg,
+	}
+	logger.logger.Info("notified", fields)
 }

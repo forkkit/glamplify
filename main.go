@@ -1,17 +1,15 @@
 package main
 
 import (
-	"bytes"
+	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/constants"
-	http2 "github.com/cultureamp/glamplify/http"
-	"net/http"
-	"net/http/httptest"
-
 	"github.com/cultureamp/glamplify/config"
+	http2 "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"github.com/cultureamp/glamplify/notify"
+	"net/http"
+	"net/http/httptest"
 )
 
 func main() {
@@ -30,71 +28,28 @@ func main() {
 	}
 
 	/* LOGGING */
-	// You can either get a new logger, or just use the public functions which internally use an internal logger
-	// eg. log.Debug(), log.Print() and log.Error()
+	// Creating loggers is cheap. Create them on every request/run
+	// DO NOT CACHE/REUSE THEM
+	ctx := context.Background()
+	logger := log.New(ctx)
 
-	// Example below shows usage with the package level logger (sensible default), but can
-	// use an instance of a logger by calling log.NewNotifier()
-
-	// Emit debug trace
-	// All messages must be static strings (as per Culture Amp Sensibile Default)
-	log.Debug("Something happened")
-
-	// Emit debug trace with types
-	// Fields can contain any type of variables
-	log.Debug("Something happened", log.Fields{
-		"aString": "hello",
-		"aInt":    123,
-		"aFloat":  42.48,
-	})
-
-	// Emit normal logging (can add optional types if required)
-	// Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
-	log.Info("Executing main")
-
-	// Emit Error (can add optional types if required)
-	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-	err := errors.New("main program stopped unexpectedly")
-	log.Error(err)
-
-	// If you want to set some types for a particular scope (eg. for a Web Request
-	// have a requestID for every log message within that scope) then you can use WithScope()
-	scope := log.WithScope(log.Fields{"requestID": 123})
-
-	// then just use the scope as you would a normal logger
-	// Fields passed in the scope will be merged with any types passed in subsequent calls
-	// If duplicate keys, then types in Debug, Print, Error will overwrite those of the scope
-	scope.Info("Starting web request", log.Fields{"auth": "oauth"})
-
-	// If you want to change the output or time format you can only do this for an
-	// instance of the logger you create (not the internal one) by doing this:
-
-	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer                 // can be set to anything that support io.Write
-		conf.TimeFormat = "2006-01-02T15:04:05" // any valid time format
-	})
-
-	// The internal logger will always use these default values:
-	// output = os.Stderr
-	// time format = "2006-01-02T15:04:05.000Z07:00"
-	logger.Info("Something useful just happened")
+	// or if you want a field to be present on each subsequent logging call do this:
+	logger = log.New(ctx, log.Fields{"request_id": 123})
 
 	/* Monitor & Notify */
-
 	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.ServerlessMode = false
 		conf.Labels = monitor.Labels{
-			"asset":          constants.UnknownString,
+			"asset":          log.Unknown,
 			"classification": "restricted",
 			"workload":       "development",
 			"camp":           "amplify",
 		}
 	})
 	if appErr != nil {
-		log.Error(appErr)
+		logger.Fatal(appErr)
 	}
 
 	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func (conf *notify.Config) {
@@ -103,14 +58,14 @@ func main() {
 		conf.AppVersion = "1.0.0"
 	})
 	if notifyErr != nil {
-		log.Error(notifyErr)
+		logger.Fatal(notifyErr)
 	}
 
 	pattern, handler := http2.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)
 	h := http.HandlerFunc(handler)
 
 	rr := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", pattern, nil)
+	req, _ := http.NewRequest("GET", pattern, nil)
 	h.ServeHTTP(rr, req)
 
 	app.Shutdown()
@@ -119,7 +74,48 @@ func main() {
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do things
+	ctx := r.Context()
 
+	/* REQUEST LOGGING */
+
+	// This helper does all the good things:
+	// Decoded JWT (if present) and set User/Customer on the context
+	// Can optionally pass in log.Fields{} if you have values you want to
+	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
+	logger, err := log.NewFromRequest(ctx, r)
+	if err != nil {
+		// Error here usually means missing public key or corrupted JWT or such like
+		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
+		logger.Error(err)
+	}
+
+	// Emit debug trace
+	// All messages must be static strings (as per Culture Amp Sensibile Default)
+	logger.Debug("Something happened")
+
+	// Emit debug trace with types
+	// Fields can contain any type of variables
+	logger.Debug("Something else happened", log.Fields{
+		"aString": "hello",
+		"aInt":    123,
+		"aFloat":  42.48,
+	})
+
+	// Emit normal logging (can add optional types if required)
+	// Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
+	logger.Info("Executing main")
+
+	// Emit Error (can add optional types if required)
+	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
+	err = errors.New("failed to save record to db")
+	logger.Error(err)
+
+	// Emit Fatal (can add optional types if required) and PANIC!
+	// Fatal error will always be sent onto 3rd party aggregation tools (eg. Splunk)
+	//err = errors.New("program died")
+	//logger.Fatal(err)
+
+	/* NEW RELIC TRANSACTION */
 	txn, err := monitor.TxnFromRequest(w, r)
 	if err == nil {
 		txn.AddAttributes(log.Fields{
@@ -130,6 +126,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do more things
 
+	/* NEW RELIC Add Attributes */
 	if err == nil {
 		txn.AddAttributes(log.Fields{
 			"aString2": "goodbye",

@@ -1,20 +1,20 @@
-package log_test
+package log
 
 import (
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cultureamp/glamplify/constants"
+	"gotest.tools/assert"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/cultureamp/glamplify/log"
-	"gotest.tools/assert"
 )
+
+var ctx context.Context
 
 func TestMain(m *testing.M) {
 	setup()
@@ -23,13 +23,11 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-var ctx context.Context
-
 func setup() {
 	ctx = context.Background()
-	ctx = log.AddTraceId(ctx, "1-2-3")
-	ctx = log.AddCustomer(ctx, "unilever")
-	ctx = log.AddUser(ctx, "user-123")
+	ctx = AddTraceId(ctx, "1-2-3")
+	ctx = AddCustomer(ctx, "unilever")
+	ctx = AddUser(ctx, "user-123")
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -44,14 +42,36 @@ func shutdown() {
 	os.Unsetenv("REGION")
 }
 
+func Test_New(t *testing.T) {
+
+	logger := New(ctx)
+	assert.Assert(t, logger != nil, logger)
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	logger, err := NewFromRequest(ctx, req)
+	assert.Assert(t, err == nil, err)
+	assert.Assert(t, logger != nil, logger)
+
+	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0In0.oDXzd1tq5XRpENEcw7GxAglOpRWmL5ld7XYPeNlrF-IfWYYRy86rta9yG9ug5wS1GV7Lvv8EbufXk0DKTnd23oObWoJtXLUaHh2TG9sw9bsxNwLKu1eWw7MQtUYByN2QFpRGeMQo_yw5Y6bT76janQ1NZknopHHvttcLBFuSMdThMX-4gOlaCuVsr8MQ218WUC-rVrSAol57at_2gf8PkEik3bcOd4bvUpf-ThumkljyzSrxVBY57H1kYbYAST4CwcCrf2F3oTLa_xNbFycngVCvJLZtSQR5GxwpO_ERqFziEaQ07bW6Svcs0EvARjCB-4vYdKTFaw3J5qu2aWVHf9m3a4QPA5O91ODYFYq_7k6upmxQl074_MQ-ZsnDRt0cUyPJjObMjU99MuMLQNnAMU67iNYkOxocR1OCNzLL1ObpeoYVq8sZWQPVhrPFDnC-V5uIsoSl9NofwcApLfUV2WjcMHxPfJYqPo-BNq3P_p1G1WSJ7iLP1BMXAU_ZaK49YaWb3fwu4NzRSCjsulWjMiE1yQL_bQrj4crygAyCgG7hpgq9OdiVl7YElrOL-oY1_3XCvnVcZkCd5dQjSbTXx-cW8Xc_zeY1QGxiKaeI3Yg24XLSVSFMNX4XNXwtNlK-LSrWQU8S0bVZBRDNo0jM9hx7INjYc4tamu2sGcH-71Q"
+	authHeader := "Bearer " + token
+
+	req.Header.Set("Authorization", authHeader)
+	logger, err = NewFromRequest(ctx, req)
+	// TODO - we get an error, because the "AUTH_PUBLIC_KEY" env var is not set to the public key
+	// Need to inject this in somehow...
+	//assert.Assert(t, err == nil, err)
+	assert.Assert(t, logger != nil, logger)
+}
+
 func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Debug(ctx, "detail_event")
+	logger.Debug( "detail_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "detail_event")
@@ -68,11 +88,12 @@ func TestDebug_Success(t *testing.T) {
 func TestDebugWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Debug(ctx, "detail_event", log.Fields{
+	logger.Debug("detail_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -87,7 +108,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -100,11 +121,12 @@ func TestDebugWithFields_Success(t *testing.T) {
 func TestInfo_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Info(ctx, "info_event")
+	logger.Info("info_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "info_event")
@@ -121,11 +143,12 @@ func TestInfo_Success(t *testing.T) {
 func TestInfoWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Info(ctx, "info_event", log.Fields{
+	logger.Info("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -140,7 +163,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -153,12 +176,13 @@ func TestInfoWithFields_Success(t *testing.T) {
 func TestInfoWithDuplicateFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Info(ctx, "info_event", log.Fields{
-		constants.ResourceLogField: "res_id", // set a standard types, this should overwrite the default
+	logger.Info("info_event", Fields{
+		Resource: "res_id", // set a standard types, this should overwrite the default
 	})
 
 	msg := memBuffer.String()
@@ -177,11 +201,12 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 func TestWarn_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Warn(ctx, "warn_event")
+	logger.Warn("warn_event")
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "warn_event")
@@ -198,11 +223,12 @@ func TestWarn_Success(t *testing.T) {
 func TestWarnWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Warn(ctx, "warn_event", log.Fields{
+	logger.Warn("warn_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -217,7 +243,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -230,11 +256,12 @@ func TestWarnWithFields_Success(t *testing.T) {
 func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Error(ctx, errors.New("error"))
+	logger.Error(errors.New("error"))
 
 	msg := memBuffer.String()
 	assertContainsString(t, msg, "event", "error")
@@ -251,11 +278,12 @@ func TestError_Success(t *testing.T) {
 func TestErrorWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
-	logger.Error(ctx, errors.New("error"), log.Fields{
+	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -270,7 +298,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assertContainsInt(t, msg, "int", 123)
 	assertContainsFloat(t, msg, "float", 42.48)
 	assertContainsString(t, msg, "string2", "hello world")
-	assertContainsString(t, msg, "string3 space", "world")
+	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
 	assertContainsString(t, msg, "user", "user-123")
@@ -282,9 +310,10 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 func TestFatal_Success(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -301,15 +330,16 @@ func TestFatal_Success(t *testing.T) {
 		}
 	}()
 
-	logger.Fatal(ctx, errors.New("fatal")) // will call panic!
+	logger.Fatal(errors.New("fatal")) // will call panic!
 }
 
 func TestFatalWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -320,7 +350,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 			assertContainsInt(t, msg, "int", 123)
 			assertContainsFloat(t, msg, "float", 42.48)
 			assertContainsString(t, msg, "string2", "hello world")
-			assertContainsString(t, msg, "string3 space", "world")
+			assertContainsString(t, msg, "string3_space", "world")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
 			assertContainsString(t, msg, "customer", "unilever")
 			assertContainsString(t, msg, "user", "user-123")
@@ -331,8 +361,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 		}
 	}()
 
-	// this will call panic!
-	logger.Fatal(ctx, errors.New("fatal"), log.Fields{
+	logger.Fatal(errors.New("fatal"), Fields{ // this will call panic!
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -345,19 +374,20 @@ func TestNamespace_Success(t *testing.T) {
 
 	t1 := time.Now()
 	memBuffer := &bytes.Buffer{}
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = memBuffer
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
 	})
+	logger := newLogger(ctx, writer)
 
 	time.Sleep(123 * time.Millisecond)
 	t2 := time.Now()
 	d := t2.Sub(t1)
 
-	logger.Error(ctx, errors.New("error"), log.Fields{
+	logger.Error(errors.New("error"), Fields{
 		"string": "hello",
 		"int":    123,
 		"float":  42.48,
-		"reports_shared": log.Fields{
+		"reports_shared": Fields{
 			"report":   "report1",
 			"user":     "userid",
 			"duration": fmt.Sprintf("P%gS", d.Seconds()),
@@ -380,8 +410,10 @@ func TestNamespace_Success(t *testing.T) {
 
 func Test_RealWorld(t *testing.T) {
 
+	logger := New(ctx)
+
 	// You should see these printed out, all correctly formatted.
-	log.Debug(ctx, "detail_event", log.Fields{
+	logger.Debug("detail_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -389,7 +421,7 @@ func Test_RealWorld(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	log.Info(ctx, "info_event", log.Fields{
+	logger.Info("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -397,7 +429,7 @@ func Test_RealWorld(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	log.Warn(ctx, "info_event", log.Fields{
+	logger.Warn("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -405,7 +437,7 @@ func Test_RealWorld(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	log.Error(ctx, errors.New("error"), log.Fields{
+	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -417,7 +449,8 @@ func Test_RealWorld(t *testing.T) {
 		recover()
 	}()
 
-	log.Fatal(ctx, errors.New("fatal"), log.Fields{
+	// this will call panic!
+	logger.Fatal(errors.New("fatal"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -428,42 +461,44 @@ func Test_RealWorld(t *testing.T) {
 
 func Test_RealWorld_Combined(t *testing.T) {
 
+	logger := New(ctx)
+
 	// multiple fields collections
-	log.Debug(ctx, "detail_event", log.Fields{
+	logger.Debug("detail_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
 	})
 
-	log.Info(ctx, "info_event", log.Fields{
+	logger.Info("info_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
 	})
 
-	log.Warn(ctx, "warn_event", log.Fields{
+	logger.Warn("warn_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
 	})
 
-	log.Error(ctx, errors.New("error"), log.Fields{
+	logger.Error(errors.New("error"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
@@ -473,23 +508,123 @@ func Test_RealWorld_Combined(t *testing.T) {
 		recover()
 	}()
 
-	log.Fatal(ctx, errors.New("fatal"), log.Fields{
+	// this will call panic!
+	logger.Fatal(errors.New("fatal"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
-	}, log.Fields{
+	}, Fields{
 		"string2": "world",
 		"int2":    456,
 		"float2":  78.98,
+	})
+}
+
+
+func TestScope(t *testing.T) {
+	memBuffer := &bytes.Buffer{}
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
+	})
+	logger := newLogger(ctx, writer, Fields{
+		"requestID": 123,
+	})
+
+	logger.Debug("detail_event")
+	msg := memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "detail_event")
+	assertScopeContainsInt(t, msg, "request_id", 123)
+
+	memBuffer.Reset()
+	logger.Info("info_event")
+	msg = memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "info_event")
+	assertScopeContainsInt(t, msg, "request_id", 123)
+
+	memBuffer.Reset()
+	logger.Warn("warn_event")
+	msg = memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "warn_event")
+	assertScopeContainsInt(t, msg, "request_id", 123)
+
+	memBuffer.Reset()
+	logger.Error(errors.New("error"))
+	msg = memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "error")
+	assertScopeContainsInt(t, msg, "request_id", 123)
+
+	defer func() {
+		if r := recover(); r != nil {
+			msg := memBuffer.String()
+			assertContainsString(t, msg, "event", "fatal")
+			assertContainsString(t, msg, "severity", "FATAL")
+		}
+	}()
+
+	logger.Fatal(errors.New("fatal")) // will call panic!
+}
+
+func TestScope_Overwrite(t *testing.T) {
+	memBuffer := &bytes.Buffer{}
+	writer := newWriter(func(conf *config) {
+		conf.output = memBuffer
+	})
+	logger := newLogger(ctx, writer, Fields{
+		"requestID": 123,
+	})
+
+	logger.Debug("detail_event", Fields {
+		"requestID": 456,
+	})
+	msg := memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "detail_event")
+	assertScopeContainsInt(t, msg, "request_id", 456)
+
+	memBuffer.Reset()
+	logger.Info("info_event", Fields {
+		"requestID": 456,
+	})
+	msg = memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "info_event")
+	assertScopeContainsInt(t, msg, "request_id", 456)
+
+	memBuffer.Reset()
+	logger.Warn("warn_event", Fields {
+		"requestID": 456,
+	})
+	msg = memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "warn_event")
+	assertScopeContainsInt(t, msg, "request_id", 456)
+
+	memBuffer.Reset()
+	logger.Error(errors.New("error"), Fields {
+		"requestID": 456,
+	})
+	msg = memBuffer.String()
+	assertScopeContainsString(t, msg, "event", "error")
+	assertScopeContainsInt(t, msg, "request_id", 456)
+
+	defer func() {
+		if r := recover(); r != nil {
+			msg := memBuffer.String()
+			assertScopeContainsString(t, msg, "event", "fatal")
+			assertScopeContainsString(t, msg, "severity", "FATAL")
+			assertScopeContainsInt(t, msg, "request_id", 456)
+		}
+	}()
+
+	// will call panic!
+	logger.Fatal(errors.New("fatal"), Fields {
+		"request_id": 456,
 	})
 }
 
 func Test_RealWorld_Scope(t *testing.T) {
 
-	scope := log.WithScope(log.Fields{"scopeID": 123})
-	assert.Assert(t, scope != nil)
+	logger := New(ctx, Fields{"scopeID": 123})
+	assert.Assert(t, logger != nil)
 
-	scope.Debug(ctx, "detail_event", log.Fields{
+	logger.Debug("detail_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -497,7 +632,7 @@ func Test_RealWorld_Scope(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	scope.Info(ctx, "info_event", log.Fields{
+	logger.Info("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -505,7 +640,7 @@ func Test_RealWorld_Scope(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	scope.Warn(ctx, "info_event", log.Fields{
+	logger.Warn("info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -513,7 +648,7 @@ func Test_RealWorld_Scope(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	scope.Error(ctx, errors.New("error"), log.Fields{
+	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -525,7 +660,8 @@ func Test_RealWorld_Scope(t *testing.T) {
 		recover()
 	}()
 
-	scope.Fatal(ctx, errors.New("fatal"), log.Fields{
+	// this will call panic!
+	logger.Fatal(errors.New("fatal"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -534,23 +670,25 @@ func Test_RealWorld_Scope(t *testing.T) {
 	})
 }
 
+
 func Test_DurationAsIso8601(t *testing.T) {
 
 	d := time.Millisecond * 456
-	s := log.DurationAsISO8601(d)
+	s := DurationAsISO8601(d)
 	assert.Assert(t, s == "P0.456S", "was: %s", s)
 
 	d = time.Millisecond * 1456
-	s = log.DurationAsISO8601(d)
+	s = DurationAsISO8601(d)
 	assert.Assert(t, s == "P1.456S", "was: %s", s)
 }
 
 func BenchmarkLogging(b *testing.B) {
-	logger := log.New(func(conf *log.Config) {
-		conf.Output = ioutil.Discard
+	writer := newWriter(func(conf *config) {
+		conf.output = ioutil.Discard
 	})
+	logger := newLogger(ctx, writer)
 
-	fields := log.Fields{
+	fields := Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -558,9 +696,8 @@ func BenchmarkLogging(b *testing.B) {
 		"string3 space": "world",
 	}
 
-	ctx := context.Background()
 	for n := 0; n < b.N; n++ {
-		logger.Info(ctx, "test details", fields)
+		logger.Info("test details", fields)
 	}
 }
 
@@ -586,4 +723,21 @@ func assertContainsSubDoc(t *testing.T, log string, key string, val string) {
 	find := fmt.Sprintf("\"%s\":{\"%s\"", key, val)
 	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
 
+}
+
+func assertScopeContainsString(t *testing.T, log string, key string, val string) {
+	// Check that the keys and values are in the log line
+	find := fmt.Sprintf("\"%s\":\"%s\"", key, val)
+	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
+}
+
+func assertScopeContainsInt(t *testing.T, log string, key string, val int) {
+	// Check that the keys and values are in the log line
+	find := fmt.Sprintf("\"%s\":%v", key, val)
+	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
+}
+
+func assertScopeContainsSubDoc(t *testing.T, log string, key string, val string) {
+	find := fmt.Sprintf("\"%s\":{\"%s\"", key, val)
+	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
 }

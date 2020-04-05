@@ -23,7 +23,7 @@ func TestHandler_Error_Success(t *testing.T) {
 
 func TestHandler_ErrorWithContext_Success(t *testing.T) {
 
-	gerror.HandleErrorWithContext(errors.New("NPE"), context.TODO(), log.Fields{
+	gerror.HandleErrorWithContext(context.TODO(), errors.New("NPE"), log.Fields{
 		"user": "mike",
 		"pwd": "abc",     // should be filtered out in bugsnag
 		"age": 47,

@@ -3,6 +3,7 @@ package log
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cultureamp/glamplify/helper"
 	systemLog "log"
 )
 
@@ -25,7 +26,23 @@ func (fields Fields) Merge(other ...Fields) Fields {
 	return merged
 }
 
-func (fields Fields) Serialize() string {
+func (fields Fields) ToSnakeCase() Fields {
+	snaked := Fields{}
+
+	for k, v := range fields {
+		switch f := v.(type) {
+		case Fields:
+			v = f.ToSnakeCase()
+		}
+
+		sc := helper.ToSnakeCase(k)
+		snaked[sc] = v
+	}
+
+	return snaked
+}
+
+func (fields Fields) serialize() string {
 
 	bytes, err := json.Marshal(fields)
 	if err != nil {
@@ -36,9 +53,9 @@ func (fields Fields) Serialize() string {
 	return string(bytes)
 }
 
-// Validate checks that Entries are valid before processing
+// ValidateNewRelic checks that Entries are valid according to NewRelic requirements before processing
+// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
 func (fields Fields) ValidateNewRelic() (bool, error) {
-	// https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/insights-custom-data-requirements-limits
 
 	for k, v := range fields {
 
