@@ -8,7 +8,7 @@ import (
 
 // Config for setting initial values for Logger
 type Config struct {
-	output io.Writer
+	Output io.Writer
 }
 
 // FieldWriter wraps the standard library writer and add structured types as quoted key value pairs
@@ -24,7 +24,7 @@ func NewWriter(configure ...func(*Config)) *FieldWriter { // https://dave.cheney
 
 	logger := &FieldWriter{}
 	conf := Config{
-		output: os.Stdout,
+		Output: os.Stdout,
 	}
 	for _, config := range configure {
 		config(&conf)
@@ -33,7 +33,7 @@ func NewWriter(configure ...func(*Config)) *FieldWriter { // https://dave.cheney
 	logger.mutex.Lock()
 	defer logger.mutex.Unlock()
 
-	logger.output = conf.output
+	logger.output = conf.Output
 
 	return logger
 }

@@ -67,7 +67,7 @@ func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -89,7 +89,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -122,7 +122,7 @@ func TestInfo_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -144,7 +144,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -177,7 +177,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -202,7 +202,7 @@ func TestWarn_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -224,7 +224,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -257,7 +257,7 @@ func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -279,7 +279,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -311,7 +311,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 func TestFatal_Success(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -337,7 +337,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -375,7 +375,7 @@ func TestNamespace_Success(t *testing.T) {
 	t1 := time.Now()
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer)
 
@@ -524,7 +524,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 func TestScope(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer, Fields{
 		"requestID": 123,
@@ -567,7 +567,7 @@ func TestScope(t *testing.T) {
 func TestScope_Overwrite(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *Config) {
-		conf.output = memBuffer
+		conf.Output = memBuffer
 	})
 	logger := NewWitCustomWriter(ctx, writer, Fields{
 		"requestID": 123,
@@ -684,7 +684,7 @@ func Test_DurationAsIso8601(t *testing.T) {
 
 func BenchmarkLogging(b *testing.B) {
 	writer := NewWriter(func(conf *Config) {
-		conf.output = ioutil.Discard
+		conf.Output = ioutil.Discard
 	})
 	logger := newLogger(ctx, writer)
 
