@@ -41,13 +41,22 @@ func NewEncoderFromBytes(pemBytes []byte) (Encoder, error) {
 }
 
 func (encoder Encoder) Encode(payload Payload) (string, error) {
-
-	claims := encoder.claims(payload)
+	// Were a little loose on the expiry for now, to avoid possible
+	// problems with clock skew, slow requests, background jobs (?) etc.
+	expiry := 10 * time.Minute
+	claims := encoder.claims(payload, expiry)
 	token := jwtgo.NewWithClaims(jwtgo.SigningMethodRS256, claims)
 	return token.SignedString(encoder.pemKey)
 }
 
-func (encoder Encoder) claims(payload Payload) claims {
+func (encoder Encoder) EncodeWithExpiry(payload Payload, duration time.Duration) (string, error) {
+
+	claims := encoder.claims(payload, duration)
+	token := jwtgo.NewWithClaims(jwtgo.SigningMethodRS256, claims)
+	return token.SignedString(encoder.pemKey)
+}
+
+func (encoder Encoder) claims(payload Payload, duration time.Duration) claims {
 	now := time.Now()
 	return claims{
 		AccountID:       payload.Customer,

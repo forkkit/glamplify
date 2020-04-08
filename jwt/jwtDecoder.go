@@ -37,11 +37,11 @@ func (jwt Decoder) Decode(tokenString string) (Payload, error) {
 	// sample token string in the form "header.payload.signature"
 	//eg. "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIiLCJuYmYiOjE0NDQ0Nzg0MDB9.u1riaD1rW97opCoAuRCTy4w58Br-Zk-bh7vLiRIsrpU"
 
+	data := Payload{}
+
 	token, err := jwtgo.Parse(tokenString, func(token *jwtgo.Token) (interface{}, error) {
 		return jwt.verifyKey, nil
 	})
-
-	data := Payload{}
 	if err != nil {
 		return data, err
 	}
