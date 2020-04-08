@@ -17,9 +17,10 @@ type FieldWriter struct {
 	output     io.Writer
 }
 
-// New creates a new FieldWriter. The optional configure func lets you set values on the underlying standard writer.
+// NewWriter creates a new FieldWriter. The optional configure func lets you set values on the underlying standard writer.
+// Useful for CLI apps that want to direct logging to a file or stderr
 // eg. SetOutput
-func newWriter(configure ...func(*config)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+func NewWriter(configure ...func(*config)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldWriter{}
 	conf := config{

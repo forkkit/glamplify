@@ -38,7 +38,6 @@ const (
 	WarnSev  = "WARN"
 	ErrorSev = "ERROR"
 	FatalSev = "FATAL"
-	AuditSev = "AUDIT"
 
 	// ENVIRONMENT VARIABLES
 	// List of  Environment Variables keys
