@@ -66,10 +66,10 @@ func Test_New(t *testing.T) {
 func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Debug( "detail_event")
 
@@ -88,10 +88,10 @@ func TestDebug_Success(t *testing.T) {
 func TestDebugWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Debug("detail_event", Fields{
 		"string":        "hello",
@@ -121,10 +121,10 @@ func TestDebugWithFields_Success(t *testing.T) {
 func TestInfo_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Info("info_event")
 
@@ -143,10 +143,10 @@ func TestInfo_Success(t *testing.T) {
 func TestInfoWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Info("info_event", Fields{
 		"string":        "hello",
@@ -176,10 +176,10 @@ func TestInfoWithFields_Success(t *testing.T) {
 func TestInfoWithDuplicateFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Info("info_event", Fields{
 		Resource: "res_id", // set a standard types, this should overwrite the default
@@ -201,10 +201,10 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 func TestWarn_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Warn("warn_event")
 
@@ -223,10 +223,10 @@ func TestWarn_Success(t *testing.T) {
 func TestWarnWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Warn("warn_event", Fields{
 		"string":        "hello",
@@ -256,10 +256,10 @@ func TestWarnWithFields_Success(t *testing.T) {
 func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Error(errors.New("error"))
 
@@ -278,10 +278,10 @@ func TestError_Success(t *testing.T) {
 func TestErrorWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
@@ -310,10 +310,10 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 func TestFatal_Success(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -336,10 +336,10 @@ func TestFatal_Success(t *testing.T) {
 func TestFatalWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -374,10 +374,10 @@ func TestNamespace_Success(t *testing.T) {
 
 	t1 := time.Now()
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer)
+	logger := NewWitCustomWriter(ctx, writer)
 
 	time.Sleep(123 * time.Millisecond)
 	t2 := time.Now()
@@ -523,10 +523,10 @@ func Test_RealWorld_Combined(t *testing.T) {
 
 func TestScope(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer, Fields{
+	logger := NewWitCustomWriter(ctx, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -566,10 +566,10 @@ func TestScope(t *testing.T) {
 
 func TestScope_Overwrite(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = memBuffer
 	})
-	logger := newLogger(ctx, writer, Fields{
+	logger := NewWitCustomWriter(ctx, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -683,7 +683,7 @@ func Test_DurationAsIso8601(t *testing.T) {
 }
 
 func BenchmarkLogging(b *testing.B) {
-	writer := newWriter(func(conf *config) {
+	writer := NewWriter(func(conf *config) {
 		conf.output = ioutil.Discard
 	})
 	logger := newLogger(ctx, writer)

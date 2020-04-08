@@ -17,7 +17,7 @@ type Logger struct {
 }
 
 var (
-	internal = newWriter(func(conf *config) {})
+	internal = NewWriter(func(conf *config) {})
 )
 
 // NewFromRequest creates a new logger and does all the good things
@@ -53,16 +53,22 @@ func New(ctx context.Context, fields ...Fields) *Logger {
 	return newLogger(ctx, internal, fields...)
 }
 
+// NewWithCustomWriter creates a *Logger with a custom writer (usually not to stdout).
+// Useful for CLI applications that want to write to stderr or file etc.
+func NewWitCustomWriter(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logger {
+	return newLogger(ctx, writer, fields...)
+}
+
 func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logger {
 	merged := Fields{}
 	merged = merged.Merge(fields...)
-	scope := &Logger{
+	logger := &Logger{
 		ctx:    ctx,
 		writer: writer,
 		fields: merged,
 	}
-	scope.defValues = newDefaultValues()
-	return scope
+	logger.defValues = newDefaultValues()
+	return logger
 }
 
 // Debug writes a debug message with optional types to the underlying standard writer.
