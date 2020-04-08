@@ -17,7 +17,7 @@ type Logger struct {
 }
 
 var (
-	internal = NewWriter(func(conf *config) {})
+	internal = NewWriter(func(conf *Config) {})
 )
 
 // NewFromRequest creates a new logger and does all the good things

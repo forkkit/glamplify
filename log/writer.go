@@ -6,8 +6,8 @@ import (
 	"sync"
 )
 
-// config for setting initial values for Logger
-type config struct {
+// Config for setting initial values for Logger
+type Config struct {
 	output io.Writer
 }
 
@@ -20,10 +20,10 @@ type FieldWriter struct {
 // NewWriter creates a new FieldWriter. The optional configure func lets you set values on the underlying standard writer.
 // Useful for CLI apps that want to direct logging to a file or stderr
 // eg. SetOutput
-func NewWriter(configure ...func(*config)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+func NewWriter(configure ...func(*Config)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldWriter{}
-	conf := config{
+	conf := Config{
 		output: os.Stdout,
 	}
 	for _, config := range configure {
