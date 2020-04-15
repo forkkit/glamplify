@@ -31,10 +31,10 @@ func main() {
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
 	ctx := context.Background()
-	logger := log.New(ctx)
+	ctx, logger := log.New(ctx)
 
 	// or if you want a field to be present on each subsequent logging call do this:
-	logger = log.New(ctx, log.Fields{"request_id": 123})
+	ctx, logger = log.New(ctx, log.Fields{"request_id": 123})
 
 	/* Monitor & Notify */
 	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
@@ -82,7 +82,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Decoded JWT (if present) and set User/Customer on the context
 	// Can optionally pass in log.Fields{} if you have values you want to
 	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
-	logger, err := log.NewFromRequest(ctx, r)
+	ctx, logger, err := log.NewFromRequest(ctx, r)
 	if err != nil {
 		// Error here usually means missing public key or corrupted JWT or such like
 		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields

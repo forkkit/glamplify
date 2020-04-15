@@ -39,7 +39,6 @@ func (df DefaultValues) getDefaults(ctx context.Context, event string, sev strin
 
 	fields = df.getCtxDefaults(ctx, fields)
 	fields = df.getEnvDefaults(fields)
-	fields = df.addMandatoryFieldsIfMissing(ctx, fields)
 
 	return fields
 }
@@ -86,27 +85,18 @@ func (df DefaultValues) getCtxDefaults(ctx context.Context, fields Fields) Field
 	return fields
 }
 
-func (df DefaultValues) addMandatoryFieldsIfMissing(ctx context.Context, fields Fields) Fields {
-	// Trace_Id
-	fields = df.addTraceIdIfMissing(ctx, fields)
+func (df DefaultValues) addTraceIdIfMissing(ctx context.Context) context.Context {
 
-	return fields
-}
-
-func (df DefaultValues) addTraceIdIfMissing(ctx context.Context, fields Fields) Fields {
-
-	// If it contains it already, all good!
-	if _, ok := fields[TraceId]; ok {
-		return fields
+	if traceId, ok := ctx.Value(TraceIdCtx).(string); !ok {
+		if xray.RequestWasTraced(ctx) {
+			traceId = xray.TraceID(ctx)
+		} else {
+			traceId = df.newTraceID()
+		}
+		ctx = AddTraceId(ctx, traceId)
 	}
 
-	if xray.RequestWasTraced(ctx) {
-		fields[TraceId] = xray.TraceID(ctx)
-	} else {
-		fields[TraceId] = df.newTraceID()
-	}
-
-	return fields
+	return ctx
 }
 
 func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fields Fields) Fields {

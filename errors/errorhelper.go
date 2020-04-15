@@ -10,22 +10,21 @@ import (
 func HandleError(err error, fields log.Fields) {
 
 	// call logger
-	scope := log.New(context.Background())
-	scope.Error(err, log.Fields(fields))
+	_, logger := log.New(context.Background())
+	logger.Error(err, log.Fields(fields))
 
 	// call newrelic
 	// todo - how to call new relic without a context?
 
 	// call bugsnag
 	notify.Error(err, fields)
-
 }
 
 func HandleErrorWithContext(ctx context.Context, err error, fields log.Fields) {
 
 	// call logger
-	scope := log.New(ctx)
-	scope.Error(err, fields)
+	_, logger := log.New(ctx)
+	logger.Error(err, fields)
 
 	// call newrelic
 	txn, err := monitor.TxnFromContext(ctx)

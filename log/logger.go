@@ -23,7 +23,8 @@ var (
 // NewFromRequest creates a new logger and does all the good things
 // like setting the current user, customer, etc from decoding the JWT on the request (if present)
 // The error returned indicates a problem with decoding the JWT, but a new *Logger is always returned regardless of error
-func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (*Logger, error) {
+func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (context.Context, *Logger, error) {
+	var logger *Logger
 
 	token := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
 	if len(token) > 0 {
@@ -33,33 +34,40 @@ func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (*Lo
 
 		jwt, err := jwt.NewDecoder()
 		if err != nil {
-			return New(ctx, fields...), err
+			ctx, logger = New(ctx, fields...)
+			return ctx, logger, err
 		}
 
 		payload, err := jwt.Decode(token)
 		if err != nil {
-			return  New(ctx, fields...), err
+			ctx, logger = New(ctx, fields...)
+			return ctx, logger, err
 		}
 
 		ctx = AddCustomer(ctx, payload.Customer)
 		ctx = AddUser(ctx, payload.EffectiveUser)
 	}
 
-	return New(ctx, fields...), nil
+	ctx, logger = New(ctx, fields...)
+	return ctx, logger, nil
 }
 
 // New creates a *Logger with optional fields. Useful for when you want to add a field to all subsequent logging calls eg. request_id, etc.
-func New(ctx context.Context, fields ...Fields) *Logger {
+func New(ctx context.Context, fields ...Fields)  (context.Context, *Logger) {
 	return newLogger(ctx, internal, fields...)
 }
 
 // NewWithCustomWriter creates a *Logger with a custom writer (usually not to stdout).
 // Useful for CLI applications that want to write to stderr or file etc.
-func NewWitCustomWriter(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logger {
+func NewWitCustomWriter(ctx context.Context, writer *FieldWriter, fields ...Fields) (context.Context, *Logger) {
 	return newLogger(ctx, writer, fields...)
 }
 
-func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logger {
+func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) (context.Context, *Logger) {
+
+	df := newDefaultValues()
+	ctx = df.addTraceIdIfMissing(ctx)
+
 	merged := Fields{}
 	merged = merged.Merge(fields...)
 	logger := &Logger{
@@ -67,8 +75,8 @@ func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) *Logg
 		writer: writer,
 		fields: merged,
 	}
-	logger.defValues = newDefaultValues()
-	return logger
+	logger.defValues = df
+	return ctx, logger
 }
 
 // Debug writes a debug message with optional types to the underlying standard writer.

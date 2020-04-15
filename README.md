@@ -60,10 +60,10 @@ func main() {
     ctx := context.Background()
     
     // This does all the good things - eg. reads the aws xray Trace_ID, or creates a new trace if missing
-    logger := log.New(ctx)
+    ctx, logger := log.New(ctx)
     
     // or if you want a field to be present on each subsequent logging call do this:
-    logger = log.New(ctx, log.Fields{"request_id": 123})
+    ctx, logger = log.New(ctx, log.Fields{"request_id": 123})
     
     h := http.HandlerFunc(requestHandler)
     
@@ -83,7 +83,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // Reads the aws xray Trace_ID or creates a new one if missing
     // Can optionally pass in log.Fields{} if you have values you want to
     // scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewFromRequest(ctx, r, log.Fields{"request_id": 123})
-    logger, err := log.NewFromRequest(ctx, r)
+    ctx, logger, err := log.NewFromRequest(ctx, r)
     if err != nil {
         // Error here usually means missing public key or corrupted JWT or such like
         // But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
@@ -198,7 +198,7 @@ func main() {
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
     ctx := r.Context()
-    logger, err := log.NewFromRequest(ctx, r)
+    ctx, logger, err := log.NewFromRequest(ctx, r)
     if err != nil {
         logger.Error(err)
     }
@@ -257,7 +257,7 @@ func main() {
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
      ctx := r.Context()
-     logger, err := log.NewFromRequest(ctx, r)
+     ctx, logger, err := log.NewFromRequest(ctx, r)
      if err != nil {
          logger.Error(err)
      }
@@ -303,7 +303,7 @@ func main() {
 
 func handler(ctx context.Context) {
    
-    logger := log.New(ctx)
+    ctx, logger := log.New(ctx)
     
     // Do things
     
@@ -352,7 +352,7 @@ func main() {
 
 func handler(ctx context.Context) {
 
-    logger := log.New(ctx)
+    ctx, logger := log.New(ctx)
     
     // Do things
     
@@ -403,7 +403,7 @@ func main() {
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
     ctx := r.Context()
-    logger, err := log.NewFromRequest(ctx, r)
+    ctx, logger, err := log.NewFromRequest(ctx, r)
     if err != nil {
        logger.Error(err)
     }

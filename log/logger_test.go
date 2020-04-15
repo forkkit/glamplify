@@ -44,11 +44,11 @@ func shutdown() {
 
 func Test_New(t *testing.T) {
 
-	logger := New(ctx)
+	_, logger := New(ctx)
 	assert.Assert(t, logger != nil, logger)
 
 	req, _ := http.NewRequest("GET", "/", nil)
-	logger, err := NewFromRequest(ctx, req)
+	_, logger, err := NewFromRequest(ctx, req)
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, logger != nil, logger)
 
@@ -56,7 +56,7 @@ func Test_New(t *testing.T) {
 	authHeader := "Bearer " + token
 
 	req.Header.Set("Authorization", authHeader)
-	logger, err = NewFromRequest(ctx, req)
+	_, logger, err = NewFromRequest(ctx, req)
 	// TODO - we get an error, because the "AUTH_PUBLIC_KEY" env var is not set to the public key
 	// Need to inject this in somehow...
 	//assert.Assert(t, err == nil, err)
@@ -69,7 +69,7 @@ func TestDebug_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Debug( "detail_event")
 
@@ -91,7 +91,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Debug("detail_event", Fields{
 		"string":        "hello",
@@ -124,7 +124,7 @@ func TestInfo_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Info("info_event")
 
@@ -146,7 +146,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Info("info_event", Fields{
 		"string":        "hello",
@@ -179,7 +179,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Info("info_event", Fields{
 		Resource: "res_id", // set a standard types, this should overwrite the default
@@ -204,7 +204,7 @@ func TestWarn_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Warn("warn_event")
 
@@ -226,7 +226,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Warn("warn_event", Fields{
 		"string":        "hello",
@@ -259,7 +259,7 @@ func TestError_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Error(errors.New("error"))
 
@@ -281,7 +281,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
@@ -313,7 +313,7 @@ func TestFatal_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -339,7 +339,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -377,7 +377,7 @@ func TestNamespace_Success(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer)
+	_, logger := NewWitCustomWriter(ctx, writer)
 
 	time.Sleep(123 * time.Millisecond)
 	t2 := time.Now()
@@ -410,7 +410,8 @@ func TestNamespace_Success(t *testing.T) {
 
 func Test_RealWorld(t *testing.T) {
 
-	logger := New(ctx)
+	ctx = context.Background()
+	_, logger := New(ctx)
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("detail_event", Fields{
@@ -461,7 +462,8 @@ func Test_RealWorld(t *testing.T) {
 
 func Test_RealWorld_Combined(t *testing.T) {
 
-	logger := New(ctx)
+	ctx = context.Background()
+	_, logger := New(ctx)
 
 	// multiple fields collections
 	logger.Debug("detail_event", Fields{
@@ -526,7 +528,7 @@ func TestScope(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer, Fields{
+	_, logger := NewWitCustomWriter(ctx, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -569,7 +571,7 @@ func TestScope_Overwrite(t *testing.T) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(ctx, writer, Fields{
+	_, logger := NewWitCustomWriter(ctx, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -621,7 +623,8 @@ func TestScope_Overwrite(t *testing.T) {
 
 func Test_RealWorld_Scope(t *testing.T) {
 
-	logger := New(ctx, Fields{"scopeID": 123})
+	ctx = context.Background()
+	_, logger := New(ctx, Fields{"scopeID": 123})
 	assert.Assert(t, logger != nil)
 
 	logger.Debug("detail_event", Fields{
@@ -686,7 +689,7 @@ func BenchmarkLogging(b *testing.B) {
 	writer := NewWriter(func(conf *Config) {
 		conf.Output = ioutil.Discard
 	})
-	logger := newLogger(ctx, writer)
+	_, logger := newLogger(ctx, writer)
 
 	fields := Fields{
 		"string":        "hello",
