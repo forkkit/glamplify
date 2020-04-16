@@ -18,10 +18,10 @@ type monitorLogger struct {
 }
 
 func newMonitorLogger(ctx context.Context) *monitorLogger {
-	scope := log.New(ctx)
+	_, logger := log.New(ctx)
 
 	return &monitorLogger{
-		logger: scope,
+		logger: logger,
 	}
 }
 
