@@ -1,16 +1,24 @@
 package aws
 
 import (
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/ssm"
 	"gotest.tools/assert"
 	"testing"
 )
 
-func Test_GetParam(t *testing.T) {
+func Test_GetParam_MissingKey(t *testing.T) {
 
 	ps := NewParameterStore("default")
 	assert.Assert(t, ps != nil, ps)
 
-	// TODO - what is a good key to use for unit tests?
-	ps.Get("/common/AUTH_PUBLIC_KEY")
-	//assert.Assert(t, err == nil, err)
+	// Missing Key
+	val, err := ps.Get("/this/should/not/exist/secret_key")
+	assert.Assert(t, val == "", val)
+
+	aerr, ok := err.(awserr.Error)
+	assert.Assert(t, ok, ok)
+	assert.Assert(t, aerr.Code() == ssm.ErrCodeParameterNotFound, aerr.Code())
 }
+
+// TODO - what is a good key to use for unit tests?
