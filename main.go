@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/cultureamp/glamplify/config"
 	http2 "github.com/cultureamp/glamplify/http"
+	"github.com/cultureamp/glamplify/jwt"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"github.com/cultureamp/glamplify/notify"
@@ -79,30 +80,23 @@ func main() {
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do things
-	ctx := context.Background()
 
 	/* REQUEST LOGGING */
+	payload, err := jwt.PayloadFromRequest(r)
 
-	//1
+	// Create the logging config for this request
 	cfg := log.Config{
-		TraceId:             xray.TraceID(ctx),        // Get TraceID from context or from wherever you have it stored
-		UserAggregateId:     jwt.DecodeUser(jwtToken), // Get UserAggregateId from context or from wherever you have it stored
-		CustomerAggregateId: "cust1",                  // Get CustomerAggregateId from context or from wherever you have it stored
+		TraceId:             xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
+		UserAggregateId:     payload.EffectiveUser, 	// Get UserAggregateId from context or from wherever you have it stored
+		CustomerAggregateId: payload.Customer,      	// Get CustomerAggregateId from context or from wherever you have it stored
 	}
-	log.AddConfigToCtx(ctx, cfg)
 
+	// Then create a logger that will use those config values when writing out logs
 	logger := log.New(cfg)
 	logger.Debug("Something happened")
 
-	// 3
+	// or use the default logger with config
 	log.Debug(cfg, "something happened")
-
-
-	doSomething()
-
-	// Emit debug trace
-	// All messages must be static strings (as per Culture Amp Sensibile Default)
-	logger.Debug("Something happened")
 
 	// Emit debug trace with types
 	// Fields can contain any type of variables
@@ -118,7 +112,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Emit Error (can add optional types if required)
 	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-	err := errors.New("failed to save record to db")
+	err = errors.New("failed to save record to db")
 	logger.Error(err)
 
 	// Emit Fatal (can add optional types if required) and PANIC!

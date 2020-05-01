@@ -4,12 +4,6 @@ import (
 	"github.com/cultureamp/glamplify/helper"
 )
 
-type Config struct {
-	TraceId             string `json:"trace_id"`
-	UserAggregateId     string `json:"user"`
-	CustomerAggregateId string `json:"customer"`
-}
-
 // Logger
 type Logger struct {
 	cfg       Config
