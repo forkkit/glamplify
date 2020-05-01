@@ -48,7 +48,7 @@ func Test_New(t *testing.T) {
 	assert.Assert(t, logger != nil, logger)
 
 	req, _ := http.NewRequest("GET", "/", nil)
-	_, logger, err := NewFromRequest(ctx, req)
+	_, logger, err := NewFromRequest(req)
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, logger != nil, logger)
 
@@ -56,7 +56,7 @@ func Test_New(t *testing.T) {
 	authHeader := "Bearer " + token
 
 	req.Header.Set("Authorization", authHeader)
-	_, logger, err = NewFromRequest(ctx, req)
+	_, logger, err = NewFromRequest(req)
 	// TODO - we get an error, because the "AUTH_PUBLIC_KEY" env var is not set to the public key
 	// Need to inject this in somehow...
 	//assert.Assert(t, err == nil, err)

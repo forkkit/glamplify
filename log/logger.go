@@ -23,9 +23,10 @@ var (
 // NewFromRequest creates a new logger and does all the good things
 // like setting the current user, customer, etc from decoding the JWT on the request (if present)
 // The error returned indicates a problem with decoding the JWT, but a new *Logger is always returned regardless of error
-func NewFromRequest(ctx context.Context, r *http.Request, fields ...Fields) (context.Context, *Logger, error) {
+func NewFromRequest(r *http.Request, fields ...Fields) (context.Context, *Logger, error) {
 	var logger *Logger
 
+	ctx := r.Context()
 	token := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
 	if len(token) > 0 {
 

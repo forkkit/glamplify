@@ -74,7 +74,6 @@ func main() {
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do things
-	ctx := r.Context()
 
 	/* REQUEST LOGGING */
 
@@ -82,7 +81,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Decoded JWT (if present) and set User/Customer on the context
 	// Can optionally pass in log.Fields{} if you have values you want to
 	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
-	ctx, logger, err := log.NewFromRequest(ctx, r)
+	_, logger, err := log.NewFromRequest(r)
 	if err != nil {
 		// Error here usually means missing public key or corrupted JWT or such like
 		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
