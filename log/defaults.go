@@ -28,7 +28,7 @@ func newDefaultValues() *DefaultValues {
 	return &DefaultValues{}
 }
 
-func (df DefaultValues) getDefaults(ctx context.Context, event string, sev string) Fields {
+func (df DefaultValues) getDefaults(cfg *Config, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -37,7 +37,7 @@ func (df DefaultValues) getDefaults(ctx context.Context, event string, sev strin
 		Severity: sev,
 	}
 
-	fields = df.getCtxDefaults(ctx, fields)
+	fields = df.getCfgDefaults(cfg, fields)
 	fields = df.getEnvDefaults(fields)
 
 	return fields
@@ -76,11 +76,11 @@ func (df DefaultValues) getEnvDefaults(fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getCtxDefaults(ctx context.Context, fields Fields) Fields {
+func (df DefaultValues) getCfgDefaults(cfg *Config, fields Fields) Fields {
 
-	fields = df.addCtxFieldIfMissing(ctx, TraceId, TraceIdCtx, fields)
-	fields = df.addCtxFieldIfMissing(ctx, Customer, CustomerCtx, fields)
-	fields = df.addCtxFieldIfMissing(ctx, User, UserCtx, fields)
+	fields = df.addCfgFieldIfMissing(TraceId, cfg.TraceId, fields)
+	fields = df.addCfgFieldIfMissing(Customer, cfg.Customer, fields)
+	fields = df.addCfgFieldIfMissing(User, cfg.User, fields)
 
 	return fields
 }
@@ -115,18 +115,14 @@ func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fie
 	return fields
 }
 
-func (df DefaultValues) addCtxFieldIfMissing(ctx context.Context, fieldName string, ctxKey EventCtxKey, fields Fields) Fields {
+func (df DefaultValues) addCfgFieldIfMissing(fieldName string, fieldValue string, fields Fields) Fields {
 
 	// If it contains it already, all good!
 	if _, ok := fields[fieldName]; ok {
 		return fields
 	}
 
-	if prod, ok := ctx.Value(ctxKey).(string); ok {
-		fields[fieldName] = prod
-		return fields
-	}
-
+	fields[fieldName] = fieldValue
 	return fields
 }
 

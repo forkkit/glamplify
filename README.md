@@ -57,13 +57,15 @@ func main() {
 
     // Creating loggers is cheap. Create them on every request/run
     // DO NOT CACHE/REUSE THEM
-    ctx := context.Background()
-    
-    // This does all the good things - eg. reads the aws xray Trace_ID, or creates a new trace if missing
-    ctx, logger := log.New(ctx)
+   cfg := log.Config{
+   		TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+   		User : "user1",			// Get User from context or from wherever you have it stored
+   		Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+   	}
+   	logger := log.New(cfg)
     
     // or if you want a field to be present on each subsequent logging call do this:
-    ctx, logger = log.New(ctx, log.Fields{"request_id": 123})
+    logger = log.New(cfg, log.Fields{"request_id": 123})
     
     h := http.HandlerFunc(requestHandler)
     
@@ -76,17 +78,12 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 
     /* REQUEST LOGGING */
     
-    // This helper does all the good things:
-    // Decoded JWT (if present) and set User/Customer on the context
-    // Reads the aws xray Trace_ID or creates a new one if missing
-    // Can optionally pass in log.Fields{} if you have values you want to
-    // scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewFromRequest(ctx, r, log.Fields{"request_id": 123})
-    _, logger, err := log.NewFromRequest(r)
-    if err != nil {
-        // Error here usually means missing public key or corrupted JWT or such like
-        // But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
-        logger.Error(err)
-    }
+   cfg := log.Config{
+   		TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+   		User : "user1",			// Get User from context or from wherever you have it stored
+   		Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+   	}
+   	logger := log.New(cfg)
     
     // Once you have a logger then you can call logger.Debug/Info/Warn/Error/Fatal
     // NOTE: unlike normal logging, the string you pass in SHOULD BE AN EVENT NAME (past tense)
@@ -134,7 +131,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     })
     
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-    err = errors.New("missing database connection string")
+    err := errors.New("missing database connection string")
     logger.Error(err)
     
     // Fields can contain any type of variables
@@ -194,11 +191,13 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-
-    _, logger, err := log.NewFromRequest(r)
-    if err != nil {
-        logger.Error(err)
-    }
+    
+    cfg := log.Config{
+		TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+		User : "user1",			// Get User from context or from wherever you have it stored
+		Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+	}
+	logger := log.New(cfg)
     
     // Do things
     
@@ -253,10 +252,12 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
-     _, logger, err := log.NewFromRequest(r)
-     if err != nil {
-         logger.Error(err)
-     }
+     cfg := log.Config{
+        TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+        User : "user1",			// Get User from context or from wherever you have it stored
+        Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+    }
+    logger := log.New(cfg)
     
     // Do things
     app, err := monitor.AppFromRequest(w, r)
@@ -299,7 +300,12 @@ func main() {
 
 func handler(ctx context.Context) {
    
-    ctx, logger := log.New(ctx)
+     cfg := log.Config{
+        TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+        User : "user1",			// Get User from context or from wherever you have it stored
+        Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+    }
+    logger := log.New(cfg)
     
     // Do things
     
@@ -348,8 +354,13 @@ func main() {
 
 func handler(ctx context.Context) {
 
-    ctx, logger := log.New(ctx)
-    
+     cfg := log.Config{
+        TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+        User : "user1",			// Get User from context or from wherever you have it stored
+        Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+    }
+    logger := log.New(cfg)
+
     // Do things
     
     app, err := monitor.AppFromContext(ctx)
@@ -398,22 +409,23 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
-    ctx := r.Context()
-    ctx, logger, err := log.NewFromRequest(ctx, r)
-    if err != nil {
-       logger.Error(err)
+     cfg := log.Config{
+        TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+        User : "user1",			// Get User from context or from wherever you have it stored
+        Customer: "cust1",		// Get Customer from context or from wherever you have it stored
     }
+    logger := log.New(cfg)
     
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
-        logger.Error(err)
+        logger.Error(notifyErr)
     }
     
     // Do things
     
     // pretend we got an error
-    err = errors.New("NPE")  
-    notifier.ErrorWithContext(ctx, err, log.Fields {
+    err := errors.New("NPE")  
+    notifier.ErrorWithContext(r.Context(), err, log.Fields {
         "key": "value",
     })
 }

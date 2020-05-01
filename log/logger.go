@@ -1,83 +1,50 @@
 package log
 
 import (
-	"context"
 	"github.com/cultureamp/glamplify/helper"
-	"github.com/cultureamp/glamplify/jwt"
-	"net/http"
-	"strings"
 )
+
+type Config struct {
+	TraceId  string
+	User     string
+	Customer string
+}
 
 // Logger
 type Logger struct {
-	ctx       context.Context
+	cfg       *Config
 	writer    *FieldWriter
 	fields    Fields
 	defValues *DefaultValues
 }
 
 var (
-	internal = NewWriter(func(conf *Config) {})
+	internal = NewWriter(func(conf *WriterConfig) {})
 )
 
-// NewFromRequest creates a new logger and does all the good things
-// like setting the current user, customer, etc from decoding the JWT on the request (if present)
-// The error returned indicates a problem with decoding the JWT, but a new *Logger is always returned regardless of error
-func NewFromRequest(r *http.Request, fields ...Fields) (context.Context, *Logger, error) {
-	var logger *Logger
-
-	ctx := r.Context()
-	token := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
-	if len(token) > 0 {
-
-		splitToken := strings.Split(token, "Bearer")
-		token = splitToken[1]
-
-		jwt, err := jwt.NewDecoder()
-		if err != nil {
-			ctx, logger = New(ctx, fields...)
-			return ctx, logger, err
-		}
-
-		payload, err := jwt.Decode(token)
-		if err != nil {
-			ctx, logger = New(ctx, fields...)
-			return ctx, logger, err
-		}
-
-		ctx = AddCustomer(ctx, payload.Customer)
-		ctx = AddUser(ctx, payload.EffectiveUser)
-	}
-
-	ctx, logger = New(ctx, fields...)
-	return ctx, logger, nil
-}
-
 // New creates a *Logger with optional fields. Useful for when you want to add a field to all subsequent logging calls eg. request_id, etc.
-func New(ctx context.Context, fields ...Fields)  (context.Context, *Logger) {
-	return newLogger(ctx, internal, fields...)
+func New(cfg Config, fields ...Fields) *Logger {
+	return newLogger(cfg, internal, fields...)
 }
 
-// NewWithCustomWriter creates a *Logger with a custom writer (usually not to stdout).
 // Useful for CLI applications that want to write to stderr or file etc.
-func NewWitCustomWriter(ctx context.Context, writer *FieldWriter, fields ...Fields) (context.Context, *Logger) {
-	return newLogger(ctx, writer, fields...)
+func NewWitCustomWriter(cfg Config, writer *FieldWriter, fields ...Fields) *Logger {
+	return newLogger(cfg, writer, fields...)
 }
 
-func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) (context.Context, *Logger) {
+func newLogger(cfg Config, writer *FieldWriter, fields ...Fields) *Logger {
 
 	df := newDefaultValues()
-	ctx = df.addTraceIdIfMissing(ctx)
 
 	merged := Fields{}
 	merged = merged.Merge(fields...)
 	logger := &Logger{
-		ctx:    ctx,
+		cfg:    &cfg,
 		writer: writer,
 		fields: merged,
 	}
 	logger.defValues = df
-	return ctx, logger
+	return logger
 }
 
 // Debug writes a debug message with optional types to the underlying standard writer.
@@ -86,7 +53,7 @@ func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) (cont
 // Use lower-case keys and values if possible.
 func (logger Logger) Debug(event string, fields ...Fields) {
 	event = helper.ToSnakeCase(event)
-	meta := logger.defValues.getDefaults(logger.ctx, event, DebugSev)
+	meta := logger.defValues.getDefaults(logger.cfg, event, DebugSev)
 	merged := logger.fields.Merge(fields...)
 	logger.writer.debug(event, meta, merged)
 }
@@ -96,7 +63,7 @@ func (logger Logger) Debug(event string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger Logger) Info(event string, fields ...Fields) {
 	event = helper.ToSnakeCase(event)
-	meta := logger.defValues.getDefaults(logger.ctx, event, InfoSev)
+	meta := logger.defValues.getDefaults(logger.cfg, event, InfoSev)
 	merged := logger.fields.Merge(fields...)
 	logger.writer.info(event, meta, merged)
 }
@@ -106,7 +73,7 @@ func (logger Logger) Info(event string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger Logger) Warn(event string, fields ...Fields) {
 	event = helper.ToSnakeCase(event)
-	meta := logger.defValues.getDefaults(logger.ctx, event, WarnSev)
+	meta := logger.defValues.getDefaults(logger.cfg, event, WarnSev)
 	merged := logger.fields.Merge(fields...)
 	logger.writer.warn(event, meta, merged)
 }
@@ -116,7 +83,7 @@ func (logger Logger) Warn(event string, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger Logger) Error(err error, fields ...Fields) {
 	event := helper.ToSnakeCase(err.Error())
-	meta := logger.defValues.getDefaults(logger.ctx, event, ErrorSev)
+	meta := logger.defValues.getDefaults(logger.cfg, event, ErrorSev)
 	meta = logger.defValues.getErrorDefaults(err, meta)
 	merged := logger.fields.Merge(fields...)
 	logger.writer.error(event, meta, merged)
@@ -128,7 +95,7 @@ func (logger Logger) Error(err error, fields ...Fields) {
 // Use lower-case keys and values if possible.
 func (logger Logger) Fatal(err error, fields ...Fields) {
 	event := helper.ToSnakeCase(err.Error())
-	meta := logger.defValues.getDefaults(logger.ctx, event, FatalSev)
+	meta := logger.defValues.getDefaults(logger.cfg, event, FatalSev)
 	meta = logger.defValues.getErrorDefaults(err, meta)
 	merged := logger.fields.Merge(fields...)
 	logger.writer.fatal(event, meta, merged)

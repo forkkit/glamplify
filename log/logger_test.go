@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"gotest.tools/assert"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -27,7 +26,7 @@ func setup() {
 	ctx = context.Background()
 	ctx = AddTraceId(ctx, "1-2-3")
 	ctx = AddCustomer(ctx, "unilever")
-	ctx = AddUser(ctx, "user-123")
+	ctx = AddUser(ctx, "User-123")
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -44,32 +43,19 @@ func shutdown() {
 
 func Test_New(t *testing.T) {
 
-	_, logger := New(ctx)
-	assert.Assert(t, logger != nil, logger)
-
-	req, _ := http.NewRequest("GET", "/", nil)
-	_, logger, err := NewFromRequest(req)
-	assert.Assert(t, err == nil, err)
-	assert.Assert(t, logger != nil, logger)
-
-	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0In0.oDXzd1tq5XRpENEcw7GxAglOpRWmL5ld7XYPeNlrF-IfWYYRy86rta9yG9ug5wS1GV7Lvv8EbufXk0DKTnd23oObWoJtXLUaHh2TG9sw9bsxNwLKu1eWw7MQtUYByN2QFpRGeMQo_yw5Y6bT76janQ1NZknopHHvttcLBFuSMdThMX-4gOlaCuVsr8MQ218WUC-rVrSAol57at_2gf8PkEik3bcOd4bvUpf-ThumkljyzSrxVBY57H1kYbYAST4CwcCrf2F3oTLa_xNbFycngVCvJLZtSQR5GxwpO_ERqFziEaQ07bW6Svcs0EvARjCB-4vYdKTFaw3J5qu2aWVHf9m3a4QPA5O91ODYFYq_7k6upmxQl074_MQ-ZsnDRt0cUyPJjObMjU99MuMLQNnAMU67iNYkOxocR1OCNzLL1ObpeoYVq8sZWQPVhrPFDnC-V5uIsoSl9NofwcApLfUV2WjcMHxPfJYqPo-BNq3P_p1G1WSJ7iLP1BMXAU_ZaK49YaWb3fwu4NzRSCjsulWjMiE1yQL_bQrj4crygAyCgG7hpgq9OdiVl7YElrOL-oY1_3XCvnVcZkCd5dQjSbTXx-cW8Xc_zeY1QGxiKaeI3Yg24XLSVSFMNX4XNXwtNlK-LSrWQU8S0bVZBRDNo0jM9hx7INjYc4tamu2sGcH-71Q"
-	authHeader := "Bearer " + token
-
-	req.Header.Set("Authorization", authHeader)
-	_, logger, err = NewFromRequest(req)
-	// TODO - we get an error, because the "AUTH_PUBLIC_KEY" env var is not set to the public key
-	// Need to inject this in somehow...
-	//assert.Assert(t, err == nil, err)
+	cfg := ConfigFromCtx(ctx)
+	logger := New(cfg)
 	assert.Assert(t, logger != nil, logger)
 }
 
 func TestDebug_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Debug( "detail_event")
 
@@ -78,7 +64,7 @@ func TestDebug_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "DEBUG")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -88,10 +74,11 @@ func TestDebug_Success(t *testing.T) {
 func TestDebugWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Debug("detail_event", Fields{
 		"string":        "hello",
@@ -111,7 +98,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -121,10 +108,11 @@ func TestDebugWithFields_Success(t *testing.T) {
 func TestInfo_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Info("info_event")
 
@@ -133,7 +121,7 @@ func TestInfo_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "INFO")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -143,10 +131,11 @@ func TestInfo_Success(t *testing.T) {
 func TestInfoWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Info("info_event", Fields{
 		"string":        "hello",
@@ -166,7 +155,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -176,10 +165,11 @@ func TestInfoWithFields_Success(t *testing.T) {
 func TestInfoWithDuplicateFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Info("info_event", Fields{
 		Resource: "res_id", // set a standard types, this should overwrite the default
@@ -191,7 +181,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "resource", "res_id") // by default this would normally be set to "host"
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -201,10 +191,11 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 func TestWarn_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Warn("warn_event")
 
@@ -213,7 +204,7 @@ func TestWarn_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "WARN")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -223,10 +214,11 @@ func TestWarn_Success(t *testing.T) {
 func TestWarnWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Warn("warn_event", Fields{
 		"string":        "hello",
@@ -246,7 +238,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -256,10 +248,11 @@ func TestWarnWithFields_Success(t *testing.T) {
 func TestError_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Error(errors.New("error"))
 
@@ -268,7 +261,7 @@ func TestError_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "ERROR")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -278,10 +271,11 @@ func TestError_Success(t *testing.T) {
 func TestErrorWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
@@ -301,7 +295,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -310,10 +304,11 @@ func TestErrorWithFields_Success(t *testing.T) {
 
 func TestFatal_Success(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -322,7 +317,7 @@ func TestFatal_Success(t *testing.T) {
 			assertContainsString(t, msg, "severity", "FATAL")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
 			assertContainsString(t, msg, "customer", "unilever")
-			assertContainsString(t, msg, "user", "user-123")
+			assertContainsString(t, msg, "user", "User-123")
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
@@ -336,10 +331,11 @@ func TestFatal_Success(t *testing.T) {
 func TestFatalWithFields_Success(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -353,7 +349,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 			assertContainsString(t, msg, "string3_space", "world")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
 			assertContainsString(t, msg, "customer", "unilever")
-			assertContainsString(t, msg, "user", "user-123")
+			assertContainsString(t, msg, "user", "User-123")
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
@@ -374,10 +370,11 @@ func TestNamespace_Success(t *testing.T) {
 
 	t1 := time.Now()
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer)
 
 	time.Sleep(123 * time.Millisecond)
 	t2 := time.Now()
@@ -389,7 +386,7 @@ func TestNamespace_Success(t *testing.T) {
 		"float":  42.48,
 		"reports_shared": Fields{
 			"report":   "report1",
-			"user":     "userid",
+			"User":     "userid",
 			"duration": fmt.Sprintf("P%gS", d.Seconds()),
 		},
 	})
@@ -399,7 +396,7 @@ func TestNamespace_Success(t *testing.T) {
 	assertContainsString(t, msg, "user", "userid")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "user-123")
+	assertContainsString(t, msg, "user", "User-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -411,7 +408,8 @@ func TestNamespace_Success(t *testing.T) {
 func Test_RealWorld(t *testing.T) {
 
 	ctx = context.Background()
-	_, logger := New(ctx)
+	cfg := ConfigFromCtx(ctx)
+	logger := New(cfg)
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("detail_event", Fields{
@@ -463,7 +461,8 @@ func Test_RealWorld(t *testing.T) {
 func Test_RealWorld_Combined(t *testing.T) {
 
 	ctx = context.Background()
-	_, logger := New(ctx)
+	cfg := ConfigFromCtx(ctx)
+	logger := New(cfg)
 
 	// multiple fields collections
 	logger.Debug("detail_event", Fields{
@@ -525,10 +524,11 @@ func Test_RealWorld_Combined(t *testing.T) {
 
 func TestScope(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer, Fields{
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -568,10 +568,11 @@ func TestScope(t *testing.T) {
 
 func TestScope_Overwrite(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	_, logger := NewWitCustomWriter(ctx, writer, Fields{
+	cfg := ConfigFromCtx(ctx)
+	logger := NewWitCustomWriter(cfg, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -624,7 +625,8 @@ func TestScope_Overwrite(t *testing.T) {
 func Test_RealWorld_Scope(t *testing.T) {
 
 	ctx = context.Background()
-	_, logger := New(ctx, Fields{"scopeID": 123})
+	cfg := ConfigFromCtx(ctx)
+	logger := New(cfg, Fields{"scopeID": 123})
 	assert.Assert(t, logger != nil)
 
 	logger.Debug("detail_event", Fields{
@@ -686,10 +688,11 @@ func Test_DurationAsIso8601(t *testing.T) {
 }
 
 func BenchmarkLogging(b *testing.B) {
-	writer := NewWriter(func(conf *Config) {
+	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = ioutil.Discard
 	})
-	_, logger := newLogger(ctx, writer)
+	cfg := ConfigFromCtx(ctx)
+	logger := newLogger(cfg, writer)
 
 	fields := Fields{
 		"string":        "hello",

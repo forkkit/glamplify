@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"github.com/cultureamp/glamplify/config"
 	http2 "github.com/cultureamp/glamplify/http"
@@ -30,11 +29,15 @@ func main() {
 	/* LOGGING */
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
-	ctx := context.Background()
-	ctx, logger := log.New(ctx)
+	cfg := log.Config{
+		TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+		User : "user1",			// Get User from context or from wherever you have it stored
+		Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+	}
+	logger := log.New(cfg)
 
 	// or if you want a field to be present on each subsequent logging call do this:
-	ctx, logger = log.New(ctx, log.Fields{"request_id": 123})
+	logger = log.New(cfg, log.Fields{"request_id": 123})
 
 	/* Monitor & Notify */
 	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
@@ -76,17 +79,12 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Do things
 
 	/* REQUEST LOGGING */
-
-	// This helper does all the good things:
-	// Decoded JWT (if present) and set User/Customer on the context
-	// Can optionally pass in log.Fields{} if you have values you want to
-	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
-	_, logger, err := log.NewFromRequest(r)
-	if err != nil {
-		// Error here usually means missing public key or corrupted JWT or such like
-		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
-		logger.Error(err)
+	cfg := log.Config{
+		TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
+		User : "user1",			// Get User from context or from wherever you have it stored
+		Customer: "cust1",		// Get Customer from context or from wherever you have it stored
 	}
+	logger := log.New(cfg)
 
 	// Emit debug trace
 	// All messages must be static strings (as per Culture Amp Sensibile Default)
@@ -106,7 +104,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Emit Error (can add optional types if required)
 	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-	err = errors.New("failed to save record to db")
+	err := errors.New("failed to save record to db")
 	logger.Error(err)
 
 	// Emit Fatal (can add optional types if required) and PANIC!
