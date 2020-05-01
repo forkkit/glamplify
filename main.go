@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"errors"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/cultureamp/glamplify/config"
 	http2 "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/log"
@@ -30,9 +32,9 @@ func main() {
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
 	cfg := log.Config{
-		TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
-		User : "user1",			// Get User from context or from wherever you have it stored
-		Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+		TraceId:             "abc",   // Get TraceID from context or from wherever you have it stored
+		UserAggregateId:     "user1", // Get UserAggregateId from context or from wherever you have it stored
+		CustomerAggregateId: "cust1", // Get CustomerAggregateId from context or from wherever you have it stored
 	}
 	logger := log.New(cfg)
 
@@ -77,14 +79,26 @@ func main() {
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Do things
+	ctx := context.Background()
 
 	/* REQUEST LOGGING */
+
+	//1
 	cfg := log.Config{
-		TraceId: "abc", 		// Get TraceID from context or from wherever you have it stored
-		User : "user1",			// Get User from context or from wherever you have it stored
-		Customer: "cust1",		// Get Customer from context or from wherever you have it stored
+		TraceId:             xray.TraceID(ctx),        // Get TraceID from context or from wherever you have it stored
+		UserAggregateId:     jwt.DecodeUser(jwtToken), // Get UserAggregateId from context or from wherever you have it stored
+		CustomerAggregateId: "cust1",                  // Get CustomerAggregateId from context or from wherever you have it stored
 	}
+	log.AddConfigToCtx(ctx, cfg)
+
 	logger := log.New(cfg)
+	logger.Debug("Something happened")
+
+	// 3
+	log.Debug(cfg, "something happened")
+
+
+	doSomething()
 
 	// Emit debug trace
 	// All messages must be static strings (as per Culture Amp Sensibile Default)
@@ -130,4 +144,14 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 			"aInt2":    456,
 		})
 	}
+}
+
+
+func doSomething(ctx context.Context) {
+	cfg := log.Config{
+		TraceId:             xray.TraceID(ctx),        // Get TraceID from context or from wherever you have it stored
+		UserAggregateId:     jwt.DecodeUser(jwtToken), // Get UserAggregateId from context or from wherever you have it stored
+		CustomerAggregateId: "cust1",                  // Get CustomerAggregateId from context or from wherever you have it stored
+	}
+
 }

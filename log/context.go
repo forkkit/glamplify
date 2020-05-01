@@ -24,10 +24,10 @@ func ConfigFromCtx(ctx context.Context) Config {
 	}
 
 	if prod, ok := ctx.Value(CustomerCtx).(string); ok {
-		cfg.Customer = prod
+		cfg.CustomerAggregateId = prod
 	}
 	if prod, ok := ctx.Value(UserCtx).(string); ok {
-		cfg.User = prod
+		cfg.UserAggregateId = prod
 	}
 
 	return cfg

@@ -28,7 +28,7 @@ func newDefaultValues() *DefaultValues {
 	return &DefaultValues{}
 }
 
-func (df DefaultValues) getDefaults(cfg *Config, event string, sev string) Fields {
+func (df DefaultValues) getDefaults(cfg Config, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -76,11 +76,11 @@ func (df DefaultValues) getEnvDefaults(fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getCfgDefaults(cfg *Config, fields Fields) Fields {
+func (df DefaultValues) getCfgDefaults(cfg Config, fields Fields) Fields {
 
 	fields = df.addCfgFieldIfMissing(TraceId, cfg.TraceId, fields)
-	fields = df.addCfgFieldIfMissing(Customer, cfg.Customer, fields)
-	fields = df.addCfgFieldIfMissing(User, cfg.User, fields)
+	fields = df.addCfgFieldIfMissing(Customer, cfg.CustomerAggregateId, fields)
+	fields = df.addCfgFieldIfMissing(User, cfg.UserAggregateId, fields)
 
 	return fields
 }

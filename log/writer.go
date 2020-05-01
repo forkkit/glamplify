@@ -38,29 +38,6 @@ func NewWriter(configure ...func(*WriterConfig)) *FieldWriter { // https://dave.
 	return logger
 }
 
-func (writer *FieldWriter) debug(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) info(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) warn(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) error(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) fatal(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-
-	// time to panic!
-	panic(event)
-}
-
 func (writer *FieldWriter) writeFields(event string, meta Fields, fields ...Fields) {
 	merged := Fields{}
 	user := merged.Merge(fields...)
