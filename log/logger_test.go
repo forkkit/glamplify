@@ -36,14 +36,16 @@ func setup() {
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
 	os.Setenv("APP_VERSION", "87.23.11")
-	os.Setenv("REGION", "us-west-02")
+	os.Setenv("AWS_REGION", "us-west-02")
+	os.Setenv("AWS_ACCOUNT_ID", "aws-account-123")
 }
 
 func shutdown() {
 	os.Unsetenv("PRODUCT")
 	os.Unsetenv("APP")
 	os.Unsetenv("APP_VERSION")
-	os.Unsetenv("REGION")
+	os.Unsetenv("AWS_REGION")
+	os.Unsetenv("AWS_ACCOUNT_ID")
 }
 
 func Test_New(t *testing.T) {
@@ -70,7 +72,8 @@ func Test_Log_Debug(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_DebugWithFields(t *testing.T) {
@@ -103,7 +106,8 @@ func Test_Log_DebugWithFields(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_Info(t *testing.T) {
@@ -125,7 +129,8 @@ func Test_Log_Info(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_InfoWithFields(t *testing.T) {
@@ -158,7 +163,8 @@ func Test_Log_InfoWithFields(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_InfoWithDuplicateFields(t *testing.T) {
@@ -183,7 +189,8 @@ func Test_Log_InfoWithDuplicateFields(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_Warn(t *testing.T) {
@@ -205,7 +212,8 @@ func Test_Log_Warn(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_WarnWithFields(t *testing.T) {
@@ -238,7 +246,8 @@ func Test_Log_WarnWithFields(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_Error(t *testing.T) {
@@ -260,7 +269,8 @@ func Test_Log_Error(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_ErrorWithFields(t *testing.T) {
@@ -293,7 +303,8 @@ func Test_Log_ErrorWithFields(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 }
 
 func Test_Log_Fatal(t *testing.T) {
@@ -314,7 +325,8 @@ func Test_Log_Fatal(t *testing.T) {
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
-			assertContainsString(t, msg, "region", "us-west-02")
+			assertContainsString(t, msg, "aws_region", "us-west-02")
+			assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 		}
 	}()
 
@@ -345,7 +357,8 @@ func Test_Log_FatalWithFields(t *testing.T) {
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
-			assertContainsString(t, msg, "region", "us-west-02")
+			assertContainsString(t, msg, "aws_region", "us-west-02")
+			assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 		}
 	}()
 
@@ -391,7 +404,8 @@ func Test_Log_Namespace(t *testing.T) {
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "region", "us-west-02")
+	assertContainsString(t, msg, "aws_region", "us-west-02")
+	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 
 	assertContainsSubDoc(t, msg, "reports_shared", "duration")
 }

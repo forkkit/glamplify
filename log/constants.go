@@ -11,17 +11,18 @@ const (
 
 	// JSON LOG KEYS
 	// List of standard keys used for logging as per https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging
-	TraceID  = "trace_id"
-	Time     = "time"
-	Event    = "event"
-	Product  = "product"
-	App      = "app"
-	AppVer   = "app_version"
-	Severity = "severity"
-	Region   = "region"
-	Resource = "resource"
-	Os       = "os"
-	Customer = "customer"
+	TraceID             = "trace_id"
+	Time                = "time"
+	Event               = "event"
+	Product             = "product"
+	App                 = "app"
+	AppVer              = "app_version"
+	Severity            = "severity"
+	AwsRegion           = "aws_region"
+	AwsAccountID        = "aws_account_id"
+	Resource            = "resource"
+	Os                  = "os"
+	Customer            = "customer"
 	User                = "user"
 	Exception           = "exception"
 	Message             = "message"
@@ -41,10 +42,11 @@ const (
 
 	// ENVIRONMENT VARIABLES
 	// List of  Environment Variables keys
-	ProductEnv = "PRODUCT"
-	AppEnv     = "APP"
-	AppVerEnv  = "APP_VERSION"
-	RegionEnv  = "REGION"
+	ProductEnv     = "PRODUCT"
+	AppEnv         = "APP"
+	AppVerEnv      = "APP_VERSION"
+	AwsRegionEnv   = "AWS_REGION"
+	AwsAcountIDEnv = "AWS_ACCOUNT_ID"
 
 	// CONTEXT KEYS
 	TraceIDCtx  EventCtxKey = iota

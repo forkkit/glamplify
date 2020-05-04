@@ -44,7 +44,7 @@ func Test_Default(t *testing.T) {
 	assert.Assert(t, ok, "missing 'app' in default fields")
 	_, ok = fields[AppVer]
 	assert.Assert(t, ok, "missing 'app_ver' in default fields")
-	_, ok = fields[Region]
+	_, ok = fields[AwsRegion]
 	assert.Assert(t, ok, "missing 'region' in default fields")
 }
 
