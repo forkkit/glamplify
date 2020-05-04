@@ -32,7 +32,7 @@ func main() {
 	/* LOGGING */
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
-	cfg := log.Config{
+	cfg := log.MandatoryFields{
 		TraceId:             "abc",   // Get TraceID from context or from wherever you have it stored
 		UserAggregateId:     "user1", // Get UserAggregateId from context or from wherever you have it stored
 		CustomerAggregateId: "cust1", // Get CustomerAggregateId from context or from wherever you have it stored
@@ -85,7 +85,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	payload, err := jwt.PayloadFromRequest(r)
 
 	// Create the logging config for this request
-	cfg := log.Config{
+	cfg := log.MandatoryFields{
 		TraceId:             xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
 		UserAggregateId:     payload.EffectiveUser, 	// Get UserAggregateId from context or from wherever you have it stored
 		CustomerAggregateId: payload.Customer,      	// Get CustomerAggregateId from context or from wherever you have it stored
@@ -142,7 +142,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func doSomething(ctx context.Context) {
-	cfg := log.Config{
+	cfg := log.MandatoryFields{
 		TraceId:             xray.TraceID(ctx),        // Get TraceID from context or from wherever you have it stored
 		UserAggregateId:     jwt.DecodeUser(jwtToken), // Get UserAggregateId from context or from wherever you have it stored
 		CustomerAggregateId: "cust1",                  // Get CustomerAggregateId from context or from wherever you have it stored

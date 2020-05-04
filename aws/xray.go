@@ -11,5 +11,5 @@ func GetTraceId(ctx context.Context) (string, bool) {
 		return xray.TraceID(ctx), true
 	}
 
-
+	return xray.NewTraceID(), false
 }

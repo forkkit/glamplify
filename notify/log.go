@@ -11,7 +11,7 @@ type notifyLogger struct {
 }
 
 func newNotifyLogger(ctx context.Context) *notifyLogger {
-	cfg := log.ConfigFromCtx(ctx)
+	cfg := log.FieldsFromCtx(ctx)
 	logger := log.New(cfg)
 
 	return &notifyLogger{

@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-var ctx context.Context
+var (
+	ctx context.Context
+	mFields MandatoryFields
+)
 
 func TestMain(m *testing.M) {
 	setup()
@@ -27,6 +30,8 @@ func setup() {
 	ctx = AddTraceId(ctx, "1-2-3")
 	ctx = AddCustomer(ctx, "unilever")
 	ctx = AddUser(ctx, "UserAggregateId-123")
+
+	mFields = NewMandatoryFieldsFromCtx(ctx)
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -42,9 +47,7 @@ func shutdown() {
 }
 
 func Test_New(t *testing.T) {
-
-	cfg := ConfigFromCtx(ctx)
-	logger := New(cfg)
+	logger := New(mFields)
 	assert.Assert(t, logger != nil, logger)
 }
 
@@ -54,8 +57,7 @@ func TestDebug_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Debug( "detail_event")
 
@@ -77,8 +79,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Debug("detail_event", Fields{
 		"string":        "hello",
@@ -111,8 +112,7 @@ func TestInfo_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Info("info_event")
 
@@ -134,8 +134,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Info("info_event", Fields{
 		"string":        "hello",
@@ -168,8 +167,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Info("info_event", Fields{
 		Resource: "res_id", // set a standard types, this should overwrite the default
@@ -194,8 +192,7 @@ func TestWarn_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Warn("warn_event")
 
@@ -217,8 +214,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Warn("warn_event", Fields{
 		"string":        "hello",
@@ -251,8 +247,7 @@ func TestError_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Error(errors.New("error"))
 
@@ -274,8 +269,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
@@ -307,8 +301,7 @@ func TestFatal_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -334,8 +327,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -373,8 +365,7 @@ func TestNamespace_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer)
+	logger := NewWitCustomWriter(mFields, writer)
 
 	time.Sleep(123 * time.Millisecond)
 	t2 := time.Now()
@@ -406,10 +397,7 @@ func TestNamespace_Success(t *testing.T) {
 }
 
 func Test_RealWorld(t *testing.T) {
-
-	ctx = context.Background()
-	cfg := ConfigFromCtx(ctx)
-	logger := New(cfg)
+	logger := New(mFields)
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("detail_event", Fields{
@@ -459,10 +447,7 @@ func Test_RealWorld(t *testing.T) {
 }
 
 func Test_RealWorld_Combined(t *testing.T) {
-
-	ctx = context.Background()
-	cfg := ConfigFromCtx(ctx)
-	logger := New(cfg)
+	logger := New(mFields)
 
 	// multiple fields collections
 	logger.Debug("detail_event", Fields{
@@ -527,8 +512,7 @@ func TestScope(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer, Fields{
+	logger := NewWitCustomWriter(mFields, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -571,8 +555,7 @@ func TestScope_Overwrite(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := NewWitCustomWriter(cfg, writer, Fields{
+	logger := NewWitCustomWriter(mFields, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -624,9 +607,7 @@ func TestScope_Overwrite(t *testing.T) {
 
 func Test_RealWorld_Scope(t *testing.T) {
 
-	ctx = context.Background()
-	cfg := ConfigFromCtx(ctx)
-	logger := New(cfg, Fields{"scopeID": 123})
+	logger := New(mFields, Fields{"scopeID": 123})
 	assert.Assert(t, logger != nil)
 
 	logger.Debug("detail_event", Fields{
@@ -691,8 +672,7 @@ func BenchmarkLogging(b *testing.B) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = ioutil.Discard
 	})
-	cfg := ConfigFromCtx(ctx)
-	logger := newLogger(cfg, writer)
+	logger := newLogger(mFields, writer)
 
 	fields := Fields{
 		"string":        "hello",

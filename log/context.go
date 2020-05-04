@@ -25,12 +25,6 @@ func AddUser(ctx context.Context, user string) context.Context {
 	return ctx
 }
 
-func ConfigToCtx(ctx context.Context, cfg Config) context.Context {
-	ctx = AddTraceId(ctx, cfg.TraceId)
-	ctx = AddCustomer(ctx, cfg.CustomerAggregateId)
-	return AddUser(ctx, cfg.UserAggregateId)
-}
-
 func GetTraceId(ctx context.Context) (string, bool) {
 	traceId, ok := ctx.Value(TraceIdCtx).(string)
 	return traceId, ok
@@ -44,19 +38,4 @@ func GetUser(ctx context.Context) (string, bool) {
 func GetCustomer(ctx context.Context) (string, bool) {
 	customer, ok := ctx.Value(CustomerCtx).(string)
 	return customer, ok
-}
-func ConfigFromCtx(ctx context.Context) Config {
-	cfg := Config{}
-
-	if prod, ok := GetTraceId(ctx); ok {
-		cfg.TraceId = prod
-	}
-	if prod, ok := GetCustomer(ctx); ok {
-		cfg.CustomerAggregateId = prod
-	}
-	if prod, ok := GetUser(ctx); ok {
-		cfg.UserAggregateId = prod
-	}
-
-	return cfg
 }

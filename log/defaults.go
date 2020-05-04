@@ -1,15 +1,10 @@
 package log
 
 import (
-	"context"
-	"encoding/hex"
 	"fmt"
-	"github.com/aws/aws-xray-sdk-go/xray"
-	"math/rand"
 	"os"
 	"runtime"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,7 +23,7 @@ func newDefaultValues() *DefaultValues {
 	return &DefaultValues{}
 }
 
-func (df DefaultValues) getDefaults(cfg Config, event string, sev string) Fields {
+func (df DefaultValues) getDefaults(mFields MandatoryFields, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -37,8 +32,8 @@ func (df DefaultValues) getDefaults(cfg Config, event string, sev string) Fields
 		Severity: sev,
 	}
 
-	fields = df.getCfgDefaults(cfg, fields)
-	fields = df.getEnvDefaults(fields)
+	fields = df.getMandatoryFields(mFields, fields)
+	fields = df.getEnvFields(fields)
 
 	return fields
 }
@@ -66,7 +61,7 @@ func (df DefaultValues) getErrorDefaults(err error, fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getEnvDefaults(fields Fields) Fields {
+func (df DefaultValues) getEnvFields(fields Fields) Fields {
 
 	fields = df.addEnvFieldIfMissing(Product, ProductEnv, fields)
 	fields = df.addEnvFieldIfMissing(App, AppEnv, fields)
@@ -76,27 +71,13 @@ func (df DefaultValues) getEnvDefaults(fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getCfgDefaults(cfg Config, fields Fields) Fields {
+func (df DefaultValues) getMandatoryFields(mFields MandatoryFields, fields Fields) Fields {
 
-	fields = df.addCfgFieldIfMissing(TraceId, cfg.TraceId, fields)
-	fields = df.addCfgFieldIfMissing(Customer, cfg.CustomerAggregateId, fields)
-	fields = df.addCfgFieldIfMissing(User, cfg.UserAggregateId, fields)
+	fields = df.addMandatoryFieldIfMissing(TraceId, mFields.TraceId, fields)
+	fields = df.addMandatoryFieldIfMissing(Customer, mFields.CustomerAggregateId, fields)
+	fields = df.addMandatoryFieldIfMissing(User, mFields.UserAggregateId, fields)
 
 	return fields
-}
-
-func (df DefaultValues) addTraceIdIfMissing(ctx context.Context) context.Context {
-
-	if traceId, ok := ctx.Value(TraceIdCtx).(string); !ok {
-		if xray.RequestWasTraced(ctx) {
-			traceId = xray.TraceID(ctx)
-		} else {
-			traceId = df.newTraceID()
-		}
-		ctx = AddTraceId(ctx, traceId)
-	}
-
-	return ctx
 }
 
 func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fields Fields) Fields {
@@ -115,7 +96,7 @@ func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fie
 	return fields
 }
 
-func (df DefaultValues) addCfgFieldIfMissing(fieldName string, fieldValue string, fields Fields) Fields {
+func (df DefaultValues) addMandatoryFieldIfMissing(fieldName string, fieldValue string, fields Fields) Fields {
 
 	// If it contains it already, all good!
 	if _, ok := fields[fieldName]; ok {
@@ -149,32 +130,3 @@ func (df DefaultValues) hostName() string {
 func (df DefaultValues) targetOS() string {
 	return runtime.GOOS
 }
-
-var randG = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-func (df DefaultValues) newTraceID() string {
-	epoch := time.Now().Unix()
-	hex := df.randHexString(24)
-
-	var sb strings.Builder
-
-	sb.Grow(+40)
-
-	sb.WriteString("1-")
-	sb.WriteString(strconv.FormatInt(epoch, 10))
-	sb.WriteString("-")
-	sb.WriteString(hex)
-
-	return sb.String()
-}
-
-func (df DefaultValues) randHexString(n int) string {
-	b := make([]byte, (n+1)/2) // can be simplified to n/2 if n is always even
-
-	if _, err := randG.Read(b); err != nil {
-		panic(err)
-	}
-
-	return hex.EncodeToString(b)[:n]
-}
-
