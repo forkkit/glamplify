@@ -6,8 +6,8 @@ import (
 	"sync"
 )
 
-// Config for setting initial values for Logger
-type Config struct {
+// WriterConfig for setting initial values for Logger
+type WriterConfig struct {
 	Output io.Writer
 }
 
@@ -20,10 +20,10 @@ type FieldWriter struct {
 // NewWriter creates a new FieldWriter. The optional configure func lets you set values on the underlying standard writer.
 // Useful for CLI apps that want to direct logging to a file or stderr
 // eg. SetOutput
-func NewWriter(configure ...func(*Config)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+func NewWriter(configure ...func(*WriterConfig)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
 	logger := &FieldWriter{}
-	conf := Config{
+	conf := WriterConfig{
 		Output: os.Stdout,
 	}
 	for _, config := range configure {
@@ -36,29 +36,6 @@ func NewWriter(configure ...func(*Config)) *FieldWriter { // https://dave.cheney
 	logger.output = conf.Output
 
 	return logger
-}
-
-func (writer *FieldWriter) debug(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) info(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) warn(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) error(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-}
-
-func (writer *FieldWriter) fatal(event string, meta Fields, fields ...Fields) {
-	writer.writeFields(event, meta, fields...)
-
-	// time to panic!
-	panic(event)
 }
 
 func (writer *FieldWriter) writeFields(event string, meta Fields, fields ...Fields) {

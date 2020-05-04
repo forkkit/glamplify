@@ -1,135 +1,142 @@
 package log
 
 import (
-	"context"
 	"github.com/cultureamp/glamplify/helper"
-	"github.com/cultureamp/glamplify/jwt"
-	"net/http"
-	"strings"
 )
 
 // Logger
 type Logger struct {
-	ctx       context.Context
+	tFields   TransactionFields
 	writer    *FieldWriter
 	fields    Fields
 	defValues *DefaultValues
 }
 
 var (
-	internal = NewWriter(func(conf *Config) {})
+	internalWriter = NewWriter(func(conf *WriterConfig) {})
+	defaultLogger  = NewWitCustomWriter(TransactionFields{}, internalWriter)
 )
 
-// NewFromRequest creates a new logger and does all the good things
-// like setting the current user, customer, etc from decoding the JWT on the request (if present)
-// The error returned indicates a problem with decoding the JWT, but a new *Logger is always returned regardless of error
-func NewFromRequest(r *http.Request, fields ...Fields) (context.Context, *Logger, error) {
-	var logger *Logger
-
-	ctx := r.Context()
-	token := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
-	if len(token) > 0 {
-
-		splitToken := strings.Split(token, "Bearer")
-		token = splitToken[1]
-
-		jwt, err := jwt.NewDecoder()
-		if err != nil {
-			ctx, logger = New(ctx, fields...)
-			return ctx, logger, err
-		}
-
-		payload, err := jwt.Decode(token)
-		if err != nil {
-			ctx, logger = New(ctx, fields...)
-			return ctx, logger, err
-		}
-
-		ctx = AddCustomer(ctx, payload.Customer)
-		ctx = AddUser(ctx, payload.EffectiveUser)
-	}
-
-	ctx, logger = New(ctx, fields...)
-	return ctx, logger, nil
-}
-
 // New creates a *Logger with optional fields. Useful for when you want to add a field to all subsequent logging calls eg. request_id, etc.
-func New(ctx context.Context, fields ...Fields)  (context.Context, *Logger) {
-	return newLogger(ctx, internal, fields...)
+func New(tFields TransactionFields, fields ...Fields) *Logger {
+	return newLogger(tFields, internalWriter, fields...)
 }
 
-// NewWithCustomWriter creates a *Logger with a custom writer (usually not to stdout).
 // Useful for CLI applications that want to write to stderr or file etc.
-func NewWitCustomWriter(ctx context.Context, writer *FieldWriter, fields ...Fields) (context.Context, *Logger) {
-	return newLogger(ctx, writer, fields...)
+func NewWitCustomWriter(tFields TransactionFields, writer *FieldWriter, fields ...Fields) *Logger {
+	return newLogger(tFields, writer, fields...)
 }
 
-func newLogger(ctx context.Context, writer *FieldWriter, fields ...Fields) (context.Context, *Logger) {
+func newLogger(tFields TransactionFields, writer *FieldWriter, fields ...Fields) *Logger {
 
 	df := newDefaultValues()
-	ctx = df.addTraceIdIfMissing(ctx)
 
 	merged := Fields{}
 	merged = merged.Merge(fields...)
 	logger := &Logger{
-		ctx:    ctx,
-		writer: writer,
-		fields: merged,
+		tFields: tFields,
+		writer:  writer,
+		fields:  merged,
 	}
 	logger.defValues = df
-	return ctx, logger
+	return logger
 }
 
-// Debug writes a debug message with optional types to the underlying standard writer.
+// Debug writes a write message with optional types to the underlying standard writer.
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
-// Use lower-case keys and values if possible.
+// Use snake_case keys and lower case values if possible.
+func Debug(tFields TransactionFields, event string, fields ...Fields) {
+	defaultLogger.write(tFields, event, DebugSev, fields...)
+}
+
+// Debug writes a write message with optional types to the underlying standard writer.
+// Useful for adding detailed tracing that you don't normally want to appear, but turned on
+// when hunting down incorrect behaviour.
+// Use snake_case keys and lower case values if possible.
 func (logger Logger) Debug(event string, fields ...Fields) {
-	event = helper.ToSnakeCase(event)
-	meta := logger.defValues.getDefaults(logger.ctx, event, DebugSev)
-	merged := logger.fields.Merge(fields...)
-	logger.writer.debug(event, meta, merged)
+	logger.write(logger.tFields, event, DebugSev, fields...)
 }
 
 // Info writes a message with optional types to the underlying standard writer.
 // Useful for normal tracing that should be captured during standard operating behaviour.
-// Use lower-case keys and values if possible.
+// Use snake_case keys and lower case values if possible.
+func Info(tFields TransactionFields, event string, fields ...Fields) {
+	defaultLogger.write(tFields, event, InfoSev, fields...)
+}
+
+// Info writes a message with optional types to the underlying standard writer.
+// Useful for normal tracing that should be captured during standard operating behaviour.
+// Use snake_case keys and lower case values if possible.
 func (logger Logger) Info(event string, fields ...Fields) {
-	event = helper.ToSnakeCase(event)
-	meta := logger.defValues.getDefaults(logger.ctx, event, InfoSev)
-	merged := logger.fields.Merge(fields...)
-	logger.writer.info(event, meta, merged)
+	logger.write(logger.tFields, event, InfoSev, fields...)
 }
 
 // Warn writes a message with optional types to the underlying standard writer.
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
-// Use lower-case keys and values if possible.
+// Use snake_case keys and lower case values if possible.
+func Warn(tFields TransactionFields, event string, fields ...Fields) {
+	defaultLogger.write(tFields, event, WarnSev, fields...)
+}
+
+// Warn writes a message with optional types to the underlying standard writer.
+// Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
+// Use snake_case keys and lower case values if possible.
 func (logger Logger) Warn(event string, fields ...Fields) {
-	event = helper.ToSnakeCase(event)
-	meta := logger.defValues.getDefaults(logger.ctx, event, WarnSev)
-	merged := logger.fields.Merge(fields...)
-	logger.writer.warn(event, meta, merged)
+	logger.write(logger.tFields, event, WarnSev, fields...)
 }
 
 // Error writes a error message with optional types to the underlying standard writer.
 // Useful to trace errors that are usually not recoverable. These should always be logged.
-// Use lower-case keys and values if possible.
+// Use snake_case keys and lower case values if possible.
+func Error(tFields TransactionFields, err error, fields ...Fields) {
+	defaultLogger.writeError(tFields, err, ErrorSev, fields...)
+}
+
+// Error writes a error message with optional types to the underlying standard writer.
+// Useful to trace errors that are usually not recoverable. These should always be logged.
+// Use snake_case keys and lower case values if possible.
 func (logger Logger) Error(err error, fields ...Fields) {
-	event := helper.ToSnakeCase(err.Error())
-	meta := logger.defValues.getDefaults(logger.ctx, event, ErrorSev)
-	meta = logger.defValues.getErrorDefaults(err, meta)
-	merged := logger.fields.Merge(fields...)
-	logger.writer.error(event, meta, merged)
+	logger.writeError(logger.tFields, err, ErrorSev, fields...)
 }
 
 // Fatal writes a error message with optional types to the underlying standard writer and then calls panic!
 // Panic will terminate the current go routine.
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
-// Use lower-case keys and values if possible.
+// Use snake_case keys and lower case values if possible.
+func Fatal(tFields TransactionFields, err error, fields ...Fields) {
+	event := defaultLogger.writeError(tFields, err, FatalSev, fields...)
+
+	// time to panic!
+	panic(event)
+}
+
+// Fatal writes a error message with optional types to the underlying standard writer and then calls panic!
+// Panic will terminate the current go routine.
+// Useful to trace catastrophic errors that are not recoverable. These should always be logged.
+// Use snake_case keys and lower case values if possible.
 func (logger Logger) Fatal(err error, fields ...Fields) {
+	event := logger.writeError(logger.tFields, err, FatalSev, fields...)
+
+	// time to panic!
+	panic(event)
+}
+
+func (logger Logger) write(tFields TransactionFields, event string, sev string, fields ...Fields) string {
+	event = helper.ToSnakeCase(event)
+	meta := logger.defValues.getDefaults(tFields, event, sev)
+	merged := logger.fields.Merge(fields...)
+	logger.writer.writeFields(event, meta, merged)
+
+	return event
+}
+
+func (logger Logger) writeError(tFields TransactionFields, err error, sev string, fields ...Fields) string {
 	event := helper.ToSnakeCase(err.Error())
-	meta := logger.defValues.getDefaults(logger.ctx, event, FatalSev)
+	meta := logger.defValues.getDefaults(tFields, event, sev)
 	meta = logger.defValues.getErrorDefaults(err, meta)
 	merged := logger.fields.Merge(fields...)
-	logger.writer.fatal(event, meta, merged)
+	logger.writer.writeFields(event, meta, merged)
+
+	return event
 }

@@ -18,7 +18,8 @@ type monitorLogger struct {
 }
 
 func newMonitorLogger(ctx context.Context) *monitorLogger {
-	_, logger := log.New(ctx)
+	cfg := log.NewRequestScopeFieldsFromCtx(ctx)
+	logger := log.New(cfg)
 
 	return &monitorLogger{
 		logger: logger,

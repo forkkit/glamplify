@@ -10,7 +10,7 @@ import (
 func HandleError(err error, fields log.Fields) {
 
 	// call logger
-	_, logger := log.New(context.Background())
+	logger := log.New(log.TransactionFields{})
 	logger.Error(err, log.Fields(fields))
 
 	// call newrelic
@@ -23,7 +23,8 @@ func HandleError(err error, fields log.Fields) {
 func HandleErrorWithContext(ctx context.Context, err error, fields log.Fields) {
 
 	// call logger
-	_, logger := log.New(ctx)
+	transactionFields := log.NewRequestScopeFieldsFromCtx(ctx)
+	logger := log.New(transactionFields)
 	logger.Error(err, fields)
 
 	// call newrelic

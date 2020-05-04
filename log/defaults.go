@@ -1,15 +1,10 @@
 package log
 
 import (
-	"context"
-	"encoding/hex"
 	"fmt"
-	"github.com/aws/aws-xray-sdk-go/xray"
-	"math/rand"
 	"os"
 	"runtime"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,7 +23,7 @@ func newDefaultValues() *DefaultValues {
 	return &DefaultValues{}
 }
 
-func (df DefaultValues) getDefaults(ctx context.Context, event string, sev string) Fields {
+func (df DefaultValues) getDefaults(transactionFields TransactionFields, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -37,8 +32,8 @@ func (df DefaultValues) getDefaults(ctx context.Context, event string, sev strin
 		Severity: sev,
 	}
 
-	fields = df.getCtxDefaults(ctx, fields)
-	fields = df.getEnvDefaults(fields)
+	fields = df.getMandatoryFields(transactionFields, fields)
+	fields = df.getEnvFields(fields)
 
 	return fields
 }
@@ -66,37 +61,24 @@ func (df DefaultValues) getErrorDefaults(err error, fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getEnvDefaults(fields Fields) Fields {
+func (df DefaultValues) getEnvFields(fields Fields) Fields {
 
 	fields = df.addEnvFieldIfMissing(Product, ProductEnv, fields)
 	fields = df.addEnvFieldIfMissing(App, AppEnv, fields)
 	fields = df.addEnvFieldIfMissing(AppVer, AppVerEnv, fields)
-	fields = df.addEnvFieldIfMissing(Region, RegionEnv, fields)
+	fields = df.addEnvFieldIfMissing(AwsRegion, AwsRegionEnv, fields)
+	fields = df.addEnvFieldIfMissing(AwsAccountID, AwsAcountIDEnv, fields)
 
 	return fields
 }
 
-func (df DefaultValues) getCtxDefaults(ctx context.Context, fields Fields) Fields {
+func (df DefaultValues) getMandatoryFields(transactionFields TransactionFields, fields Fields) Fields {
 
-	fields = df.addCtxFieldIfMissing(ctx, TraceId, TraceIdCtx, fields)
-	fields = df.addCtxFieldIfMissing(ctx, Customer, CustomerCtx, fields)
-	fields = df.addCtxFieldIfMissing(ctx, User, UserCtx, fields)
+	fields = df.addMandatoryFieldIfMissing(TraceID, transactionFields.TraceID, fields)
+	fields = df.addMandatoryFieldIfMissing(Customer, transactionFields.CustomerAggregateID, fields)
+	fields = df.addMandatoryFieldIfMissing(User, transactionFields.UserAggregateID, fields)
 
 	return fields
-}
-
-func (df DefaultValues) addTraceIdIfMissing(ctx context.Context) context.Context {
-
-	if traceId, ok := ctx.Value(TraceIdCtx).(string); !ok {
-		if xray.RequestWasTraced(ctx) {
-			traceId = xray.TraceID(ctx)
-		} else {
-			traceId = df.newTraceID()
-		}
-		ctx = AddTraceId(ctx, traceId)
-	}
-
-	return ctx
 }
 
 func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fields Fields) Fields {
@@ -106,27 +88,21 @@ func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fie
 		return fields
 	}
 
-	// next, check env
-	if prod, ok := os.LookupEnv(osVar); ok {
-		fields[fieldName] = prod
-		return fields
-	}
+	// otherwise get env value from OS
+	prod := os.Getenv(osVar)
+	fields[fieldName] = prod
 
 	return fields
 }
 
-func (df DefaultValues) addCtxFieldIfMissing(ctx context.Context, fieldName string, ctxKey EventCtxKey, fields Fields) Fields {
+func (df DefaultValues) addMandatoryFieldIfMissing(fieldName string, fieldValue string, fields Fields) Fields {
 
 	// If it contains it already, all good!
 	if _, ok := fields[fieldName]; ok {
 		return fields
 	}
 
-	if prod, ok := ctx.Value(ctxKey).(string); ok {
-		fields[fieldName] = prod
-		return fields
-	}
-
+	fields[fieldName] = fieldValue
 	return fields
 }
 
@@ -153,32 +129,3 @@ func (df DefaultValues) hostName() string {
 func (df DefaultValues) targetOS() string {
 	return runtime.GOOS
 }
-
-var randG = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-func (df DefaultValues) newTraceID() string {
-	epoch := time.Now().Unix()
-	hex := df.randHexString(24)
-
-	var sb strings.Builder
-
-	sb.Grow(+40)
-
-	sb.WriteString("1-")
-	sb.WriteString(strconv.FormatInt(epoch, 10))
-	sb.WriteString("-")
-	sb.WriteString(hex)
-
-	return sb.String()
-}
-
-func (df DefaultValues) randHexString(n int) string {
-	b := make([]byte, (n+1)/2) // can be simplified to n/2 if n is always even
-
-	if _, err := randG.Read(b); err != nil {
-		panic(err)
-	}
-
-	return hex.EncodeToString(b)[:n]
-}
-

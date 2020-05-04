@@ -1,10 +1,11 @@
 package main
 
 import (
-	"context"
 	"errors"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/cultureamp/glamplify/config"
 	http2 "github.com/cultureamp/glamplify/http"
+	"github.com/cultureamp/glamplify/jwt"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"github.com/cultureamp/glamplify/notify"
@@ -30,11 +31,15 @@ func main() {
 	/* LOGGING */
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
-	ctx := context.Background()
-	ctx, logger := log.New(ctx)
+	transactionFields := log.TransactionFields{
+		TraceID:             "abc",   // Get TraceID from context or from wherever you have it stored
+		UserAggregateID:     "user1", // Get UserAggregateID from context or from wherever you have it stored
+		CustomerAggregateID: "cust1", // Get CustomerAggregateID from context or from wherever you have it stored
+	}
+	logger := log.New(transactionFields)
 
 	// or if you want a field to be present on each subsequent logging call do this:
-	ctx, logger = log.New(ctx, log.Fields{"request_id": 123})
+	logger = log.New(transactionFields, log.Fields{"request_id": 123})
 
 	/* Monitor & Notify */
 	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
@@ -76,25 +81,25 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Do things
 
 	/* REQUEST LOGGING */
+	payload, err := jwt.PayloadFromRequest(r)
 
-	// This helper does all the good things:
-	// Decoded JWT (if present) and set User/Customer on the context
-	// Can optionally pass in log.Fields{} if you have values you want to
-	// scope to every subsequent logging calls..   eg. logger, ctx, err := helper.NewLoggerFromRequest(ctx, r, log.Fields{"request_id": 123})
-	_, logger, err := log.NewFromRequest(r)
-	if err != nil {
-		// Error here usually means missing public key or corrupted JWT or such like
-		// But a valid logger is ALWAYS returned, so it is safe to use. It just won't have User/Customer logging fields
-		logger.Error(err)
+	// Create the logging config for this request
+	transactionFields := log.TransactionFields{
+		TraceID:             xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
+		UserAggregateID:     payload.EffectiveUser,     // Get UserAggregateID from context or from wherever you have it stored
+		CustomerAggregateID: payload.Customer,          // Get CustomerAggregateID from context or from wherever you have it stored
 	}
 
-	// Emit debug trace
-	// All messages must be static strings (as per Culture Amp Sensibile Default)
-	logger.Debug("Something happened")
+	// Then create a logger that will use those transaction fields values when writing out logs
+	logger := log.New(transactionFields)
+	logger.Debug("something_happened")
+
+	// or use the default logger with transaction fields passed in
+	log.Debug(transactionFields, "something_happened", log.Fields{})
 
 	// Emit debug trace with types
 	// Fields can contain any type of variables
-	logger.Debug("Something else happened", log.Fields{
+	logger.Debug("something_else_happened", log.Fields{
 		"aString": "hello",
 		"aInt":    123,
 		"aFloat":  42.48,
