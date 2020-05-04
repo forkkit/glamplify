@@ -16,12 +16,12 @@ func PayloadFromRequest(r *http.Request) (Payload, error) {
 
 	token := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
 	if len(token) == 0 {
-		return Payload{}, errors.New("Missing authorization header")
+		return Payload{}, errors.New("missing authorization header")
 	}
 
 	splitToken := strings.Split(token, "Bearer")
 	if len(splitToken) < 2 {
-		return Payload{}, errors.New("Missing 'Bearer' token in authorization header")
+		return Payload{}, errors.New("missing 'Bearer' token in authorization header")
 	}
 
 	jwt, err := NewDecoder()
