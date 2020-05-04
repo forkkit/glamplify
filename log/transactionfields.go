@@ -1,6 +1,9 @@
 package log
 
-import "context"
+import (
+	"context"
+	"github.com/cultureamp/glamplify/aws"
+)
 
 type TransactionFields struct {
 	TraceID             string `json:"trace_id"`
@@ -19,9 +22,15 @@ func NewRequestScopeFields(traceID string, customer string, user string) Transac
 func NewRequestScopeFieldsFromCtx(ctx context.Context) TransactionFields {
 	rsFields := TransactionFields{}
 
+	// First look for our key in the context
 	if prod, ok := GetTraceID(ctx); ok {
 		rsFields.TraceID = prod
+	} else {
+		// if ours isn't there, then ask AWS SDK for the TraceID
+		prod, ok = aws.GetTraceID(ctx)	// creates new traceID if missing, but doesn't add to ctx!
+		rsFields.TraceID = prod
 	}
+
 	if prod, ok := GetCustomer(ctx); ok {
 		rsFields.CustomerAggregateID = prod
 	}
