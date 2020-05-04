@@ -66,7 +66,7 @@ func (encoder Encoder) claims(payload Payload, duration time.Duration) claims {
 			IssuedAt: now.Unix(),
 			// Were a little loose on the expiry for now, to avoid possible
 			// problems with clock skew, slow requests, background jobs (?) etc.
-			ExpiresAt: now.Add(10 * time.Minute).Unix(),
+			ExpiresAt: now.Add(duration).Unix(),
 		},
 	}
 }
