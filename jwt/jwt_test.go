@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -39,12 +40,54 @@ func Test_JWT_Encode(t *testing.T) {
 }
 
 func Test_JWT_Decode(t *testing.T) {
+	jwtEncoder, err := NewEncoderFromPath("jwt.rs256.key.development.pem")
+	assert.Assert(t, err == nil, err)
+
+	expiry := 10 * year
+	token, err := jwtEncoder.EncodeWithExpiry(Payload{
+		Customer:      "abc123",
+		RealUser:      "xyz234",
+		EffectiveUser: "xyz345",
+	}, expiry)
+
 	jwt, err := NewDecoderFromPath("jwt.rs256.key.development.pub")
 	assert.Assert(t, err == nil, err)
 
-	payload, err := jwt.Decode("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0IiwiZXhwIjoxNTg4NTY4OTY4LCJpYXQiOjE1ODg1NjgzNjh9.bQKvgB8ZfGSZDQnyfM1remW_cB_sF95iIS-QfJmdn3jOCK60xiwMB7cNkXBLeVsCyMScHiTyENePvCOudsMruNhWO8YvnBpv6712O4n2sRckTKaNdYXAwidILDFXzRZMzrFAOJu1zKjPSaXiXdEv6zgq3OMruXcBF9RzsOlKPoOlgBI1Q9ctGurgI-p4WovCA0YmV9w7I2c1t3WQMMlapoJPKW1-bM37sgEgJpJrmjCavYswQ_mWY0yk9h8ftXGvQRPvLXM_K-kkhmUJ1cLT-H4iXIZkCk-Y-ONAej9lPOgBGiCmOq5DHHcggOKzzqcT0YNKrZHfCrigd7ZbT-zRSw9ukzYafduabCSj9MAq_oKzYYbYpqu6yNtzHXFBZ7izWjGVMUxpQX5gaFh6W0aezWwmBL6drO1NzYDSMX2lJ-FwVCVfKbvqFPxS5mqYQCAQueGrTlrIndWqVdDbJFw2LHTFxVLAFQGgnM292WJYp6KYVKm07mRpzHdozb8ER7lfB_hlloudEBh14WxnV4iKZabjsGZmpzXldSdVKceXTBSY4jobE-vD_U2YfBcNU7y_A2qJtTnhdIWMq_UZrmi5ycV_Nq5MUSjLat-J8iFSkCeOEsyxQ3ybMiaxFEbpBZoZAIrRUJxx3KWtdzywyS4dN9frv36O0UuWomskaR1il6U")
+	// token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0IiwiZXhwIjoxNTg4NTY4OTY4LCJpYXQiOjE1ODg1NjgzNjh9.bQKvgB8ZfGSZDQnyfM1remW_cB_sF95iIS-QfJmdn3jOCK60xiwMB7cNkXBLeVsCyMScHiTyENePvCOudsMruNhWO8YvnBpv6712O4n2sRckTKaNdYXAwidILDFXzRZMzrFAOJu1zKjPSaXiXdEv6zgq3OMruXcBF9RzsOlKPoOlgBI1Q9ctGurgI-p4WovCA0YmV9w7I2c1t3WQMMlapoJPKW1-bM37sgEgJpJrmjCavYswQ_mWY0yk9h8ftXGvQRPvLXM_K-kkhmUJ1cLT-H4iXIZkCk-Y-ONAej9lPOgBGiCmOq5DHHcggOKzzqcT0YNKrZHfCrigd7ZbT-zRSw9ukzYafduabCSj9MAq_oKzYYbYpqu6yNtzHXFBZ7izWjGVMUxpQX5gaFh6W0aezWwmBL6drO1NzYDSMX2lJ-FwVCVfKbvqFPxS5mqYQCAQueGrTlrIndWqVdDbJFw2LHTFxVLAFQGgnM292WJYp6KYVKm07mRpzHdozb8ER7lfB_hlloudEBh14WxnV4iKZabjsGZmpzXldSdVKceXTBSY4jobE-vD_U2YfBcNU7y_A2qJtTnhdIWMq_UZrmi5ycV_Nq5MUSjLat-J8iFSkCeOEsyxQ3ybMiaxFEbpBZoZAIrRUJxx3KWtdzywyS4dN9frv36O0UuWomskaR1il6U"
+
+	payload, err := jwt.Decode(token)
+
 	assert.Assert(t, err == nil, err)
 	assert.Assert(t, payload.Customer == "abc123", payload.Customer)
 	assert.Assert(t, payload.RealUser == "xyz234", payload.RealUser)
 	assert.Assert(t, payload.EffectiveUser == "xyz345", payload.EffectiveUser)
+}
+
+func Test_PayloadFromRequest_NoAuthorizationHeader(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+	_, err := PayloadFromRequest(req)
+	assert.Assert(t, err != nil, err)
+	assert.Assert(t, err.Error() == "Missing authorization header", err)
+}
+
+func Test_PayloadFromRequest_NoBearer(t *testing.T) {
+	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50SWQiOiJhYmMxMjMiLCJlZmZlY3RpdmVVc2VySWQiOiJ4eXozNDUiLCJyZWFsVXNlcklkIjoieHl6MjM0IiwiZXhwIjoxNTg4NTY4OTY4LCJpYXQiOjE1ODg1NjgzNjh9.bQKvgB8ZfGSZDQnyfM1remW_cB_sF95iIS-QfJmdn3jOCK60xiwMB7cNkXBLeVsCyMScHiTyENePvCOudsMruNhWO8YvnBpv6712O4n2sRckTKaNdYXAwidILDFXzRZMzrFAOJu1zKjPSaXiXdEv6zgq3OMruXcBF9RzsOlKPoOlgBI1Q9ctGurgI-p4WovCA0YmV9w7I2c1t3WQMMlapoJPKW1-bM37sgEgJpJrmjCavYswQ_mWY0yk9h8ftXGvQRPvLXM_K-kkhmUJ1cLT-H4iXIZkCk-Y-ONAej9lPOgBGiCmOq5DHHcggOKzzqcT0YNKrZHfCrigd7ZbT-zRSw9ukzYafduabCSj9MAq_oKzYYbYpqu6yNtzHXFBZ7izWjGVMUxpQX5gaFh6W0aezWwmBL6drO1NzYDSMX2lJ-FwVCVfKbvqFPxS5mqYQCAQueGrTlrIndWqVdDbJFw2LHTFxVLAFQGgnM292WJYp6KYVKm07mRpzHdozb8ER7lfB_hlloudEBh14WxnV4iKZabjsGZmpzXldSdVKceXTBSY4jobE-vD_U2YfBcNU7y_A2qJtTnhdIWMq_UZrmi5ycV_Nq5MUSjLat-J8iFSkCeOEsyxQ3ybMiaxFEbpBZoZAIrRUJxx3KWtdzywyS4dN9frv36O0UuWomskaR1il6U"
+
+	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+	req.Header.Add("Authorization", "Beare "+token)
+
+	_, err := PayloadFromRequest(req)
+	assert.Assert(t, err != nil, err)
+	assert.Assert(t, err.Error() == "Missing 'Bearer' token in authorization header", err)
+}
+
+func Test_PayloadFromRequest_InvalidToken(t *testing.T) {
+	token := "INVALID.TOKEN."
+
+	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	_, err := PayloadFromRequest(req)
+	assert.Assert(t, err != nil, err)
+	assert.Assert(t, err.Error() == "Invalid Key: Key must be PEM encoded PKCS1 or PKCS8 private key", err)
 }
