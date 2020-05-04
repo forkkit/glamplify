@@ -51,7 +51,7 @@ func Test_New(t *testing.T) {
 	assert.Assert(t, logger != nil, logger)
 }
 
-func TestDebug_Success(t *testing.T) {
+func Test_Log_Debug(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -73,7 +73,7 @@ func TestDebug_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestDebugWithFields_Success(t *testing.T) {
+func Test_Log_DebugWithFields(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -106,7 +106,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestInfo_Success(t *testing.T) {
+func Test_Log_Info(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -128,7 +128,7 @@ func TestInfo_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestInfoWithFields_Success(t *testing.T) {
+func Test_Log_InfoWithFields(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -161,7 +161,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestInfoWithDuplicateFields_Success(t *testing.T) {
+func Test_Log_InfoWithDuplicateFields(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -186,7 +186,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestWarn_Success(t *testing.T) {
+func Test_Log_Warn(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -208,7 +208,7 @@ func TestWarn_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestWarnWithFields_Success(t *testing.T) {
+func Test_Log_WarnWithFields(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -241,7 +241,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestError_Success(t *testing.T) {
+func Test_Log_Error(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -263,7 +263,7 @@ func TestError_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestErrorWithFields_Success(t *testing.T) {
+func Test_Log_ErrorWithFields(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -296,7 +296,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 }
 
-func TestFatal_Success(t *testing.T) {
+func Test_Log_Fatal(t *testing.T) {
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
@@ -321,7 +321,7 @@ func TestFatal_Success(t *testing.T) {
 	logger.Fatal(errors.New("fatal")) // will call panic!
 }
 
-func TestFatalWithFields_Success(t *testing.T) {
+func Test_Log_FatalWithFields(t *testing.T) {
 
 	memBuffer := &bytes.Buffer{}
 	writer := NewWriter(func(conf *WriterConfig) {
@@ -358,7 +358,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 	})
 }
 
-func TestNamespace_Success(t *testing.T) {
+func Test_Log_Namespace(t *testing.T) {
 
 	t1 := time.Now()
 	memBuffer := &bytes.Buffer{}
@@ -394,116 +394,6 @@ func TestNamespace_Success(t *testing.T) {
 	assertContainsString(t, msg, "region", "us-west-02")
 
 	assertContainsSubDoc(t, msg, "reports_shared", "duration")
-}
-
-func Test_RealWorld(t *testing.T) {
-	logger := New(transactionFields)
-
-	// You should see these printed out, all correctly formatted.
-	logger.Debug("detail_event", Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	logger.Info("info_event", Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	logger.Warn("info_event", Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	logger.Error(errors.New("error"), Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	defer func() {
-		recover()
-	}()
-
-	// this will call panic!
-	logger.Fatal(errors.New("fatal"), Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-}
-
-func Test_RealWorld_Combined(t *testing.T) {
-	logger := New(transactionFields)
-
-	// multiple fields collections
-	logger.Debug("detail_event", Fields{
-		"string1": "hello",
-		"int1":    123,
-		"float1":  42.48,
-	}, Fields{
-		"string2": "world",
-		"int2":    456,
-		"float2":  78.98,
-	})
-
-	logger.Info("info_event", Fields{
-		"string1": "hello",
-		"int1":    123,
-		"float1":  42.48,
-	}, Fields{
-		"string2": "world",
-		"int2":    456,
-		"float2":  78.98,
-	})
-
-	logger.Warn("warn_event", Fields{
-		"string1": "hello",
-		"int1":    123,
-		"float1":  42.48,
-	}, Fields{
-		"string2": "world",
-		"int2":    456,
-		"float2":  78.98,
-	})
-
-	logger.Error(errors.New("error"), Fields{
-		"string1": "hello",
-		"int1":    123,
-		"float1":  42.48,
-	}, Fields{
-		"string2": "world",
-		"int2":    456,
-		"float2":  78.98,
-	})
-
-	defer func() {
-		recover()
-	}()
-
-	// this will call panic!
-	logger.Fatal(errors.New("fatal"), Fields{
-		"string1": "hello",
-		"int1":    123,
-		"float1":  42.48,
-	}, Fields{
-		"string2": "world",
-		"int2":    456,
-		"float2":  78.98,
-	})
 }
 
 
@@ -605,6 +495,210 @@ func TestScope_Overwrite(t *testing.T) {
 	})
 }
 
+func Test_RealWorld(t *testing.T) {
+	logger := New(transactionFields)
+
+	// You should see these printed out, all correctly formatted.
+	logger.Debug("detail_event", Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+	Debug(transactionFields, "detail_event", Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	logger.Info("info_event", Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+	Info(transactionFields, "info_event", Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	logger.Warn("info_event", Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+	Warn(transactionFields, "info_event", Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	logger.Error(errors.New("error"), Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+	Error(transactionFields, errors.New("error"), Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	// this will call panic!
+	logger.Fatal(errors.New("fatal"), Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	// this will call panic!
+	Fatal(transactionFields, errors.New("fatal"), Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+}
+
+func Test_RealWorld_Combined(t *testing.T) {
+	logger := New(transactionFields)
+
+	// multiple fields collections
+	logger.Debug("detail_event", Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+	Debug(transactionFields, "detail_event", Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	logger.Info("info_event", Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+	Info(transactionFields, "info_event", Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	logger.Warn("warn_event", Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+	Warn(transactionFields, "warn_event", Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	logger.Error(errors.New("error"), Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+	Error(transactionFields, errors.New("error"), Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	// this will call panic!
+	logger.Fatal(errors.New("fatal"), Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	// this will call panic!
+	Fatal(transactionFields, errors.New("fatal"), Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+}
+
+
+
 func Test_RealWorld_Scope(t *testing.T) {
 
 	logger := New(transactionFields, Fields{"scopeID": 123})
@@ -655,7 +749,6 @@ func Test_RealWorld_Scope(t *testing.T) {
 		"string3 space": "world",
 	})
 }
-
 
 func Test_DurationAsIso8601(t *testing.T) {
 
