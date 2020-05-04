@@ -1,7 +1,9 @@
 package log
 
 import (
+	"context"
 	"github.com/cultureamp/glamplify/helper"
+	"net/http"
 )
 
 // Logger
@@ -25,6 +27,28 @@ func New(tFields TransactionFields, fields ...Fields) *Logger {
 // Useful for CLI applications that want to write to stderr or file etc.
 func NewWitCustomWriter(tFields TransactionFields, writer *FieldWriter, fields ...Fields) *Logger {
 	return newLogger(tFields, writer, fields...)
+}
+
+// NewWithCtx creates a new logger from a context. The context should contain TraceID, CustomerID, UserID, but
+// if not then this method will create and add TraceID to the context and return that new context
+// which should then be used in further methods (so we have consistent trace_ids)
+// To add CustomerID, UserID use ctx := log.AddCustomer(ctx, customerID), ctx := log.AddUser(ctx, userID)
+// before calling this method. You can use the jwt helper in the package to get these values from the JWT
+func NewWithCtx(ctx context.Context,  fields ...Fields) (context.Context, *Logger) {
+	transactionFields := NewRequestScopeFieldsFromCtx(ctx)
+	ctx = transactionFields.AddToCtx(ctx)
+	logger := New(transactionFields, fields...)
+	return ctx, logger
+}
+
+// NewWithRequest creates a new logger from a http.Request. The context within the request should contain
+// TraceID, CustomerID, UserID, but if not then this method wil create and add TraceID to the context and return
+// the http.Request with that new context. This returned http.Request should be used in further methods (so we have
+// consistent trace_ids) To add CustomerID, UserID use ctx := log.AddCustomer(ctx, customerID), ctx := log.AddUser(ctx, userID)
+// before calling this method. You can use the jwt helper in the package to get these values from the JWT
+func NewWithRequest(r *http.Request, fields ...Fields) (*http.Request, *Logger){
+	ctx, logger := NewWithCtx(r.Context(), fields...)
+	return r.WithContext(ctx), logger
 }
 
 func newLogger(tFields TransactionFields, writer *FieldWriter, fields ...Fields) *Logger {

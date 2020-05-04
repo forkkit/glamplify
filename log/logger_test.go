@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"gotest.tools/assert"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -51,6 +52,35 @@ func shutdown() {
 func Test_New(t *testing.T) {
 	logger := New(transactionFields)
 	assert.Assert(t, logger != nil, logger)
+}
+
+func Test_NewWithContext(t *testing.T) {
+	tempCtx, logger := NewWithCtx(ctx)
+	assert.Assert(t, logger != nil, logger)
+
+	traceID1, ok1 := GetTraceID(ctx)
+	traceID2, ok2 := GetTraceID(tempCtx)
+
+	assert.Assert(t, ok1, ok1)
+	assert.Assert(t, ok2, ok2)
+	assert.Assert(t, traceID1 == traceID2, "different trace ids")
+	assert.Assert(t, traceID2 == "1-2-3", traceID2)
+}
+
+func Test_NewWithRequest(t *testing.T) {
+	req, _ := http.NewRequest("GET", "*", nil)
+
+	req1 := req.WithContext(ctx)
+	req2, logger := NewWithRequest(req1)
+	assert.Assert(t, logger != nil, logger)
+
+	traceID1, ok1 := GetTraceID(req1.Context())
+	traceID2, ok2 := GetTraceID(req2.Context())
+
+	assert.Assert(t, ok1, ok1)
+	assert.Assert(t, ok2, ok2)
+	assert.Assert(t, traceID1 == traceID2, "different trace ids")
+	assert.Assert(t, traceID2 == "1-2-3", traceID2)
 }
 
 func Test_Log_Debug(t *testing.T) {
