@@ -20,7 +20,7 @@ func Test_JWT_Encode(t *testing.T) {
 	jwt, err := NewEncoderFromPath("jwt.rs256.key.development.pem")
 	assert.Assert(t, err == nil, err)
 
-	expiry := 10 * year
+	expiry := 25 * year
 	token, err := jwt.EncodeWithExpiry(Payload{
 		Customer:      "abc123",
 		RealUser:      "xyz234",
