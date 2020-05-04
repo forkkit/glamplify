@@ -23,7 +23,7 @@ func newDefaultValues() *DefaultValues {
 	return &DefaultValues{}
 }
 
-func (df DefaultValues) getDefaults(mFields MandatoryFields, event string, sev string) Fields {
+func (df DefaultValues) getDefaults(transactionFields TransactionFields, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -32,7 +32,7 @@ func (df DefaultValues) getDefaults(mFields MandatoryFields, event string, sev s
 		Severity: sev,
 	}
 
-	fields = df.getMandatoryFields(mFields, fields)
+	fields = df.getMandatoryFields(transactionFields, fields)
 	fields = df.getEnvFields(fields)
 
 	return fields
@@ -71,11 +71,11 @@ func (df DefaultValues) getEnvFields(fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getMandatoryFields(mFields MandatoryFields, fields Fields) Fields {
+func (df DefaultValues) getMandatoryFields(transactionFields TransactionFields, fields Fields) Fields {
 
-	fields = df.addMandatoryFieldIfMissing(TraceId, mFields.TraceId, fields)
-	fields = df.addMandatoryFieldIfMissing(Customer, mFields.CustomerAggregateId, fields)
-	fields = df.addMandatoryFieldIfMissing(User, mFields.UserAggregateId, fields)
+	fields = df.addMandatoryFieldIfMissing(TraceID, transactionFields.TraceID, fields)
+	fields = df.addMandatoryFieldIfMissing(Customer, transactionFields.CustomerAggregateID, fields)
+	fields = df.addMandatoryFieldIfMissing(User, transactionFields.UserAggregateID, fields)
 
 	return fields
 }
@@ -87,11 +87,9 @@ func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fie
 		return fields
 	}
 
-	// next, check env
-	if prod, ok := os.LookupEnv(osVar); ok {
-		fields[fieldName] = prod
-		return fields
-	}
+	// otherwise get env value from OS
+	prod := os.Getenv(osVar)
+	fields[fieldName] = prod
 
 	return fields
 }

@@ -18,7 +18,7 @@ func Test_HostName(t *testing.T) {
 func Test_Default(t *testing.T) {
 	df := newDefaultValues()
 
-	fields := df.getDefaults(mFields, "event_name", DebugSev)
+	fields := df.getDefaults(transactionFields, "event_name", DebugSev)
 
 	_, ok := fields[Time]
 	assert.Assert(t, ok, "missing 'time' in default fields")
@@ -31,7 +31,7 @@ func Test_Default(t *testing.T) {
 	_, ok = fields[Severity]
 	assert.Assert(t, ok, "missing 'severity' in default fields")
 
-	_, ok = fields[TraceId]
+	_, ok = fields[TraceID]
 	assert.Assert(t, ok, "missing 'trace_id' in default fields")
 	_, ok = fields[Customer]
 	assert.Assert(t, ok, "missing 'customer' in default fields")
@@ -51,7 +51,7 @@ func Test_Default(t *testing.T) {
 func Test_ErrorDefault(t *testing.T) {
 	df := newDefaultValues()
 
-	fields := df.getDefaults(mFields, "event_name", DebugSev)
+	fields := df.getDefaults(transactionFields, "event_name", DebugSev)
 	fields = df.getErrorDefaults(errors.New("test err"), fields)
 
 	_, ok := fields[Exception]

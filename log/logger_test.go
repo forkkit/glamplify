@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	ctx context.Context
-	mFields MandatoryFields
+	ctx               context.Context
+	transactionFields TransactionFields
 )
 
 func TestMain(m *testing.M) {
@@ -27,11 +27,11 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	ctx = context.Background()
-	ctx = AddTraceId(ctx, "1-2-3")
+	ctx = AddTraceID(ctx, "1-2-3")
 	ctx = AddCustomer(ctx, "unilever")
-	ctx = AddUser(ctx, "UserAggregateId-123")
+	ctx = AddUser(ctx, "UserAggregateID-123")
 
-	mFields = NewMandatoryFieldsFromCtx(ctx)
+	transactionFields = NewRequestScopeFieldsFromCtx(ctx)
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -47,7 +47,7 @@ func shutdown() {
 }
 
 func Test_New(t *testing.T) {
-	logger := New(mFields)
+	logger := New(transactionFields)
 	assert.Assert(t, logger != nil, logger)
 }
 
@@ -57,7 +57,7 @@ func TestDebug_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Debug( "detail_event")
 
@@ -66,7 +66,7 @@ func TestDebug_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "DEBUG")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -79,7 +79,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Debug("detail_event", Fields{
 		"string":        "hello",
@@ -99,7 +99,7 @@ func TestDebugWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -112,7 +112,7 @@ func TestInfo_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Info("info_event")
 
@@ -121,7 +121,7 @@ func TestInfo_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "INFO")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -134,7 +134,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Info("info_event", Fields{
 		"string":        "hello",
@@ -154,7 +154,7 @@ func TestInfoWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -167,7 +167,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Info("info_event", Fields{
 		Resource: "res_id", // set a standard types, this should overwrite the default
@@ -179,7 +179,7 @@ func TestInfoWithDuplicateFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "resource", "res_id") // by default this would normally be set to "host"
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -192,7 +192,7 @@ func TestWarn_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Warn("warn_event")
 
@@ -201,7 +201,7 @@ func TestWarn_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "WARN")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -214,7 +214,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Warn("warn_event", Fields{
 		"string":        "hello",
@@ -234,7 +234,7 @@ func TestWarnWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -247,7 +247,7 @@ func TestError_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Error(errors.New("error"))
 
@@ -256,7 +256,7 @@ func TestError_Success(t *testing.T) {
 	assertContainsString(t, msg, "severity", "ERROR")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -269,7 +269,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
@@ -289,7 +289,7 @@ func TestErrorWithFields_Success(t *testing.T) {
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -301,7 +301,7 @@ func TestFatal_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -310,7 +310,7 @@ func TestFatal_Success(t *testing.T) {
 			assertContainsString(t, msg, "severity", "FATAL")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
 			assertContainsString(t, msg, "customer", "unilever")
-			assertContainsString(t, msg, "user", "UserAggregateId-123")
+			assertContainsString(t, msg, "user", "UserAggregateID-123")
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
@@ -327,7 +327,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -341,7 +341,7 @@ func TestFatalWithFields_Success(t *testing.T) {
 			assertContainsString(t, msg, "string3_space", "world")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
 			assertContainsString(t, msg, "customer", "unilever")
-			assertContainsString(t, msg, "user", "UserAggregateId-123")
+			assertContainsString(t, msg, "user", "UserAggregateID-123")
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
@@ -365,7 +365,7 @@ func TestNamespace_Success(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer)
+	logger := NewWitCustomWriter(transactionFields, writer)
 
 	time.Sleep(123 * time.Millisecond)
 	t2 := time.Now()
@@ -387,7 +387,7 @@ func TestNamespace_Success(t *testing.T) {
 	assertContainsString(t, msg, "user", "userid")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateId-123")
+	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
@@ -397,7 +397,7 @@ func TestNamespace_Success(t *testing.T) {
 }
 
 func Test_RealWorld(t *testing.T) {
-	logger := New(mFields)
+	logger := New(transactionFields)
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("detail_event", Fields{
@@ -447,7 +447,7 @@ func Test_RealWorld(t *testing.T) {
 }
 
 func Test_RealWorld_Combined(t *testing.T) {
-	logger := New(mFields)
+	logger := New(transactionFields)
 
 	// multiple fields collections
 	logger.Debug("detail_event", Fields{
@@ -512,7 +512,7 @@ func TestScope(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer, Fields{
+	logger := NewWitCustomWriter(transactionFields, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -555,7 +555,7 @@ func TestScope_Overwrite(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(mFields, writer, Fields{
+	logger := NewWitCustomWriter(transactionFields, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -607,7 +607,7 @@ func TestScope_Overwrite(t *testing.T) {
 
 func Test_RealWorld_Scope(t *testing.T) {
 
-	logger := New(mFields, Fields{"scopeID": 123})
+	logger := New(transactionFields, Fields{"scopeID": 123})
 	assert.Assert(t, logger != nil)
 
 	logger.Debug("detail_event", Fields{
@@ -672,7 +672,7 @@ func BenchmarkLogging(b *testing.B) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = ioutil.Discard
 	})
-	logger := newLogger(mFields, writer)
+	logger := newLogger(transactionFields, writer)
 
 	fields := Fields{
 		"string":        "hello",

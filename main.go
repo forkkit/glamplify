@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/cultureamp/glamplify/config"
@@ -32,15 +31,15 @@ func main() {
 	/* LOGGING */
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
-	cfg := log.MandatoryFields{
-		TraceId:             "abc",   // Get TraceID from context or from wherever you have it stored
-		UserAggregateId:     "user1", // Get UserAggregateId from context or from wherever you have it stored
-		CustomerAggregateId: "cust1", // Get CustomerAggregateId from context or from wherever you have it stored
+	transactionFields := log.TransactionFields{
+		TraceID:             "abc",   // Get TraceID from context or from wherever you have it stored
+		UserAggregateID:     "user1", // Get UserAggregateID from context or from wherever you have it stored
+		CustomerAggregateID: "cust1", // Get CustomerAggregateID from context or from wherever you have it stored
 	}
-	logger := log.New(cfg)
+	logger := log.New(transactionFields)
 
 	// or if you want a field to be present on each subsequent logging call do this:
-	logger = log.New(cfg, log.Fields{"request_id": 123})
+	logger = log.New(transactionFields, log.Fields{"request_id": 123})
 
 	/* Monitor & Notify */
 	app, appErr := monitor.NewApplication("GlamplifyUnitTests", func(conf *monitor.Config) {
@@ -85,22 +84,22 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	payload, err := jwt.PayloadFromRequest(r)
 
 	// Create the logging config for this request
-	cfg := log.MandatoryFields{
-		TraceId:             xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
-		UserAggregateId:     payload.EffectiveUser, 	// Get UserAggregateId from context or from wherever you have it stored
-		CustomerAggregateId: payload.Customer,      	// Get CustomerAggregateId from context or from wherever you have it stored
+	transactionFields := log.TransactionFields{
+		TraceID:             xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
+		UserAggregateID:     payload.EffectiveUser,     // Get UserAggregateID from context or from wherever you have it stored
+		CustomerAggregateID: payload.Customer,          // Get CustomerAggregateID from context or from wherever you have it stored
 	}
 
-	// Then create a logger that will use those config values when writing out logs
-	logger := log.New(cfg)
-	logger.Debug("Something happened")
+	// Then create a logger that will use those transaction fields values when writing out logs
+	logger := log.New(transactionFields)
+	logger.Debug("something_happened")
 
-	// or use the default logger with config
-	log.Debug(cfg, "something happened")
+	// or use the default logger with transaction fields passed in
+	log.Debug(transactionFields, "something_happened", log.Fields{})
 
 	// Emit debug trace with types
 	// Fields can contain any type of variables
-	logger.Debug("Something else happened", log.Fields{
+	logger.Debug("something_else_happened", log.Fields{
 		"aString": "hello",
 		"aInt":    123,
 		"aFloat":  42.48,
@@ -138,14 +137,4 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 			"aInt2":    456,
 		})
 	}
-}
-
-
-func doSomething(ctx context.Context) {
-	cfg := log.MandatoryFields{
-		TraceId:             xray.TraceID(ctx),        // Get TraceID from context or from wherever you have it stored
-		UserAggregateId:     jwt.DecodeUser(jwtToken), // Get UserAggregateId from context or from wherever you have it stored
-		CustomerAggregateId: "cust1",                  // Get CustomerAggregateId from context or from wherever you have it stored
-	}
-
 }

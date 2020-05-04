@@ -4,9 +4,9 @@ import (
 	"context"
 )
 
-func AddTraceId(ctx context.Context, traceId string) context.Context {
-	if len(traceId) > 0 {
-		return context.WithValue(ctx, TraceIdCtx, traceId)
+func AddTraceID(ctx context.Context, traceID string) context.Context {
+	if len(traceID) > 0 {
+		return context.WithValue(ctx, TraceIDCtx, traceID)
 	}
 	return ctx
 }
@@ -25,9 +25,9 @@ func AddUser(ctx context.Context, user string) context.Context {
 	return ctx
 }
 
-func GetTraceId(ctx context.Context) (string, bool) {
-	traceId, ok := ctx.Value(TraceIdCtx).(string)
-	return traceId, ok
+func GetTraceID(ctx context.Context) (string, bool) {
+	traceID, ok := ctx.Value(TraceIDCtx).(string)
+	return traceID, ok
 }
 
 func GetUser(ctx context.Context) (string, bool) {
