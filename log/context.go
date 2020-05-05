@@ -39,3 +39,8 @@ func GetCustomer(ctx context.Context) (string, bool) {
 	customer, ok := ctx.Value(CustomerCtx).(string)
 	return customer, ok
 }
+
+func SeedCtxWithRequestScopeFields(ctx context.Context) context.Context {
+	transactionFields := NewRequestScopeFieldsFromCtx(ctx)
+	return transactionFields.AddToCtx(ctx)
+}

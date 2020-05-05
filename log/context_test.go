@@ -39,3 +39,10 @@ func Test_Context_TraceID_AddGet_Empty(t *testing.T) {
 	assert.Assert(t, !ok && id == "", id)
 }
 
+func Test_SeedCtx(t *testing.T) {
+	ctx := context.Background()
+
+	ctx = log.SeedCtxWithRequestScopeFields(ctx)
+	id, ok := log.GetTraceID(ctx)
+	assert.Assert(t, ok && id != "", id)
+}
