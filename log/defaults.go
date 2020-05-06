@@ -23,7 +23,7 @@ func newDefaultValues() *DefaultValues {
 	return &DefaultValues{}
 }
 
-func (df DefaultValues) getDefaults(transactionFields TransactionFields, event string, sev string) Fields {
+func (df DefaultValues) getDefaults(transactionFields RequestScopedFields, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -72,7 +72,7 @@ func (df DefaultValues) getEnvFields(fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getMandatoryFields(transactionFields TransactionFields, fields Fields) Fields {
+func (df DefaultValues) getMandatoryFields(transactionFields RequestScopedFields, fields Fields) Fields {
 
 	fields = df.addMandatoryFieldIfMissing(TraceID, transactionFields.TraceID, fields)
 	fields = df.addMandatoryFieldIfMissing(Customer, transactionFields.CustomerAggregateID, fields)

@@ -16,7 +16,7 @@ import (
 
 var (
 	ctx               context.Context
-	transactionFields TransactionFields
+	transactionFields RequestScopedFields
 )
 
 func TestMain(m *testing.M) {

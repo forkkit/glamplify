@@ -23,6 +23,24 @@ func Test_Context_AddGet(t *testing.T) {
 	assert.Assert(t, ok && id == "user1", id)
 }
 
+func Test_Context_RequestScope_AddGet(t *testing.T) {
+
+	rsFields := log.RequestScopedFields{
+		TraceID: "1-2-3",
+		UserAggregateID: "a-b-c",
+		CustomerAggregateID: "xyz",
+	}
+
+	ctx := context.Background()
+
+	ctx = log.AddRequestScopedFieldsCtx(ctx, rsFields)
+
+	resultFields := log.GetRequestScopedFieldsCtx(ctx)
+	assert.Assert(t, resultFields.TraceID == rsFields.TraceID, resultFields.TraceID)
+	assert.Assert(t, resultFields.CustomerAggregateID == rsFields.CustomerAggregateID, resultFields.CustomerAggregateID)
+	assert.Assert(t, resultFields.UserAggregateID == rsFields.UserAggregateID, resultFields.UserAggregateID)
+}
+
 func Test_Context_TraceID_AddGet_Empty(t *testing.T) {
 
 	ctx := context.Background()

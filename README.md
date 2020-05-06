@@ -48,7 +48,7 @@ import (
     "bytes"
     "context"
     "errors"
-    "github.com/aws/aws-xray-sdk-go/xray"
+    "github.com/cultureamp/glamplify/aws"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "net/http"
@@ -59,7 +59,7 @@ func main() {
 
     // Creating loggers is cheap. Create them on every request/run
     // DO NOT CACHE/REUSE THEM
-    transactionFields := log.TransactionFields{
+    transactionFields := log.RequestScopedFields{
    		TraceID:                "abc", 		// Get TraceID from context or from wherever you have it stored
    		UserAggregateID :       "user1",	// Get User from context or from wherever you have it stored
    		CustomerAggregateID:    "cust1",	// Get Customer from context or from wherever you have it stored
@@ -78,16 +78,31 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
-    /* REQUEST LOGGING */
+    // get JWT payload from http header
     payload, err := jwt.PayloadFromRequest(r)
-
-    // Create the logging transaction fields for this request
-    transactionFields := log.TransactionFields{
-        TraceID:             xray.TraceID(r.Context()), // Get from context or from wherever you have it stored
-        UserAggregateID:     payload.EffectiveUser, 	// Get from context or from wherever you have it stored
-        CustomerAggregateID: payload.Customer,      	// Get from context or from wherever you have it stored
+    
+    // Create the logging config for this request
+    ctx := r.Context()
+    traceID, _ := aws.GetTraceID(ctx)
+    requestScopedFields := log.RequestScopedFields{
+        TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
+        UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
+        CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
     }
-    logger := log.New(transactionFields)
+    
+    // Then create a logger that will use those transaction fields values when writing out logs
+    logger := log.New(requestScopedFields)
+    
+    // optional: save this to the context for later use, then you can just create via: ctx, logger := log.NewWithCtx(ctx)
+    // ctx = log.AddRequestScopedFieldsCtx(ctx, requestScopedFields)
+    // if you want to get them back out from the context
+    // rsFields := log.GetRequestScopedFieldsCtx(ctx)
+    
+    // optional: if you need to propagate the request then make sure you update the context for the request
+    // then you can create new loggers with: r, logger := log.NewWithRequest(r)
+    // r = r.WithContext(ctx)
+    // if you want to get them back out from the request
+    // rsFields := log.GetRequestScopedFieldsRequest(r)
 
     // Once you have a logger then you can call logger.Debug/Info/Warn/Error/Fatal
     // NOTE: unlike normal logging, the string you pass in SHOULD BE AN EVENT NAME (past tense)
@@ -172,6 +187,7 @@ package main
 
 import (
     "github.com/aws/aws-xray-sdk-go/xray"
+    "github.com/cultureamp/glamplify/aws"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
@@ -198,13 +214,20 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
+    // get JWT payload from http header
     payload, err := jwt.PayloadFromRequest(r)
-    transactionFields := log.TransactionFields{
-       TraceID:             xray.TraceID(r.Context()), // Get from context or from wherever you have it stored
-       UserAggregateID:     payload.EffectiveUser, 	// Get from context or from wherever you have it stored
-       CustomerAggregateID: payload.Customer,      	// Get from context or from wherever you have it stored
+    
+    // Create the logging config for this request
+    ctx := r.Context()
+    traceID, _ := aws.GetTraceID(ctx)
+    requestScopedFields := log.RequestScopedFields{
+        TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
+        UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
+        CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
     }
-    logger := log.New(transactionFields)
+    
+    // Then create a logger that will use those transaction fields values when writing out logs
+    logger := log.New(requestScopedFields)
 
     // Do things
 
@@ -235,6 +258,7 @@ package main
 
 import (
     "github.com/aws/aws-xray-sdk-go/xray"
+    "github.com/cultureamp/glamplify/aws"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
@@ -261,13 +285,20 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
+     // get JWT payload from http header
      payload, err := jwt.PayloadFromRequest(r)
-     transactionFields := log.TransactionFields{
-        TraceID:             xray.TraceID(r.Context()), // Get from context or from wherever you have it stored
-        UserAggregateID:     payload.EffectiveUser, 	// Get from context or from wherever you have it stored
-        CustomerAggregateID: payload.Customer,      	// Get from context or from wherever you have it stored
+     
+     // Create the logging config for this request
+     ctx := r.Context()
+     traceID, _ := aws.GetTraceID(ctx)
+     requestScopedFields := log.RequestScopedFields{
+         TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
+         UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
+         CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
      }
-     logger := log.New(transactionFields)
+     
+     // Then create a logger that will use those transaction fields values when writing out logs
+     logger := log.New(requestScopedFields)
 
     // Do things
     app, err := monitor.AppFromRequest(w, r)
@@ -293,6 +324,7 @@ package main
 import (
     "context"
     "github.com/aws/aws-xray-sdk-go/xray"
+    "github.com/cultureamp/glamplify/aws"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
@@ -312,10 +344,14 @@ func main() {
 
 func handler(ctx context.Context) {
 
-     transactionFields := log.TransactionFields{
-        TraceID: xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
-     }
-     logger := log.New(transactionFields)
+      // Create the logging config for this request
+      traceID, _ := aws.GetTraceID(ctx)
+      requestScopedFields := log.RequestScopedFields{
+          TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
+      }
+      
+      // Then create a logger that will use those transaction fields values when writing out logs
+      logger := log.New(requestScopedFields)
 
     // Do things
 
@@ -347,6 +383,7 @@ package main
 import (
     "context"
     "github.com/aws/aws-xray-sdk-go/xray"
+    "github.com/cultureamp/glamplify/aws"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
@@ -366,10 +403,14 @@ func main() {
 
 func handler(ctx context.Context) {
 
-     transactionFields := log.TransactionFields{
-        TraceID: xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
-     }
-     logger := log.New(transactionFields)
+    // Create the logging config for this request
+    traceID, _ := aws.GetTraceID(ctx)
+    requestScopedFields := log.RequestScopedFields{
+      TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
+    }
+    
+    // Then create a logger that will use those transaction fields values when writing out logs
+    logger := log.New(requestScopedFields)
 
     // Do things
 
@@ -396,6 +437,7 @@ package main
 import (
     "errors"
     "github.com/aws/aws-xray-sdk-go/xray"
+    "github.com/cultureamp/glamplify/aws"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/notify"
@@ -420,14 +462,20 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-
-     payload, err := jwt.PayloadFromRequest(r)
-     transactionFields := log.TransactionFields{
-        TraceID:             xray.TraceID(r.Context()), // Get from context or from wherever you have it stored
-        UserAggregateID:     payload.EffectiveUser, 	// Get from context or from wherever you have it stored
-        CustomerAggregateID: payload.Customer,      	// Get from context or from wherever you have it stored
-     }
-     logger := log.New(transactionFields)
+    // get JWT payload from http header
+    payload, err := jwt.PayloadFromRequest(r)
+    
+    // Create the logging config for this request
+    ctx := r.Context()
+    traceID, _ := aws.GetTraceID(ctx)
+    requestScopedFields := log.RequestScopedFields{
+      TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
+      UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
+      CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
+    }
+    
+    // Then create a logger that will use those transaction fields values when writing out logs
+    logger := log.New(requestScopedFields)
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
@@ -437,7 +485,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // Do things
 
     // Pretend we got an error
-    err := errors.New("NPE")
+    err = errors.New("NPE")
     notifier.ErrorWithContext(r.Context(), err, log.Fields {
         "key": "value",
     })

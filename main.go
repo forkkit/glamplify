@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/aws/aws-xray-sdk-go/xray"
+	"github.com/cultureamp/glamplify/aws"
 	"github.com/cultureamp/glamplify/config"
 	http2 "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/jwt"
@@ -31,7 +31,7 @@ func main() {
 	/* LOGGING */
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
-	transactionFields := log.TransactionFields{
+	transactionFields := log.RequestScopedFields{
 		TraceID:             "abc",   // Get TraceID from context or from wherever you have it stored
 		UserAggregateID:     "user1", // Get UserAggregateID from context or from wherever you have it stored
 		CustomerAggregateID: "cust1", // Get CustomerAggregateID from context or from wherever you have it stored
@@ -78,24 +78,35 @@ func main() {
 
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Do things
-
-	/* REQUEST LOGGING */
+	// get JWT payload from http header
 	payload, err := jwt.PayloadFromRequest(r)
 
 	// Create the logging config for this request
-	transactionFields := log.TransactionFields{
-		TraceID:             xray.TraceID(r.Context()), // Get TraceID from context or from wherever you have it stored
-		UserAggregateID:     payload.EffectiveUser,     // Get UserAggregateID from context or from wherever you have it stored
-		CustomerAggregateID: payload.Customer,          // Get CustomerAggregateID from context or from wherever you have it stored
+	ctx := r.Context()
+	traceID, _ := aws.GetTraceID(ctx)
+	requestScopedFields := log.RequestScopedFields{
+		TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
+		UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
+		CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
 	}
 
 	// Then create a logger that will use those transaction fields values when writing out logs
-	logger := log.New(transactionFields)
+	logger := log.New(requestScopedFields)
 	logger.Debug("something_happened")
 
+
+	// optional: save this to the context for later use, then you can just create via: ctx, logger := log.NewWithCtx(ctx)
+	// ctx = log.AddRequestScopedFieldsCtx(ctx, requestScopedFields)
+	// if you want to get them back out from the context
+	// rsFields := log.GetRequestScopedFieldsCtx(ctx)
+
+	// optional: if you need to propagate the request then make sure you update the context for the request
+	// then you can create new loggers with: r, logger := log.NewWithRequest(r)
+	// r = r.WithContext(ctx)
+
+
 	// or use the default logger with transaction fields passed in
-	log.Debug(transactionFields, "something_happened", log.Fields{})
+	log.Debug(requestScopedFields, "something_happened", log.Fields{})
 
 	// Emit debug trace with types
 	// Fields can contain any type of variables

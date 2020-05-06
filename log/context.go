@@ -25,6 +25,12 @@ func AddUser(ctx context.Context, user string) context.Context {
 	return ctx
 }
 
+func AddRequestScopedFieldsCtx(ctx context.Context, requestScopeFields RequestScopedFields) context.Context {
+	ctx = AddTraceID(ctx, requestScopeFields.TraceID)
+	ctx = AddCustomer(ctx, requestScopeFields.CustomerAggregateID)
+	return  AddUser(ctx, requestScopeFields.UserAggregateID)
+}
+
 func GetTraceID(ctx context.Context) (string, bool) {
 	traceID, ok := ctx.Value(TraceIDCtx).(string)
 	return traceID, ok
@@ -40,7 +46,25 @@ func GetCustomer(ctx context.Context) (string, bool) {
 	return customer, ok
 }
 
+func GetRequestScopedFieldsCtx(ctx context.Context) RequestScopedFields {
+	rsFields := RequestScopedFields{}
+	val, ok := GetTraceID(ctx)
+	if ok {
+		rsFields.TraceID = val
+	}
+	val, ok = GetUser(ctx)
+	if ok {
+		rsFields.UserAggregateID = val
+	}
+	val, ok = GetCustomer(ctx)
+	if ok {
+		rsFields.CustomerAggregateID = val
+	}
+
+	return rsFields
+}
+
 func SeedCtxWithRequestScopeFields(ctx context.Context) context.Context {
-	transactionFields := NewRequestScopeFieldsFromCtx(ctx)
-	return transactionFields.AddToCtx(ctx)
+	rsFields := NewRequestScopeFieldsFromCtx(ctx)
+	return rsFields.AddToCtx(ctx)
 }

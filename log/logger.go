@@ -8,7 +8,7 @@ import (
 
 // Logger
 type Logger struct {
-	tFields   TransactionFields
+	tFields   RequestScopedFields
 	writer    *FieldWriter
 	fields    Fields
 	defValues *DefaultValues
@@ -16,17 +16,17 @@ type Logger struct {
 
 var (
 	internalWriter = NewWriter(func(conf *WriterConfig) {})
-	defaultLogger  = NewWitCustomWriter(TransactionFields{}, internalWriter)
+	defaultLogger  = NewWitCustomWriter(RequestScopedFields{}, internalWriter)
 )
 
 // New creates a *Logger with optional fields. Useful for when you want to add a field to all subsequent logging calls eg. request_id, etc.
-func New(tFields TransactionFields, fields ...Fields) *Logger {
-	return newLogger(tFields, internalWriter, fields...)
+func New(rsFields RequestScopedFields, fields ...Fields) *Logger {
+	return newLogger(rsFields, internalWriter, fields...)
 }
 
 // Useful for CLI applications that want to write to stderr or file etc.
-func NewWitCustomWriter(tFields TransactionFields, writer *FieldWriter, fields ...Fields) *Logger {
-	return newLogger(tFields, writer, fields...)
+func NewWitCustomWriter(rsFields RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
+	return newLogger(rsFields, writer, fields...)
 }
 
 // NewWithCtx creates a new logger from a context. The context should contain TraceID, CustomerID, UserID, but
@@ -35,9 +35,9 @@ func NewWitCustomWriter(tFields TransactionFields, writer *FieldWriter, fields .
 // To add CustomerID, UserID use ctx := log.AddCustomer(ctx, customerID), ctx := log.AddUser(ctx, userID)
 // before calling this method. You can use the jwt helper in the package to get these values from the JWT
 func NewWithCtx(ctx context.Context,  fields ...Fields) (context.Context, *Logger) {
-	transactionFields := NewRequestScopeFieldsFromCtx(ctx)
-	ctx = transactionFields.AddToCtx(ctx)
-	logger := New(transactionFields, fields...)
+	rsFields := NewRequestScopeFieldsFromCtx(ctx)
+	ctx = rsFields.AddToCtx(ctx)
+	logger := New(rsFields, fields...)
 	return ctx, logger
 }
 
@@ -51,7 +51,7 @@ func NewWithRequest(r *http.Request, fields ...Fields) (*http.Request, *Logger){
 	return r.WithContext(ctx), logger
 }
 
-func newLogger(tFields TransactionFields, writer *FieldWriter, fields ...Fields) *Logger {
+func newLogger(tFields RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
 
 	df := newDefaultValues()
 
@@ -70,7 +70,7 @@ func newLogger(tFields TransactionFields, writer *FieldWriter, fields ...Fields)
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
 // Use snake_case keys and lower case values if possible.
-func Debug(tFields TransactionFields, event string, fields ...Fields) {
+func Debug(tFields RequestScopedFields, event string, fields ...Fields) {
 	defaultLogger.write(tFields, event, DebugSev, fields...)
 }
 
@@ -85,7 +85,7 @@ func (logger Logger) Debug(event string, fields ...Fields) {
 // Info writes a message with optional types to the underlying standard writer.
 // Useful for normal tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
-func Info(tFields TransactionFields, event string, fields ...Fields) {
+func Info(tFields RequestScopedFields, event string, fields ...Fields) {
 	defaultLogger.write(tFields, event, InfoSev, fields...)
 }
 
@@ -99,7 +99,7 @@ func (logger Logger) Info(event string, fields ...Fields) {
 // Warn writes a message with optional types to the underlying standard writer.
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
-func Warn(tFields TransactionFields, event string, fields ...Fields) {
+func Warn(tFields RequestScopedFields, event string, fields ...Fields) {
 	defaultLogger.write(tFields, event, WarnSev, fields...)
 }
 
@@ -113,7 +113,7 @@ func (logger Logger) Warn(event string, fields ...Fields) {
 // Error writes a error message with optional types to the underlying standard writer.
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
-func Error(tFields TransactionFields, err error, fields ...Fields) {
+func Error(tFields RequestScopedFields, err error, fields ...Fields) {
 	defaultLogger.writeError(tFields, err, ErrorSev, fields...)
 }
 
@@ -128,7 +128,7 @@ func (logger Logger) Error(err error, fields ...Fields) {
 // Panic will terminate the current go routine.
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
-func Fatal(tFields TransactionFields, err error, fields ...Fields) {
+func Fatal(tFields RequestScopedFields, err error, fields ...Fields) {
 	event := defaultLogger.writeError(tFields, err, FatalSev, fields...)
 
 	// time to panic!
@@ -146,7 +146,7 @@ func (logger Logger) Fatal(err error, fields ...Fields) {
 	panic(event)
 }
 
-func (logger Logger) write(tFields TransactionFields, event string, sev string, fields ...Fields) string {
+func (logger Logger) write(tFields RequestScopedFields, event string, sev string, fields ...Fields) string {
 	event = helper.ToSnakeCase(event)
 	meta := logger.defValues.getDefaults(tFields, event, sev)
 	merged := logger.fields.Merge(fields...)
@@ -155,7 +155,7 @@ func (logger Logger) write(tFields TransactionFields, event string, sev string, 
 	return event
 }
 
-func (logger Logger) writeError(tFields TransactionFields, err error, sev string, fields ...Fields) string {
+func (logger Logger) writeError(tFields RequestScopedFields, err error, sev string, fields ...Fields) string {
 	event := helper.ToSnakeCase(err.Error())
 	meta := logger.defValues.getDefaults(tFields, event, sev)
 	meta = logger.defValues.getErrorDefaults(err, meta)

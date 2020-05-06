@@ -5,22 +5,22 @@ import (
 	"github.com/cultureamp/glamplify/aws"
 )
 
-type TransactionFields struct {
+type RequestScopedFields struct {
 	TraceID             string `json:"trace_id"`
 	UserAggregateID     string `json:"user"`
 	CustomerAggregateID string `json:"customer"`
 }
 
-func NewRequestScopeFields(traceID string, customer string, user string) TransactionFields {
-	return TransactionFields{
+func NewRequestScopeFields(traceID string, customer string, user string) RequestScopedFields {
+	return RequestScopedFields{
 		TraceID:             traceID,
 		CustomerAggregateID: customer,
 		UserAggregateID:     user,
 	}
 }
 
-func NewRequestScopeFieldsFromCtx(ctx context.Context) TransactionFields {
-	rsFields := TransactionFields{}
+func NewRequestScopeFieldsFromCtx(ctx context.Context) RequestScopedFields {
+	rsFields := RequestScopedFields{}
 
 	// First look for our key in the context
 	if prod, ok := GetTraceID(ctx); ok {
@@ -41,7 +41,7 @@ func NewRequestScopeFieldsFromCtx(ctx context.Context) TransactionFields {
 	return rsFields
 }
 
-func (mFields TransactionFields) AddToCtx(ctx context.Context) context.Context {
+func (mFields RequestScopedFields) AddToCtx(ctx context.Context) context.Context {
 	ctx = AddTraceID(ctx, mFields.TraceID)
 	ctx = AddCustomer(ctx, mFields.CustomerAggregateID)
 	return AddUser(ctx, mFields.UserAggregateID)

@@ -10,7 +10,7 @@ import (
 func HandleError(err error, fields log.Fields) {
 
 	// call logger
-	logger := log.New(log.TransactionFields{})
+	logger := log.New(log.RequestScopedFields{})
 	logger.Error(err, log.Fields(fields))
 
 	// call newrelic
