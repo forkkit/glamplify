@@ -38,13 +38,13 @@ func NewWriter(configure ...func(*WriterConfig)) *FieldWriter { // https://dave.
 	return logger
 }
 
-func (writer *FieldWriter) writeFields(event string, meta Fields, fields ...Fields) {
+func (writer *FieldWriter) writeFields(system Fields, fields ...Fields) {
 	merged := Fields{}
-	user := merged.Merge(fields...)
-	if len(user) > 0 {
-		meta[event] = user
+	properties := merged.Merge(fields...)
+	if len(properties) > 0 {
+		system[Properties] = properties
 	}
-	str := meta.ToSnakeCase().serialize()
+	str := system.ToSnakeCase().serialize()
 	writer.write(str)
 }
 

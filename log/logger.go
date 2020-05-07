@@ -11,7 +11,7 @@ type Logger struct {
 	tFields   RequestScopedFields
 	writer    *FieldWriter
 	fields    Fields
-	defValues *DefaultValues
+	sysValues *SystemValues
 }
 
 var (
@@ -53,7 +53,7 @@ func NewWithRequest(r *http.Request, fields ...Fields) (*http.Request, *Logger){
 
 func newLogger(tFields RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
 
-	df := newDefaultValues()
+	df := newSystemValues()
 
 	merged := Fields{}
 	merged = merged.Merge(fields...)
@@ -62,7 +62,7 @@ func newLogger(tFields RequestScopedFields, writer *FieldWriter, fields ...Field
 		writer:  writer,
 		fields:  merged,
 	}
-	logger.defValues = df
+	logger.sysValues = df
 	return logger
 }
 
@@ -146,21 +146,25 @@ func (logger Logger) Fatal(err error, fields ...Fields) {
 	panic(event)
 }
 
-func (logger Logger) write(tFields RequestScopedFields, event string, sev string, fields ...Fields) string {
+func (logger Logger) write(rsFields RequestScopedFields, event string, sev string, fields ...Fields) string {
 	event = helper.ToSnakeCase(event)
-	meta := logger.defValues.getDefaults(tFields, event, sev)
-	merged := logger.fields.Merge(fields...)
-	logger.writer.writeFields(event, meta, merged)
+
+	system := logger.sysValues.getSystemValues(rsFields, event, sev)
+
+	properties := logger.fields.Merge(fields...)
+	logger.writer.writeFields(system, properties)
 
 	return event
 }
 
-func (logger Logger) writeError(tFields RequestScopedFields, err error, sev string, fields ...Fields) string {
+func (logger Logger) writeError(rsFields RequestScopedFields, err error, sev string, fields ...Fields) string {
 	event := helper.ToSnakeCase(err.Error())
-	meta := logger.defValues.getDefaults(tFields, event, sev)
-	meta = logger.defValues.getErrorDefaults(err, meta)
-	merged := logger.fields.Merge(fields...)
-	logger.writer.writeFields(event, meta, merged)
+
+	system := logger.sysValues.getSystemValues(rsFields, event, sev)
+	systemWithErrors := logger.sysValues.getErrorValues(err, system)
+
+	properties := logger.fields.Merge(fields...)
+	logger.writer.writeFields(systemWithErrors, properties)
 
 	return event
 }

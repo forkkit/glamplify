@@ -8,7 +8,7 @@ import (
 
 func Test_HostName(t *testing.T) {
 
-	df := newDefaultValues()
+	df := newSystemValues()
 	host := df.hostName()
 
 	assert.Assert(t, host != "", host)
@@ -16,9 +16,9 @@ func Test_HostName(t *testing.T) {
 }
 
 func Test_Default(t *testing.T) {
-	df := newDefaultValues()
+	df := newSystemValues()
 
-	fields := df.getDefaults(transactionFields, "event_name", DebugSev)
+	fields := df.getSystemValues(transactionFields, "event_name", DebugSev)
 
 	_, ok := fields[Time]
 	assert.Assert(t, ok, "missing 'time' in default fields")
@@ -49,10 +49,10 @@ func Test_Default(t *testing.T) {
 }
 
 func Test_ErrorDefault(t *testing.T) {
-	df := newDefaultValues()
+	df := newSystemValues()
 
-	fields := df.getDefaults(transactionFields, "event_name", DebugSev)
-	fields = df.getErrorDefaults(errors.New("test err"), fields)
+	fields := df.getSystemValues(transactionFields, "event_name", DebugSev)
+	fields = df.getErrorValues(errors.New("test err"), fields)
 
 	_, ok := fields[Exception]
 	assert.Assert(t, ok, "missing 'exception' in default fields")

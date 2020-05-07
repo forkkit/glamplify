@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// DefaultValues
-type DefaultValues struct {
+// SystemValues
+type SystemValues struct {
 
 }
 
@@ -19,11 +19,11 @@ func DurationAsISO8601(duration time.Duration) string {
 	return fmt.Sprintf("P%gS", duration.Seconds())
 }
 
-func newDefaultValues() *DefaultValues {
-	return &DefaultValues{}
+func newSystemValues() *SystemValues {
+	return &SystemValues{}
 }
 
-func (df DefaultValues) getDefaults(transactionFields RequestScopedFields, event string, sev string) Fields {
+func (df SystemValues) getSystemValues(transactionFields RequestScopedFields, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -38,7 +38,7 @@ func (df DefaultValues) getDefaults(transactionFields RequestScopedFields, event
 	return fields
 }
 
-func (df DefaultValues) getErrorDefaults(err error, fields Fields) Fields {
+func (df SystemValues) getErrorValues(err error, fields Fields) Fields {
 	errorMessage := strings.TrimSpace(err.Error())
 
 	stats := &debug.GCStats{}
@@ -61,7 +61,7 @@ func (df DefaultValues) getErrorDefaults(err error, fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getEnvFields(fields Fields) Fields {
+func (df SystemValues) getEnvFields(fields Fields) Fields {
 
 	fields = df.addEnvFieldIfMissing(Product, ProductEnv, fields)
 	fields = df.addEnvFieldIfMissing(App, AppEnv, fields)
@@ -72,7 +72,7 @@ func (df DefaultValues) getEnvFields(fields Fields) Fields {
 	return fields
 }
 
-func (df DefaultValues) getMandatoryFields(transactionFields RequestScopedFields, fields Fields) Fields {
+func (df SystemValues) getMandatoryFields(transactionFields RequestScopedFields, fields Fields) Fields {
 
 	fields = df.addMandatoryFieldIfMissing(TraceID, transactionFields.TraceID, fields)
 	fields = df.addMandatoryFieldIfMissing(Customer, transactionFields.CustomerAggregateID, fields)
@@ -81,7 +81,7 @@ func (df DefaultValues) getMandatoryFields(transactionFields RequestScopedFields
 	return fields
 }
 
-func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fields Fields) Fields {
+func (df SystemValues) addEnvFieldIfMissing(fieldName string, osVar string, fields Fields) Fields {
 
 	// If it contains it already, all good!
 	if _, ok := fields[fieldName]; ok {
@@ -95,7 +95,7 @@ func (df DefaultValues) addEnvFieldIfMissing(fieldName string, osVar string, fie
 	return fields
 }
 
-func (df DefaultValues) addMandatoryFieldIfMissing(fieldName string, fieldValue string, fields Fields) Fields {
+func (df SystemValues) addMandatoryFieldIfMissing(fieldName string, fieldValue string, fields Fields) Fields {
 
 	// If it contains it already, all good!
 	if _, ok := fields[fieldName]; ok {
@@ -106,14 +106,14 @@ func (df DefaultValues) addMandatoryFieldIfMissing(fieldName string, fieldValue 
 	return fields
 }
 
-func (df DefaultValues) timeNow(format string) string {
+func (df SystemValues) timeNow(format string) string {
 	return time.Now().UTC().Format(format)
 }
 
 var host string
 var hostOnce sync.Once
 
-func (df DefaultValues) hostName() string {
+func (df SystemValues) hostName() string {
 
 	var err error
 	hostOnce.Do(func() {
@@ -126,6 +126,6 @@ func (df DefaultValues) hostName() string {
 	return host
 }
 
-func (df DefaultValues) targetOS() string {
+func (df SystemValues) targetOS() string {
 	return runtime.GOOS
 }

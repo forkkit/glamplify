@@ -26,6 +26,7 @@ const (
 	User                = "user"
 	Exception           = "exception"
 	Message             = "message"
+	Properties			= "properties"
 	TimeTaken           = "time_taken"
 	MemoryUsed          = "memory_used"
 	MemoryAvail         = "memory_available"

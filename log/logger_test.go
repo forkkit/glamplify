@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 func setup() {
 	ctx = context.Background()
 	ctx = AddTraceID(ctx, "1-2-3")
-	ctx = AddCustomer(ctx, "unilever")
+	ctx = AddCustomer(ctx, "hooli")
 	ctx = AddUser(ctx, "UserAggregateID-123")
 
 	transactionFields = NewRequestScopeFieldsFromCtx(ctx)
@@ -97,7 +97,7 @@ func Test_Log_Debug(t *testing.T) {
 	assertContainsString(t, msg, "event", "detail_event")
 	assertContainsString(t, msg, "severity", "DEBUG")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
@@ -131,13 +131,14 @@ func Test_Log_DebugWithFields(t *testing.T) {
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
 	assertContainsString(t, msg, "aws_region", "us-west-02")
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
+	assertScopeContainsSubDoc(t, msg, "properties")
 }
 
 func Test_Log_Info(t *testing.T) {
@@ -154,7 +155,7 @@ func Test_Log_Info(t *testing.T) {
 	assertContainsString(t, msg, "event", "info_event")
 	assertContainsString(t, msg, "severity", "INFO")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
@@ -188,39 +189,14 @@ func Test_Log_InfoWithFields(t *testing.T) {
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
 	assertContainsString(t, msg, "aws_region", "us-west-02")
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
-}
-
-func Test_Log_InfoWithDuplicateFields(t *testing.T) {
-
-	memBuffer := &bytes.Buffer{}
-	writer := NewWriter(func(conf *WriterConfig) {
-		conf.Output = memBuffer
-	})
-	logger := NewWitCustomWriter(transactionFields, writer)
-
-	logger.Info("info_event", Fields{
-		Resource: "res_id", // set a standard types, this should overwrite the default
-	})
-
-	msg := memBuffer.String()
-	assertContainsString(t, msg, "event", "info_event")
-	assertContainsString(t, msg, "severity", "INFO")
-	assertContainsString(t, msg, "resource", "res_id") // by default this would normally be set to "host"
-	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
-	assertContainsString(t, msg, "user", "UserAggregateID-123")
-	assertContainsString(t, msg, "product", "engagement")
-	assertContainsString(t, msg, "app", "murmur")
-	assertContainsString(t, msg, "app_version", "87.23.11")
-	assertContainsString(t, msg, "aws_region", "us-west-02")
-	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
+	assertScopeContainsSubDoc(t, msg, "properties")
 }
 
 func Test_Log_Warn(t *testing.T) {
@@ -237,7 +213,7 @@ func Test_Log_Warn(t *testing.T) {
 	assertContainsString(t, msg, "event", "warn_event")
 	assertContainsString(t, msg, "severity", "WARN")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
@@ -271,13 +247,14 @@ func Test_Log_WarnWithFields(t *testing.T) {
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
 	assertContainsString(t, msg, "aws_region", "us-west-02")
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
+	assertScopeContainsSubDoc(t, msg, "properties")
 }
 
 func Test_Log_Error(t *testing.T) {
@@ -294,13 +271,14 @@ func Test_Log_Error(t *testing.T) {
 	assertContainsString(t, msg, "event", "error")
 	assertContainsString(t, msg, "severity", "ERROR")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
 	assertContainsString(t, msg, "aws_region", "us-west-02")
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
+	assertScopeContainsSubDoc(t, msg, "exception")
 }
 
 func Test_Log_ErrorWithFields(t *testing.T) {
@@ -328,13 +306,15 @@ func Test_Log_ErrorWithFields(t *testing.T) {
 	assertContainsString(t, msg, "string2", "hello world")
 	assertContainsString(t, msg, "string3_space", "world")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
 	assertContainsString(t, msg, "app_version", "87.23.11")
 	assertContainsString(t, msg, "aws_region", "us-west-02")
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
+	assertScopeContainsSubDoc(t, msg, "properties")
+	assertScopeContainsSubDoc(t, msg, "exception")
 }
 
 func Test_Log_Fatal(t *testing.T) {
@@ -350,13 +330,14 @@ func Test_Log_Fatal(t *testing.T) {
 			assertContainsString(t, msg, "event", "fatal")
 			assertContainsString(t, msg, "severity", "FATAL")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
-			assertContainsString(t, msg, "customer", "unilever")
+			assertContainsString(t, msg, "customer", "hooli")
 			assertContainsString(t, msg, "user", "UserAggregateID-123")
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
 			assertContainsString(t, msg, "aws_region", "us-west-02")
 			assertContainsString(t, msg, "aws_account_id", "aws-account-123")
+			assertScopeContainsSubDoc(t, msg, "exception")
 		}
 	}()
 
@@ -382,13 +363,15 @@ func Test_Log_FatalWithFields(t *testing.T) {
 			assertContainsString(t, msg, "string2", "hello world")
 			assertContainsString(t, msg, "string3_space", "world")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
-			assertContainsString(t, msg, "customer", "unilever")
+			assertContainsString(t, msg, "customer", "hooli")
 			assertContainsString(t, msg, "user", "UserAggregateID-123")
 			assertContainsString(t, msg, "product", "engagement")
 			assertContainsString(t, msg, "app", "murmur")
 			assertContainsString(t, msg, "app_version", "87.23.11")
 			assertContainsString(t, msg, "aws_region", "us-west-02")
 			assertContainsString(t, msg, "aws_account_id", "aws-account-123")
+			assertScopeContainsSubDoc(t, msg, "properties")
+			assertScopeContainsSubDoc(t, msg, "exception")
 		}
 	}()
 
@@ -429,7 +412,7 @@ func Test_Log_Namespace(t *testing.T) {
 	assertContainsString(t, msg, "report", "report1")
 	assertContainsString(t, msg, "user", "userid")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
-	assertContainsString(t, msg, "customer", "unilever")
+	assertContainsString(t, msg, "customer", "hooli")
 	assertContainsString(t, msg, "user", "UserAggregateID-123")
 	assertContainsString(t, msg, "product", "engagement")
 	assertContainsString(t, msg, "app", "murmur")
@@ -437,7 +420,8 @@ func Test_Log_Namespace(t *testing.T) {
 	assertContainsString(t, msg, "aws_region", "us-west-02")
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 
-	assertContainsSubDoc(t, msg, "reports_shared", "duration")
+	assertScopeContainsSubDoc(t, msg, "reports_shared")
+	assertScopeContainsSubDoc(t, msg, "properties")
 }
 
 
@@ -860,7 +844,7 @@ func assertScopeContainsInt(t *testing.T, log string, key string, val int) {
 	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
 }
 
-func assertScopeContainsSubDoc(t *testing.T, log string, key string, val string) {
-	find := fmt.Sprintf("\"%s\":{\"%s\"", key, val)
+func assertScopeContainsSubDoc(t *testing.T, log string, key string) {
+	find := fmt.Sprintf("\"%s\":{", key)
 	assert.Assert(t, strings.Contains(log, find), "Expected '%s' in '%s'", find, log)
 }
