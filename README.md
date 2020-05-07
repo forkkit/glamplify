@@ -92,17 +92,11 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     
     // Then create a logger that will use those transaction fields values when writing out logs
     logger := log.New(requestScopedFields)
-    
-    // optional: save this to the context for later use, then you can just create via: ctx, logger := log.NewWithCtx(ctx)
-    // ctx = log.AddRequestScopedFieldsCtx(ctx, requestScopedFields)
-    // if you want to get them back out from the context
-    // rsFields := log.GetRequestScopedFieldsCtx(ctx)
-    
-    // optional: if you need to propagate the request then make sure you update the context for the request
-    // then you can create new loggers with: r, logger := log.NewWithRequest(r)
-    // r = r.WithContext(ctx)
-    // if you want to get them back out from the request
-    // rsFields := log.GetRequestScopedFieldsRequest(r)
+
+    // OR, if you want a helper that does all of the above, use
+    r = log.EnsureRequestScopeFieldsPresentInRequest(r)
+    logger = log.NewFromRequest(r)
+
 
     // Once you have a logger then you can call logger.Debug/Info/Warn/Error/Fatal
     // NOTE: unlike normal logging, the string you pass in SHOULD BE AN EVENT NAME (past tense)
@@ -150,7 +144,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     })
 
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-    err := errors.New("Missing database connection string")
+    err = errors.New("Missing database connection string")
     logger.Error(err)
 
     // Fields can contain any type of variables
@@ -213,21 +207,9 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-
-    // get JWT payload from http header
-    payload, err := jwt.PayloadFromRequest(r)
     
-    // Create the logging config for this request
-    ctx := r.Context()
-    traceID, _ := aws.GetTraceID(ctx)
-    requestScopedFields := log.RequestScopedFields{
-        TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
-        UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
-        CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
-    }
-    
-    // Then create a logger that will use those transaction fields values when writing out logs
-    logger := log.New(requestScopedFields)
+    r = log.EnsureRequestScopedFieldsPresentInRequest(r)
+    logger := log.NewFromRequest(r)
 
     // Do things
 
@@ -285,21 +267,9 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
-     // get JWT payload from http header
-     payload, err := jwt.PayloadFromRequest(r)
-     
-     // Create the logging config for this request
-     ctx := r.Context()
-     traceID, _ := aws.GetTraceID(ctx)
-     requestScopedFields := log.RequestScopedFields{
-         TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
-         UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
-         CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
-     }
-     
-     // Then create a logger that will use those transaction fields values when writing out logs
-     logger := log.New(requestScopedFields)
-
+    r = log.EnsureRequestScopedFieldsPresentInRequest(r)
+    logger := log.NewFromRequest(r)
+ 
     // Do things
     app, err := monitor.AppFromRequest(w, r)
     if err != nil {
@@ -344,14 +314,8 @@ func main() {
 
 func handler(ctx context.Context) {
 
-      // Create the logging config for this request
-      traceID, _ := aws.GetTraceID(ctx)
-      requestScopedFields := log.RequestScopedFields{
-          TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
-      }
-      
-      // Then create a logger that will use those transaction fields values when writing out logs
-      logger := log.New(requestScopedFields)
+    ctx = log.EnsureRequestScopedFieldsPresentInCtx(ctx)
+    logger := log.NewFromCtx(ctx)
 
     // Do things
 
@@ -403,14 +367,8 @@ func main() {
 
 func handler(ctx context.Context) {
 
-    // Create the logging config for this request
-    traceID, _ := aws.GetTraceID(ctx)
-    requestScopedFields := log.RequestScopedFields{
-      TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
-    }
-    
-    // Then create a logger that will use those transaction fields values when writing out logs
-    logger := log.New(requestScopedFields)
+    ctx = log.EnsureRequestScopedFieldsPresentInCtx(ctx)
+    logger := log.NewFromCtx(ctx)
 
     // Do things
 
@@ -436,9 +394,6 @@ package main
 
 import (
     "errors"
-    "github.com/aws/aws-xray-sdk-go/xray"
-    "github.com/cultureamp/glamplify/aws"
-    "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/notify"
     "net/http"
@@ -462,20 +417,8 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    // get JWT payload from http header
-    payload, err := jwt.PayloadFromRequest(r)
-    
-    // Create the logging config for this request
-    ctx := r.Context()
-    traceID, _ := aws.GetTraceID(ctx)
-    requestScopedFields := log.RequestScopedFields{
-      TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
-      UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
-      CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
-    }
-    
-    // Then create a logger that will use those transaction fields values when writing out logs
-    logger := log.New(requestScopedFields)
+    r = log.EnsureRequestScopedFieldsPresentInRequest(r)
+    logger := log.NewFromRequest(r)
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
@@ -485,7 +428,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // Do things
 
     // Pretend we got an error
-    err = errors.New("NPE")
+    err := errors.New("NPE")
     notifier.ErrorWithContext(r.Context(), err, log.Fields {
         "key": "value",
     })

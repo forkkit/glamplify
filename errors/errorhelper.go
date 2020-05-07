@@ -23,8 +23,7 @@ func HandleError(err error, fields log.Fields) {
 func HandleErrorWithContext(ctx context.Context, err error, fields log.Fields) {
 
 	// call logger
-	transactionFields := log.NewRequestScopeFieldsFromCtx(ctx)
-	logger := log.New(transactionFields)
+	logger := log.NewFromCtx(ctx)
 	logger.Error(err, fields)
 
 	// call newrelic

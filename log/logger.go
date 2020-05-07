@@ -8,10 +8,10 @@ import (
 
 // Logger
 type Logger struct {
-	tFields   RequestScopedFields
-	writer    *FieldWriter
+	rsFields  RequestScopedFields
 	fields    Fields
 	sysValues *SystemValues
+	writer    *FieldWriter
 }
 
 var (
@@ -29,38 +29,32 @@ func NewWitCustomWriter(rsFields RequestScopedFields, writer *FieldWriter, field
 	return newLogger(rsFields, writer, fields...)
 }
 
-// NewWithCtx creates a new logger from a context. The context should contain TraceID, CustomerID, UserID, but
-// if not then this method will create and add TraceID to the context and return that new context
-// which should then be used in further methods (so we have consistent trace_ids)
-// To add CustomerID, UserID use ctx := log.AddCustomer(ctx, customerID), ctx := log.AddUser(ctx, userID)
-// before calling this method. You can use the jwt helper in the package to get these values from the JWT
-func NewWithCtx(ctx context.Context,  fields ...Fields) (context.Context, *Logger) {
-	rsFields := NewRequestScopeFieldsFromCtx(ctx)
-	ctx = rsFields.AddToCtx(ctx)
+// NewFromCtx creates a new logger from a context, which should contain RequestScopedFields.
+// If the context does not contain then, then this method will NOT add them in.
+func NewFromCtx(ctx context.Context, fields ...Fields) *Logger {
+
+	rsFields, _ := GetRequestScopedFieldsFromCtx(ctx)
 	logger := New(rsFields, fields...)
-	return ctx, logger
+	return logger
 }
 
-// NewWithRequest creates a new logger from a http.Request. The context within the request should contain
-// TraceID, CustomerID, UserID, but if not then this method wil create and add TraceID to the context and return
-// the http.Request with that new context. This returned http.Request should be used in further methods (so we have
-// consistent trace_ids) To add CustomerID, UserID use ctx := log.AddCustomer(ctx, customerID), ctx := log.AddUser(ctx, userID)
-// before calling this method. You can use the jwt helper in the package to get these values from the JWT
-func NewWithRequest(r *http.Request, fields ...Fields) (*http.Request, *Logger){
-	ctx, logger := NewWithCtx(r.Context(), fields...)
-	return r.WithContext(ctx), logger
+// NewFromRequest creates a new logger from a http.Request, which should contain RequestScopedFields.
+// If the context does not contain then, then this method will NOT add them in.
+func NewFromRequest(r *http.Request, fields ...Fields) *Logger {
+	logger := NewFromCtx(r.Context(), fields...)
+	return logger
 }
 
-func newLogger(tFields RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
+func newLogger(rsFields RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
 
 	df := newSystemValues()
 
 	merged := Fields{}
 	merged = merged.Merge(fields...)
 	logger := &Logger{
-		tFields: tFields,
-		writer:  writer,
-		fields:  merged,
+		rsFields: rsFields,
+		writer:   writer,
+		fields:   merged,
 	}
 	logger.sysValues = df
 	return logger
@@ -79,7 +73,7 @@ func Debug(tFields RequestScopedFields, event string, fields ...Fields) {
 // when hunting down incorrect behaviour.
 // Use snake_case keys and lower case values if possible.
 func (logger Logger) Debug(event string, fields ...Fields) {
-	logger.write(logger.tFields, event, DebugSev, fields...)
+	logger.write(logger.rsFields, event, DebugSev, fields...)
 }
 
 // Info writes a message with optional types to the underlying standard writer.
@@ -93,7 +87,7 @@ func Info(tFields RequestScopedFields, event string, fields ...Fields) {
 // Useful for normal tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
 func (logger Logger) Info(event string, fields ...Fields) {
-	logger.write(logger.tFields, event, InfoSev, fields...)
+	logger.write(logger.rsFields, event, InfoSev, fields...)
 }
 
 // Warn writes a message with optional types to the underlying standard writer.
@@ -107,7 +101,7 @@ func Warn(tFields RequestScopedFields, event string, fields ...Fields) {
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
 func (logger Logger) Warn(event string, fields ...Fields) {
-	logger.write(logger.tFields, event, WarnSev, fields...)
+	logger.write(logger.rsFields, event, WarnSev, fields...)
 }
 
 // Error writes a error message with optional types to the underlying standard writer.
@@ -121,7 +115,7 @@ func Error(tFields RequestScopedFields, err error, fields ...Fields) {
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
 func (logger Logger) Error(err error, fields ...Fields) {
-	logger.writeError(logger.tFields, err, ErrorSev, fields...)
+	logger.writeError(logger.rsFields, err, ErrorSev, fields...)
 }
 
 // Fatal writes a error message with optional types to the underlying standard writer and then calls panic!
@@ -140,7 +134,7 @@ func Fatal(tFields RequestScopedFields, err error, fields ...Fields) {
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
 func (logger Logger) Fatal(err error, fields ...Fields) {
-	event := logger.writeError(logger.tFields, err, FatalSev, fields...)
+	event := logger.writeError(logger.rsFields, err, FatalSev, fields...)
 
 	// time to panic!
 	panic(event)

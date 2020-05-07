@@ -21,19 +21,13 @@ func Test_TransactionFields_NewFromCtx(t *testing.T) {
 	ctx := context.Background()
 	ctx = transactionFields.AddToCtx(ctx)
 
-	transactionFields = log.NewRequestScopeFieldsFromCtx(ctx)
-	assert.Assert(t, transactionFields.TraceID == "1-2-3",  transactionFields.TraceID)
-	assert.Assert(t, transactionFields.CustomerAggregateID == "unilever",  transactionFields.CustomerAggregateID)
-	assert.Assert(t, transactionFields.UserAggregateID == "UserAggregateID-123",  transactionFields.UserAggregateID)
+	rsFields, ok := log.GetRequestScopedFieldsFromCtx(ctx)
+	assert.Assert(t, ok, ok)
+	assert.Assert(t, rsFields.TraceID == "1-2-3",  transactionFields.TraceID)
+	assert.Assert(t, rsFields.CustomerAggregateID == "unilever",  transactionFields.CustomerAggregateID)
+	assert.Assert(t, rsFields.UserAggregateID == "UserAggregateID-123",  transactionFields.UserAggregateID)
 }
 
 func Test_TransactionFields_NewTraceIDCtx(t *testing.T) {
-	ctx := context.Background()
-	transactionFields := log.NewRequestScopeFieldsFromCtx(ctx) // will add traceID if missing
-	traceID := transactionFields.TraceID
-	assert.Assert(t, transactionFields.TraceID != "",  transactionFields.TraceID)
 
-	ctx = transactionFields.AddToCtx(ctx) // save traceID to context for next time
-	transactionFields = log.NewRequestScopeFieldsFromCtx(ctx) // traceID should still be there
-	assert.Assert(t, transactionFields.TraceID == traceID, transactionFields.TraceID)
 }

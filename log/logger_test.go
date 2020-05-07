@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	ctx               context.Context
-	transactionFields RequestScopedFields
+	ctx      context.Context
+	rsFields RequestScopedFields
 )
 
 func TestMain(m *testing.M) {
@@ -32,7 +32,7 @@ func setup() {
 	ctx = AddCustomer(ctx, "hooli")
 	ctx = AddUser(ctx, "UserAggregateID-123")
 
-	transactionFields = NewRequestScopeFieldsFromCtx(ctx)
+	rsFields, _ = GetRequestScopedFieldsFromCtx(ctx)
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -50,37 +50,31 @@ func shutdown() {
 }
 
 func Test_New(t *testing.T) {
-	logger := New(transactionFields)
+	logger := New(rsFields)
 	assert.Assert(t, logger != nil, logger)
 }
 
 func Test_NewWithContext(t *testing.T) {
-	tempCtx, logger := NewWithCtx(ctx)
+	logger := NewFromCtx(ctx)
 	assert.Assert(t, logger != nil, logger)
 
 	traceID1, ok1 := GetTraceID(ctx)
-	traceID2, ok2 := GetTraceID(tempCtx)
 
 	assert.Assert(t, ok1, ok1)
-	assert.Assert(t, ok2, ok2)
-	assert.Assert(t, traceID1 == traceID2, "different trace ids")
-	assert.Assert(t, traceID2 == "1-2-3", traceID2)
+	assert.Assert(t, traceID1 == "1-2-3", traceID1)
 }
 
 func Test_NewWithRequest(t *testing.T) {
 	req, _ := http.NewRequest("GET", "*", nil)
 
 	req1 := req.WithContext(ctx)
-	req2, logger := NewWithRequest(req1)
+	logger := NewFromRequest(req1)
 	assert.Assert(t, logger != nil, logger)
 
 	traceID1, ok1 := GetTraceID(req1.Context())
-	traceID2, ok2 := GetTraceID(req2.Context())
 
 	assert.Assert(t, ok1, ok1)
-	assert.Assert(t, ok2, ok2)
-	assert.Assert(t, traceID1 == traceID2, "different trace ids")
-	assert.Assert(t, traceID2 == "1-2-3", traceID2)
+	assert.Assert(t, traceID1 == "1-2-3", traceID1)
 }
 
 func Test_Log_Debug(t *testing.T) {
@@ -89,7 +83,7 @@ func Test_Log_Debug(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Debug( "detail_event")
 
@@ -112,7 +106,7 @@ func Test_Log_DebugWithFields(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Debug("detail_event", Fields{
 		"string":        "hello",
@@ -147,7 +141,7 @@ func Test_Log_Info(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Info("info_event")
 
@@ -170,7 +164,7 @@ func Test_Log_InfoWithFields(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Info("info_event", Fields{
 		"string":        "hello",
@@ -205,7 +199,7 @@ func Test_Log_Warn(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Warn("warn_event")
 
@@ -228,7 +222,7 @@ func Test_Log_WarnWithFields(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Warn("warn_event", Fields{
 		"string":        "hello",
@@ -263,7 +257,7 @@ func Test_Log_Error(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Error(errors.New("error"))
 
@@ -287,7 +281,7 @@ func Test_Log_ErrorWithFields(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	logger.Error(errors.New("error"), Fields{
 		"string":        "hello",
@@ -322,7 +316,7 @@ func Test_Log_Fatal(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -350,7 +344,7 @@ func Test_Log_FatalWithFields(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -391,7 +385,7 @@ func Test_Log_Namespace(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer)
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	time.Sleep(123 * time.Millisecond)
 	t2 := time.Now()
@@ -430,7 +424,7 @@ func TestScope(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer, Fields{
+	logger := NewWitCustomWriter(rsFields, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -473,7 +467,7 @@ func TestScope_Overwrite(t *testing.T) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = memBuffer
 	})
-	logger := NewWitCustomWriter(transactionFields, writer, Fields{
+	logger := NewWitCustomWriter(rsFields, writer, Fields{
 		"requestID": 123,
 	})
 
@@ -524,7 +518,7 @@ func TestScope_Overwrite(t *testing.T) {
 }
 
 func Test_RealWorld(t *testing.T) {
-	logger := New(transactionFields)
+	logger := New(rsFields)
 
 	// You should see these printed out, all correctly formatted.
 	logger.Debug("detail_event", Fields{
@@ -534,7 +528,7 @@ func Test_RealWorld(t *testing.T) {
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	Debug(transactionFields, "detail_event", Fields{
+	Debug(rsFields, "detail_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -549,7 +543,7 @@ func Test_RealWorld(t *testing.T) {
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	Info(transactionFields, "info_event", Fields{
+	Info(rsFields, "info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -564,7 +558,7 @@ func Test_RealWorld(t *testing.T) {
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	Warn(transactionFields, "info_event", Fields{
+	Warn(rsFields, "info_event", Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -579,7 +573,7 @@ func Test_RealWorld(t *testing.T) {
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	Error(transactionFields, errors.New("error"), Fields{
+	Error(rsFields, errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -605,7 +599,7 @@ func Test_RealWorld(t *testing.T) {
 	}()
 
 	// this will call panic!
-	Fatal(transactionFields, errors.New("fatal"), Fields{
+	Fatal(rsFields, errors.New("fatal"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -615,7 +609,7 @@ func Test_RealWorld(t *testing.T) {
 }
 
 func Test_RealWorld_Combined(t *testing.T) {
-	logger := New(transactionFields)
+	logger := New(rsFields)
 
 	// multiple fields collections
 	logger.Debug("detail_event", Fields{
@@ -627,7 +621,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 		"int2":    456,
 		"float2":  78.98,
 	})
-	Debug(transactionFields, "detail_event", Fields{
+	Debug(rsFields, "detail_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -646,7 +640,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 		"int2":    456,
 		"float2":  78.98,
 	})
-	Info(transactionFields, "info_event", Fields{
+	Info(rsFields, "info_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -665,7 +659,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 		"int2":    456,
 		"float2":  78.98,
 	})
-	Warn(transactionFields, "warn_event", Fields{
+	Warn(rsFields, "warn_event", Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -684,7 +678,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 		"int2":    456,
 		"float2":  78.98,
 	})
-	Error(transactionFields, errors.New("error"), Fields{
+	Error(rsFields, errors.New("error"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -714,7 +708,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 	}()
 
 	// this will call panic!
-	Fatal(transactionFields, errors.New("fatal"), Fields{
+	Fatal(rsFields, errors.New("fatal"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -729,7 +723,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 
 func Test_RealWorld_Scope(t *testing.T) {
 
-	logger := New(transactionFields, Fields{"scopeID": 123})
+	logger := New(rsFields, Fields{"scopeID": 123})
 	assert.Assert(t, logger != nil)
 
 	logger.Debug("detail_event", Fields{
@@ -793,7 +787,7 @@ func BenchmarkLogging(b *testing.B) {
 	writer := NewWriter(func(conf *WriterConfig) {
 		conf.Output = ioutil.Discard
 	})
-	logger := newLogger(transactionFields, writer)
+	logger := newLogger(rsFields, writer)
 
 	fields := Fields{
 		"string":        "hello",

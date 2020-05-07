@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"github.com/cultureamp/glamplify/aws"
 )
 
 func AddTraceID(ctx context.Context, traceID string) context.Context {
@@ -25,12 +26,6 @@ func AddUser(ctx context.Context, user string) context.Context {
 	return ctx
 }
 
-func AddRequestScopedFieldsCtx(ctx context.Context, requestScopeFields RequestScopedFields) context.Context {
-	ctx = AddTraceID(ctx, requestScopeFields.TraceID)
-	ctx = AddCustomer(ctx, requestScopeFields.CustomerAggregateID)
-	return  AddUser(ctx, requestScopeFields.UserAggregateID)
-}
-
 func GetTraceID(ctx context.Context) (string, bool) {
 	traceID, ok := ctx.Value(TraceIDCtx).(string)
 	return traceID, ok
@@ -46,8 +41,9 @@ func GetCustomer(ctx context.Context) (string, bool) {
 	return customer, ok
 }
 
-func GetRequestScopedFieldsCtx(ctx context.Context) RequestScopedFields {
+func GetRequestScopedFieldsFromCtx(ctx context.Context) (RequestScopedFields, bool) {
 	rsFields := RequestScopedFields{}
+
 	val, ok := GetTraceID(ctx)
 	if ok {
 		rsFields.TraceID = val
@@ -61,10 +57,29 @@ func GetRequestScopedFieldsCtx(ctx context.Context) RequestScopedFields {
 		rsFields.CustomerAggregateID = val
 	}
 
-	return rsFields
+	// if there is a traceID, then we assume the context has RequestScopedFields
+	if len(rsFields.TraceID) > 0 {
+		return rsFields, true
+	}
+	return rsFields, false
 }
 
-func SeedCtxWithRequestScopeFields(ctx context.Context) context.Context {
-	rsFields := NewRequestScopeFieldsFromCtx(ctx)
+// EnsureRequestScopedFieldsPresentInCtx returns modified context IF TraceID was added
+// (returns the same context if TraceID was already present)
+func EnsureRequestScopedFieldsPresentInCtx(ctx context.Context) context.Context {
+	rsFields, ok := GetRequestScopedFieldsFromCtx(ctx)
+	if ok {
+		return ctx
+	}
+
+	// need to create new RequestScopedFields
+	traceID, _ := aws.GetTraceID(ctx)	// creates new TraceID if xray hasn't already added to the context
+	rsFields = NewRequestScopeFields(traceID,"","")
 	return rsFields.AddToCtx(ctx)
+}
+
+func AddRequestScopedFieldsToCtx(ctx context.Context, requestScopeFields RequestScopedFields) context.Context {
+	ctx = AddTraceID(ctx, requestScopeFields.TraceID)
+	ctx = AddUser(ctx, requestScopeFields.UserAggregateID)
+	return AddCustomer(ctx, requestScopeFields.CustomerAggregateID)
 }
