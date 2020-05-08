@@ -12,22 +12,22 @@ type Payload struct {
 	EffectiveUser string // uid
 }
 
-func PayloadFromRequest(r *http.Request) (Payload, error) {
+type DecodeJwtToken interface {
+	Decode(tokenString string) (Payload, error)
+}
 
-	token := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
-	if len(token) == 0 {
+func PayloadFromRequest(r *http.Request, jwtDecoder DecodeJwtToken) (Payload, error) {
+
+	auth := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
+	if len(auth) == 0 {
 		return Payload{}, errors.New("missing authorization header")
 	}
 
-	splitToken := strings.Split(token, "Bearer")
+	splitToken := strings.Split(auth, "Bearer")
 	if len(splitToken) < 2 {
 		return Payload{}, errors.New("missing 'Bearer' token in authorization header")
 	}
 
-	jwt, err := NewDecoder()
-	if err != nil {
-		return Payload{}, err
-	}
-
-	return jwt.Decode(splitToken[1])
+	token := strings.TrimSpace(splitToken[1])
+	return jwtDecoder.Decode(token)
 }

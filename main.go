@@ -79,7 +79,8 @@ func main() {
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// get JWT payload from http header
-	payload, err := jwt.PayloadFromRequest(r)
+	decoder, err := jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
+	payload, err := jwt.PayloadFromRequest(r, decoder)
 
 	// Create the logging config for this request
 	ctx := r.Context()
@@ -94,7 +95,8 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	logger := log.New(requestScopedFields)
 
 	// OR if you want a helper to do all of the above, use
-	r = log.WrapRequest(r)
+	decoder, err = jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
+	r = log.WrapRequest(r, decoder)
 	logger = log.NewFromRequest(r)
 
 	logger.Debug("something_happened")

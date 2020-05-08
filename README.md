@@ -79,7 +79,8 @@ func main() {
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
     // get JWT payload from http header
-    payload, err := jwt.PayloadFromRequest(r)
+    decoder, err := jwt.NewDecoder()
+    payload, err := jwt.PayloadFromRequest(r, decoder)
     
     // Create the logging config for this request
     ctx := r.Context()
@@ -94,7 +95,8 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     logger := log.New(requestScopedFields)
 
     // OR, if you want a helper that does all of the above, use
-    r = log.WrapRequest(r)
+	decoder, err = jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
+    r = log.WrapRequest(r, decoder)
     logger = log.NewFromRequest(r)
 
 
@@ -207,8 +209,8 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    
-    r = log.WrapRequest(r)
+	decoder, err := jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
+    r = log.WrapRequest(r, decoder)
     logger := log.NewFromRequest(r)
 
     // Do things
@@ -266,8 +268,8 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-
-    r = log.WrapRequest(r)
+	decoder, err := jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
+    r = log.WrapRequest(r, decoder)
     logger := log.NewFromRequest(r)
  
     // Do things
@@ -313,7 +315,6 @@ func main() {
 }
 
 func handler(ctx context.Context) {
-
     ctx = log.WrapCtx(ctx)
     logger := log.NewFromCtx(ctx)
 
@@ -394,6 +395,7 @@ package main
 
 import (
     "errors"
+    "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/notify"
     "net/http"
@@ -417,7 +419,8 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    r = log.WrapRequest(r)
+	decoder, err := jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
+    r = log.WrapRequest(r, decoder)
     logger := log.NewFromRequest(r)
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)

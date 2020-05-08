@@ -58,7 +58,7 @@ func Test_Context_RequestScope_AddGet(t *testing.T) {
 }
 
 
-func Test_Context_Ensure(t *testing.T) {
+func Test_Context_Wrap(t *testing.T) {
 	ctx := context.Background()
 
 	ctx = log.WrapCtx(ctx)
