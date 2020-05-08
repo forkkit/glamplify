@@ -64,9 +64,15 @@ func GetRequestScopedFieldsFromCtx(ctx context.Context) (RequestScopedFields, bo
 	return rsFields, false
 }
 
-// EnsureRequestScopedFieldsPresentInCtx returns modified context IF TraceID was added
+func AddRequestScopedFieldsToCtx(ctx context.Context, requestScopeFields RequestScopedFields) context.Context {
+	ctx = AddTraceID(ctx, requestScopeFields.TraceID)
+	ctx = AddUser(ctx, requestScopeFields.UserAggregateID)
+	return AddCustomer(ctx, requestScopeFields.CustomerAggregateID)
+}
+
+// WrapCtx returns modified context IF TraceID was added
 // (returns the same context if TraceID was already present)
-func EnsureRequestScopedFieldsPresentInCtx(ctx context.Context) context.Context {
+func WrapCtx(ctx context.Context) context.Context {
 	rsFields, ok := GetRequestScopedFieldsFromCtx(ctx)
 	if ok {
 		return ctx
@@ -78,8 +84,3 @@ func EnsureRequestScopedFieldsPresentInCtx(ctx context.Context) context.Context 
 	return rsFields.AddToCtx(ctx)
 }
 
-func AddRequestScopedFieldsToCtx(ctx context.Context, requestScopeFields RequestScopedFields) context.Context {
-	ctx = AddTraceID(ctx, requestScopeFields.TraceID)
-	ctx = AddUser(ctx, requestScopeFields.UserAggregateID)
-	return AddCustomer(ctx, requestScopeFields.CustomerAggregateID)
-}

@@ -94,7 +94,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     logger := log.New(requestScopedFields)
 
     // OR, if you want a helper that does all of the above, use
-    r = log.EnsureRequestScopeFieldsPresentInRequest(r)
+    r = log.WrapRequest(r)
     logger = log.NewFromRequest(r)
 
 
@@ -208,7 +208,7 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
     
-    r = log.EnsureRequestScopedFieldsPresentInRequest(r)
+    r = log.WrapRequest(r)
     logger := log.NewFromRequest(r)
 
     // Do things
@@ -267,7 +267,7 @@ func main() {
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 
-    r = log.EnsureRequestScopedFieldsPresentInRequest(r)
+    r = log.WrapRequest(r)
     logger := log.NewFromRequest(r)
  
     // Do things
@@ -314,7 +314,7 @@ func main() {
 
 func handler(ctx context.Context) {
 
-    ctx = log.EnsureRequestScopedFieldsPresentInCtx(ctx)
+    ctx = log.WrapCtx(ctx)
     logger := log.NewFromCtx(ctx)
 
     // Do things
@@ -367,7 +367,7 @@ func main() {
 
 func handler(ctx context.Context) {
 
-    ctx = log.EnsureRequestScopedFieldsPresentInCtx(ctx)
+    ctx = log.WrapCtx(ctx)
     logger := log.NewFromCtx(ctx)
 
     // Do things
@@ -417,7 +417,7 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    r = log.EnsureRequestScopedFieldsPresentInRequest(r)
+    r = log.WrapRequest(r)
     logger := log.NewFromRequest(r)
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)

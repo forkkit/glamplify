@@ -94,7 +94,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	logger := log.New(requestScopedFields)
 
 	// OR if you want a helper to do all of the above, use
-	r = log.EnsureRequestScopedFieldsPresentInRequest(r)
+	r = log.WrapRequest(r)
 	logger = log.NewFromRequest(r)
 
 	logger.Debug("something_happened")

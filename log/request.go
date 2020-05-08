@@ -10,11 +10,16 @@ func GetRequestScopedFieldsFromRequest(r *http.Request) (RequestScopedFields, bo
 	return GetRequestScopedFieldsFromCtx(r.Context())
 }
 
-// EnsureRequestScopedFieldsPresentInRequest returns the same *http.Request if TraceID was already present in the context.
+func AddRequestScopedFieldsRequest(r *http.Request, requestScopeFields RequestScopedFields) *http.Request {
+	ctx := AddRequestScopedFieldsToCtx(r.Context(), requestScopeFields)
+	return r.WithContext(ctx)
+}
+
+// WrapRequest returns the same *http.Request if TraceID was already present in the context.
 // If TraceID was missing, then it checks xray and if present, adds that TraceID, or if missing creates a new TraceID.
 // If a TraceID was added (from xray or new) to the context, then this method also tries to decode the JWT payload and
 // adds CustomerAggregateID and UserAggregateID if successful.
-func EnsureRequestScopedFieldsPresentInRequest(r *http.Request) *http.Request {
+func WrapRequest(r *http.Request) *http.Request {
 	rsFields, ok := GetRequestScopedFieldsFromRequest(r)
 	if ok {
 		return r
@@ -34,7 +39,3 @@ func EnsureRequestScopedFieldsPresentInRequest(r *http.Request) *http.Request {
 	return r.WithContext(ctx)
 }
 
-func AddRequestScopedFieldsRequest(r *http.Request, requestScopeFields RequestScopedFields) *http.Request {
-	ctx := AddRequestScopedFieldsToCtx(r.Context(), requestScopeFields)
-	return r.WithContext(ctx)
-}

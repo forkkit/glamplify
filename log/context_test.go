@@ -61,7 +61,7 @@ func Test_Context_RequestScope_AddGet(t *testing.T) {
 func Test_Context_Ensure(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = log.EnsureRequestScopedFieldsPresentInCtx(ctx)
+	ctx = log.WrapCtx(ctx)
 	id, ok := log.GetTraceID(ctx)
 	assert.Assert(t, ok && id != "", id)
 }

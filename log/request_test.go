@@ -30,7 +30,7 @@ func Test_RequestScope_AddGet(t *testing.T) {
 func Test_Request_Ensure_NoJWT(t *testing.T) {
 	req, _ := http.NewRequest("GET", "*", nil)
 
-	req2 := log.EnsureRequestScopedFieldsPresentInRequest(req)
+	req2 := log.WrapRequest(req)
 	id, ok := log.GetTraceID(req2.Context())
 	assert.Assert(t, ok && id != "", id)
 	id, ok = log.GetCustomer(req2.Context())
@@ -46,7 +46,7 @@ func Test_Request_Ensure_Jwt(t *testing.T) {
 	req, _ := http.NewRequest("GET", "*", nil)
 	req.Header.Set("Authorization", "Bearer " + token)
 
-	req2 := log.EnsureRequestScopedFieldsPresentInRequest(req)
+	req2 := log.WrapRequest(req)
 	id, ok := log.GetTraceID(req2.Context())
 	assert.Assert(t, ok && id != "", id)
 
