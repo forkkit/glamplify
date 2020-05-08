@@ -80,7 +80,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// get JWT payload from http header
 	decoder, err := jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
-	payload, err := jwt.PayloadFromRequest(r, decoder)
+	payload, err := jwt.PayloadFromRequestWithDecoder(r, decoder)
 
 	// Create the logging config for this request
 	ctx := r.Context()
@@ -95,21 +95,10 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	logger := log.New(requestScopedFields)
 
 	// OR if you want a helper to do all of the above, use
-	decoder, err = jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
-	r = log.WrapRequest(r, decoder)
+	r = log.WrapRequest(r)
 	logger = log.NewFromRequest(r)
 
 	logger.Debug("something_happened")
-
-	// optional: save this to the context for later use, then you can just create via: ctx, logger := log.NewFromCtx(ctx)
-	// ctx = log.AddRequestScopedFieldsCtx(ctx, requestScopedFields)
-	// if you want to get them back out from the context
-	// rsFields := log.GetRequestScopedFieldsCtx(ctx)
-
-	// optional: if you need to propagate the request then make sure you update the context for the request
-	// then you can create new loggers with: r, logger := log.NewFromRequest(r)
-	// r = r.WithContext(ctx)
-
 
 	// or use the default logger with transaction fields passed in
 	log.Debug(requestScopedFields, "something_happened", log.Fields{})

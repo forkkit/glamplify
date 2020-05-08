@@ -78,7 +78,7 @@ func Test_PayloadFromRequest_NoAuthorizationHeader(t *testing.T) {
 	assert.Assert(t, err == nil, err)
 
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	_, err = PayloadFromRequest(req, jwt)
+	_, err = PayloadFromRequestWithDecoder(req, jwt)
 	assert.Assert(t, err != nil, err)
 	assert.Assert(t, err.Error() == "missing authorization header", err)
 }
@@ -92,7 +92,7 @@ func Test_PayloadFromRequest_NoBearer(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	req.Header.Add("Authorization", "Beare "+token)
 
-	_, err = PayloadFromRequest(req, jwt)
+	_, err = PayloadFromRequestWithDecoder(req, jwt)
 	assert.Assert(t, err != nil, err)
 	assert.Assert(t, err.Error() == "missing 'Bearer' token in authorization header", err.Error())
 }
@@ -106,6 +106,6 @@ func Test_PayloadFromRequest_InvalidToken(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	req.Header.Add("Authorization", "Bearer "+token)
 
-	_, err = PayloadFromRequest(req, jwt)
+	_, err = PayloadFromRequestWithDecoder(req, jwt)
 	assert.Assert(t, err != nil, err)
 }

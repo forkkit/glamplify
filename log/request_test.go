@@ -37,7 +37,7 @@ func Test_Request_Wrap(t *testing.T) {
 	req, _ := http.NewRequest("GET", "*", nil)
 	req.Header.Set("Authorization", "Bearer " + token)
 
-	req2 := log.WrapRequest(req, jwt)
+	req2 := log.WrapRequestWithDecoder(req, jwt)
 	id, ok := log.GetTraceID(req2.Context())
 	assert.Assert(t, ok && id != "", id)
 
