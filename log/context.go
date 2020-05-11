@@ -97,7 +97,7 @@ func WrapCtx(ctx context.Context) context.Context {
 
 	// need to create new RequestScopedFields
 	traceID, _ := aws.GetTraceID(ctx)	// creates new TraceID if xray hasn't already added to the context
-	rsFields = NewRequestScopeFields(traceID,"", "","")
+	rsFields = NewRequestScopeFields(traceID, traceID, "","")
 	return rsFields.AddToCtx(ctx)
 }
 
