@@ -28,12 +28,13 @@ func WrapRequest(r *http.Request) *http.Request {
 	// need to create new RequestScopedFields
 	ctx := r.Context()
 	traceID, _ := aws.GetTraceID(ctx) // creates new TraceID if xray hasn't already added to the context
+	requestID := traceID
 	payload, err := jwt.PayloadFromRequest(r)
 
 	if err == nil {
-		rsFields = NewRequestScopeFields(traceID, payload.Customer, payload.EffectiveUser)
+		rsFields = NewRequestScopeFields(traceID, requestID, payload.Customer, payload.EffectiveUser)
 	} else {
-		rsFields = NewRequestScopeFields(traceID, "", "")
+		rsFields = NewRequestScopeFields(traceID, requestID, "", "")
 	}
 	ctx = rsFields.AddToCtx(ctx)
 	return r.WithContext(ctx)
@@ -52,12 +53,13 @@ func WrapRequestWithDecoder(r *http.Request, jwtDecoder jwt.DecodeJwtToken) *htt
 	// need to create new RequestScopedFields
 	ctx := r.Context()
 	traceID, _ := aws.GetTraceID(ctx) // creates new TraceID if xray hasn't already added to the context
+	requestID := traceID
 	payload, err := jwt.PayloadFromRequestWithDecoder(r, jwtDecoder)
 
 	if err == nil {
-		rsFields = NewRequestScopeFields(traceID, payload.Customer, payload.EffectiveUser)
+		rsFields = NewRequestScopeFields(traceID, requestID, payload.Customer, payload.EffectiveUser)
 	} else {
-		rsFields = NewRequestScopeFields(traceID, "", "")
+		rsFields = NewRequestScopeFields(traceID, requestID,"", "")
 	}
 	ctx = rsFields.AddToCtx(ctx)
 	return r.WithContext(ctx)

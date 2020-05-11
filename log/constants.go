@@ -12,6 +12,7 @@ const (
 	// JSON LOG KEYS
 	// List of standard keys used for logging as per https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging
 	TraceID             = "trace_id"
+	RequestID           = "request_id"
 	Time                = "time"
 	Event               = "event"
 	Product             = "product"
@@ -26,7 +27,7 @@ const (
 	User                = "user"
 	Exception           = "exception"
 	Message             = "message"
-	Properties			= "properties"
+	Properties          = "properties"
 	TimeTaken           = "time_taken"
 	MemoryUsed          = "memory_used"
 	MemoryAvail         = "memory_available"
@@ -50,7 +51,8 @@ const (
 	AwsAcountIDEnv = "AWS_ACCOUNT_ID"
 
 	// CONTEXT KEYS
-	TraceIDCtx  EventCtxKey = iota
-	CustomerCtx EventCtxKey = iota
-	UserCtx     EventCtxKey = iota
+	TraceIDCtx   EventCtxKey = iota
+	RequestIDCtx EventCtxKey = iota
+	CustomerCtx  EventCtxKey = iota
+	UserCtx      EventCtxKey = iota
 )

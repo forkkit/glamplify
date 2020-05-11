@@ -12,6 +12,13 @@ func AddTraceID(ctx context.Context, traceID string) context.Context {
 	return ctx
 }
 
+func AddRequestID(ctx context.Context, requestID string) context.Context {
+	if len(requestID) > 0 {
+		return context.WithValue(ctx, RequestIDCtx, requestID)
+	}
+	return ctx
+}
+
 func AddCustomer(ctx context.Context, customer string) context.Context {
 	if len(customer) > 0 {
 		return context.WithValue(ctx, CustomerCtx, customer)
@@ -31,6 +38,11 @@ func GetTraceID(ctx context.Context) (string, bool) {
 	return traceID, ok
 }
 
+func GetRequestID(ctx context.Context) (string, bool) {
+	requestID, ok := ctx.Value(RequestIDCtx).(string)
+	return requestID, ok
+}
+
 func GetUser(ctx context.Context) (string, bool) {
 	user, ok := ctx.Value(UserCtx).(string)
 	return user, ok
@@ -47,6 +59,10 @@ func GetRequestScopedFieldsFromCtx(ctx context.Context) (RequestScopedFields, bo
 	val, ok := GetTraceID(ctx)
 	if ok {
 		rsFields.TraceID = val
+	}
+	val, ok = GetRequestID(ctx)
+	if ok {
+		rsFields.RequestID = val
 	}
 	val, ok = GetUser(ctx)
 	if ok {
@@ -66,6 +82,7 @@ func GetRequestScopedFieldsFromCtx(ctx context.Context) (RequestScopedFields, bo
 
 func AddRequestScopedFieldsToCtx(ctx context.Context, requestScopeFields RequestScopedFields) context.Context {
 	ctx = AddTraceID(ctx, requestScopeFields.TraceID)
+	ctx = AddRequestID(ctx, requestScopeFields.RequestID)
 	ctx = AddUser(ctx, requestScopeFields.UserAggregateID)
 	return AddCustomer(ctx, requestScopeFields.CustomerAggregateID)
 }
@@ -80,7 +97,7 @@ func WrapCtx(ctx context.Context) context.Context {
 
 	// need to create new RequestScopedFields
 	traceID, _ := aws.GetTraceID(ctx)	// creates new TraceID if xray hasn't already added to the context
-	rsFields = NewRequestScopeFields(traceID,"","")
+	rsFields = NewRequestScopeFields(traceID,"", "","")
 	return rsFields.AddToCtx(ctx)
 }
 

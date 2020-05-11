@@ -29,6 +29,7 @@ func TestMain(m *testing.M) {
 func setup() {
 	ctx = context.Background()
 	ctx = AddTraceID(ctx, "1-2-3")
+	ctx = AddRequestID(ctx, "7-8-9")
 	ctx = AddCustomer(ctx, "hooli")
 	ctx = AddUser(ctx, "UserAggregateID-123")
 

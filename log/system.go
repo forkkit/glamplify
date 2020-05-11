@@ -75,6 +75,7 @@ func (df SystemValues) getEnvFields(fields Fields) Fields {
 func (df SystemValues) getMandatoryFields(transactionFields RequestScopedFields, fields Fields) Fields {
 
 	fields = df.addMandatoryFieldIfMissing(TraceID, transactionFields.TraceID, fields)
+	fields = df.addMandatoryFieldIfMissing(RequestID, transactionFields.RequestID, fields)
 	fields = df.addMandatoryFieldIfMissing(Customer, transactionFields.CustomerAggregateID, fields)
 	fields = df.addMandatoryFieldIfMissing(User, transactionFields.UserAggregateID, fields)
 
