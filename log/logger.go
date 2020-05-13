@@ -64,8 +64,8 @@ func newLogger(rsFields RequestScopedFields, writer *FieldWriter, fields ...Fiel
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
 // Use snake_case keys and lower case values if possible.
-func Debug(tFields RequestScopedFields, event string, fields ...Fields) {
-	defaultLogger.write(tFields, event, nil, DebugSev, fields...)
+func Debug(rsFields RequestScopedFields, event string, fields ...Fields) {
+	defaultLogger.write(rsFields, event, nil, DebugSev, fields...)
 }
 
 // Debug writes a write message with optional types to the underlying standard writer.
@@ -79,8 +79,8 @@ func (logger Logger) Debug(event string, fields ...Fields) {
 // Info writes a message with optional types to the underlying standard writer.
 // Useful for normal tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
-func Info(tFields RequestScopedFields, event string, fields ...Fields) {
-	defaultLogger.write(tFields, event, nil, InfoSev, fields...)
+func Info(rsFields RequestScopedFields, event string, fields ...Fields) {
+	defaultLogger.write(rsFields, event, nil, InfoSev, fields...)
 }
 
 // Info writes a message with optional types to the underlying standard writer.
@@ -93,8 +93,8 @@ func (logger Logger) Info(event string, fields ...Fields) {
 // Warn writes a message with optional types to the underlying standard writer.
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
-func Warn(tFields RequestScopedFields, event string, fields ...Fields) {
-	defaultLogger.write(tFields, event, nil, WarnSev, fields...)
+func Warn(rsFields RequestScopedFields, event string, fields ...Fields) {
+	defaultLogger.write(rsFields, event, nil, WarnSev, fields...)
 }
 
 // Warn writes a message with optional types to the underlying standard writer.
@@ -107,8 +107,8 @@ func (logger Logger) Warn(event string, fields ...Fields) {
 // Error writes a error message with optional types to the underlying standard writer.
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
-func Error(tFields RequestScopedFields, event string, err error, fields ...Fields) {
-	defaultLogger.write(tFields, event, err, ErrorSev, fields...)
+func Error(rsFields RequestScopedFields, event string, err error, fields ...Fields) {
+	defaultLogger.write(rsFields, event, err, ErrorSev, fields...)
 }
 
 // Error writes a error message with optional types to the underlying standard writer.
@@ -122,8 +122,8 @@ func (logger Logger) Error(event string, err error, fields ...Fields) {
 // Panic will terminate the current go routine.
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
-func Fatal(tFields RequestScopedFields, event string, err error, fields ...Fields) {
-	event = defaultLogger.write(tFields, event, err, FatalSev, fields...)
+func Fatal(rsFields RequestScopedFields, event string, err error, fields ...Fields) {
+	event = defaultLogger.write(rsFields, event, err, FatalSev, fields...)
 
 	// time to panic!
 	panic(event)
