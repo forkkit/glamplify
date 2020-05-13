@@ -96,6 +96,17 @@ func Test_Segment_Fatal(t *testing.T) {
 	logger.Event("something_happened").Fields(properties).Fatal(errors.New("not sure what is going on"))
 }
 
+func Test_Segment_WithNoFields(t *testing.T) {
+
+	memBuffer, logger := getTestLogger()
+
+	logger.Event("something_happened").Info("nothing to write home about")
+
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "event", "something_happened")
+	assertContainsString(t, msg, "severity", "INFO")
+	assertContainsString(t, msg, "message", "nothing to write home about")
+}
 
 func getTestLogger() (*bytes.Buffer, *log.Logger) {
 	rsFields := log.RequestScopedFields{

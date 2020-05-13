@@ -8,8 +8,7 @@ type Segment struct {
 
 func (segment *Segment) Fields(fields ...Fields) *Segment {
 
-	properties := Fields{}.Merge(fields...)
-	segment.fields = properties
+	segment.fields = segment.fields.Merge(fields...)
 	return segment
 }
 

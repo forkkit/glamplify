@@ -146,6 +146,7 @@ func (logger Logger) Event(event string) *Segment {
 	return &Segment{
 		logger: logger,
 		event: event,
+		fields: Fields{},
 	}
 }
 
