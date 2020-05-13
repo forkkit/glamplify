@@ -260,10 +260,10 @@ func Test_Log_Error(t *testing.T) {
 	})
 	logger := NewWitCustomWriter(rsFields, writer)
 
-	logger.Error(errors.New("error"))
+	logger.Error("error event", errors.New("something went wrong"))
 
 	msg := memBuffer.String()
-	assertContainsString(t, msg, "event", "error")
+	assertContainsString(t, msg, "event", "error_event")
 	assertContainsString(t, msg, "severity", "ERROR")
 	assertContainsString(t, msg, "trace_id", "1-2-3")
 	assertContainsString(t, msg, "customer", "hooli")
@@ -274,6 +274,7 @@ func Test_Log_Error(t *testing.T) {
 	assertContainsString(t, msg, "aws_region", "us-west-02")
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 	assertScopeContainsSubDoc(t, msg, "exception")
+	assertContainsString(t, msg, "error", "something went wrong")
 }
 
 func Test_Log_ErrorWithFields(t *testing.T) {
@@ -284,7 +285,7 @@ func Test_Log_ErrorWithFields(t *testing.T) {
 	})
 	logger := NewWitCustomWriter(rsFields, writer)
 
-	logger.Error(errors.New("error"), Fields{
+	logger.Error("error event", errors.New("something went wrong"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -293,7 +294,7 @@ func Test_Log_ErrorWithFields(t *testing.T) {
 	})
 
 	msg := memBuffer.String()
-	assertContainsString(t, msg, "event", "error")
+	assertContainsString(t, msg, "event", "error_event")
 	assertContainsString(t, msg, "severity", "ERROR")
 	assertContainsString(t, msg, "string", "hello")
 	assertContainsInt(t, msg, "int", 123)
@@ -310,6 +311,7 @@ func Test_Log_ErrorWithFields(t *testing.T) {
 	assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 	assertScopeContainsSubDoc(t, msg, "properties")
 	assertScopeContainsSubDoc(t, msg, "exception")
+	assertContainsString(t, msg, "error", "something went wrong")
 }
 
 func Test_Log_Fatal(t *testing.T) {
@@ -322,7 +324,7 @@ func Test_Log_Fatal(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			msg := memBuffer.String()
-			assertContainsString(t, msg, "event", "fatal")
+			assertContainsString(t, msg, "event", "fatal_event")
 			assertContainsString(t, msg, "severity", "FATAL")
 			assertContainsString(t, msg, "trace_id", "1-2-3")
 			assertContainsString(t, msg, "customer", "hooli")
@@ -333,10 +335,11 @@ func Test_Log_Fatal(t *testing.T) {
 			assertContainsString(t, msg, "aws_region", "us-west-02")
 			assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 			assertScopeContainsSubDoc(t, msg, "exception")
+			assertContainsString(t, msg, "error", "something fatal happened")
 		}
 	}()
 
-	logger.Fatal(errors.New("fatal")) // will call panic!
+	logger.Fatal("fatal event", errors.New("something fatal happened")) // will call panic!
 }
 
 func Test_Log_FatalWithFields(t *testing.T) {
@@ -350,7 +353,7 @@ func Test_Log_FatalWithFields(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			msg := memBuffer.String()
-			assertContainsString(t, msg, "event", "fatal")
+			assertContainsString(t, msg, "event", "fatal_event")
 			assertContainsString(t, msg, "severity", "FATAL")
 			assertContainsString(t, msg, "string", "hello")
 			assertContainsInt(t, msg, "int", 123)
@@ -367,10 +370,12 @@ func Test_Log_FatalWithFields(t *testing.T) {
 			assertContainsString(t, msg, "aws_account_id", "aws-account-123")
 			assertScopeContainsSubDoc(t, msg, "properties")
 			assertScopeContainsSubDoc(t, msg, "exception")
+			assertContainsString(t, msg, "error", "something fatal happened")
+
 		}
 	}()
 
-	logger.Fatal(errors.New("fatal"), Fields{ // this will call panic!
+	logger.Fatal("fatal event", errors.New("something fatal happened"), Fields{ // this will call panic!
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -392,7 +397,7 @@ func Test_Log_Namespace(t *testing.T) {
 	t2 := time.Now()
 	d := t2.Sub(t1)
 
-	logger.Error(errors.New("error"), Fields{
+	logger.Error("error event", errors.New("something went wrong"), Fields{
 		"string": "hello",
 		"int":    123,
 		"float":  42.48,
@@ -447,20 +452,20 @@ func TestScope(t *testing.T) {
 	assertScopeContainsInt(t, msg, "request_id", 123)
 
 	memBuffer.Reset()
-	logger.Error(errors.New("error"))
+	logger.Error("error_event", errors.New("something went wrong"))
 	msg = memBuffer.String()
-	assertScopeContainsString(t, msg, "event", "error")
+	assertScopeContainsString(t, msg, "event", "error_event")
 	assertScopeContainsInt(t, msg, "request_id", 123)
 
 	defer func() {
 		if r := recover(); r != nil {
 			msg := memBuffer.String()
-			assertContainsString(t, msg, "event", "fatal")
+			assertContainsString(t, msg, "event", "fatal_event")
 			assertContainsString(t, msg, "severity", "FATAL")
 		}
 	}()
 
-	logger.Fatal(errors.New("fatal")) // will call panic!
+	logger.Fatal("fatal_event", errors.New("something fatal happened")) // will call panic!
 }
 
 func TestScope_Overwrite(t *testing.T) {
@@ -496,24 +501,24 @@ func TestScope_Overwrite(t *testing.T) {
 	assertScopeContainsInt(t, msg, "request_id", 456)
 
 	memBuffer.Reset()
-	logger.Error(errors.New("error"), Fields {
+	logger.Error("error_event", errors.New("error"), Fields {
 		"requestID": 456,
 	})
 	msg = memBuffer.String()
-	assertScopeContainsString(t, msg, "event", "error")
+	assertScopeContainsString(t, msg, "event", "error_event")
 	assertScopeContainsInt(t, msg, "request_id", 456)
 
 	defer func() {
 		if r := recover(); r != nil {
 			msg := memBuffer.String()
-			assertScopeContainsString(t, msg, "event", "fatal")
+			assertScopeContainsString(t, msg, "event", "fatal_event")
 			assertScopeContainsString(t, msg, "severity", "FATAL")
 			assertScopeContainsInt(t, msg, "request_id", 456)
 		}
 	}()
 
 	// will call panic!
-	logger.Fatal(errors.New("fatal"), Fields {
+	logger.Fatal("fatal_event", errors.New("fatal"), Fields {
 		"request_id": 456,
 	})
 }
@@ -567,27 +572,14 @@ func Test_RealWorld(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	logger.Error(errors.New("error"), Fields{
+	logger.Error("error_event", errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
 		"string2":       "hello world",
 		"string3 space": "world",
 	})
-	Error(rsFields, errors.New("error"), Fields{
-		"string":        "hello",
-		"int":           123,
-		"float":         42.48,
-		"string2":       "hello world",
-		"string3 space": "world",
-	})
-
-	defer func() {
-		recover()
-	}()
-
-	// this will call panic!
-	logger.Fatal(errors.New("fatal"), Fields{
+	Error(rsFields, "error_event", errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -600,7 +592,20 @@ func Test_RealWorld(t *testing.T) {
 	}()
 
 	// this will call panic!
-	Fatal(rsFields, errors.New("fatal"), Fields{
+	logger.Fatal("fatal_event", errors.New("fatal"), Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	// this will call panic!
+	Fatal(rsFields, "fatal_event", errors.New("fatal"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -670,7 +675,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 		"float2":  78.98,
 	})
 
-	logger.Error(errors.New("error"), Fields{
+	logger.Error("error_event", errors.New("error"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -679,22 +684,7 @@ func Test_RealWorld_Combined(t *testing.T) {
 		"int2":    456,
 		"float2":  78.98,
 	})
-	Error(rsFields, errors.New("error"), Fields{
-		"string1": "hello",
-		"int1":    123,
-		"float1":  42.48,
-	}, Fields{
-		"string2": "world",
-		"int2":    456,
-		"float2":  78.98,
-	})
-
-	defer func() {
-		recover()
-	}()
-
-	// this will call panic!
-	logger.Fatal(errors.New("fatal"), Fields{
+	Error(rsFields, "error_event", errors.New("error"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -709,7 +699,22 @@ func Test_RealWorld_Combined(t *testing.T) {
 	}()
 
 	// this will call panic!
-	Fatal(rsFields, errors.New("fatal"), Fields{
+	logger.Fatal("fatal_event", errors.New("fatal"), Fields{
+		"string1": "hello",
+		"int1":    123,
+		"float1":  42.48,
+	}, Fields{
+		"string2": "world",
+		"int2":    456,
+		"float2":  78.98,
+	})
+
+	defer func() {
+		recover()
+	}()
+
+	// this will call panic!
+	Fatal(rsFields, "fatal_event", errors.New("fatal"), Fields{
 		"string1": "hello",
 		"int1":    123,
 		"float1":  42.48,
@@ -751,7 +756,7 @@ func Test_RealWorld_Scope(t *testing.T) {
 		"string3 space": "world",
 	})
 
-	logger.Error(errors.New("error"), Fields{
+	logger.Error("error_event", errors.New("error"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
@@ -764,7 +769,7 @@ func Test_RealWorld_Scope(t *testing.T) {
 	}()
 
 	// this will call panic!
-	logger.Fatal(errors.New("fatal"), Fields{
+	logger.Fatal("fatal_event", errors.New("fatal"), Fields{
 		"string":        "hello",
 		"int":           123,
 		"float":         42.48,
