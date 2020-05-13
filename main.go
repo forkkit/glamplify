@@ -54,7 +54,7 @@ func main() {
 		}
 	})
 	if appErr != nil {
-		logger.Fatal(appErr)
+		logger.Fatal("monitoring_failed", appErr)
 	}
 
 	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func (conf *notify.Config) {
@@ -63,7 +63,7 @@ func main() {
 		conf.AppVersion = "1.0.0"
 	})
 	if notifyErr != nil {
-		logger.Fatal(notifyErr)
+		logger.Fatal("notification_failed", notifyErr)
 	}
 
 	pattern, handler := http2.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)
@@ -98,10 +98,17 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	r = log.WrapRequest(r)
 	logger = log.NewFromRequest(r)
 
+	// now away you go!
 	logger.Debug("something_happened")
 
 	// or use the default logger with transaction fields passed in
-	log.Debug(requestScopedFields, "something_happened", log.Fields{})
+	log.Debug(requestScopedFields, "something_happened", log.Fields{log.Message: "message"})
+
+	// or use an more expressive syntax
+	logger.Event("something_happened").Debug("message")
+
+	// or use an more expressive syntax
+	logger.Event("something_happened").Fields(log.Fields{"count": 1}).Debug("message")
 
 	// Emit debug trace with types
 	// Fields can contain any type of variables
@@ -109,7 +116,14 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 		"aString": "hello",
 		"aInt":    123,
 		"aFloat":  42.48,
+		log.Message: "message",
 	})
+	logger.Event("something_else_happened").Fields(log.Fields{
+		"aString": "hello",
+		"aInt":    123,
+		"aFloat":  42.48,
+	}).Debug("message")
+
 
 	// Emit normal logging (can add optional types if required)
 	// Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)
@@ -118,12 +132,12 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Emit Error (can add optional types if required)
 	// Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
 	err = errors.New("failed to save record to db")
-	logger.Error(err)
+	logger.Error("error_saving_record", err)
 
 	// Emit Fatal (can add optional types if required) and PANIC!
 	// Fatal error will always be sent onto 3rd party aggregation tools (eg. Splunk)
 	//err = errors.New("program died")
-	//logger.Fatal(err)
+	//logger.Fatal("fatal_problem_detected", err)
 
 	/* NEW RELIC TRANSACTION */
 	txn, err := monitor.TxnFromRequest(w, r)

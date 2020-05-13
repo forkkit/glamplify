@@ -72,7 +72,7 @@ func main() {
     h := http.HandlerFunc(requestHandler)
 
     if err := http.ListenAndServe(":8080", h); err != nil {
-        logger.Error(err)
+        logger.Error("failed_to_serve_http_request", err)
     }
 }
 
@@ -98,17 +98,31 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     r = log.WrapRequest(r)
     logger = log.NewFromRequest(r)
 
-
-    // Once you have a logger then you can call logger.Debug/Info/Warn/Error/Fatal
-    // NOTE: unlike normal logging, the string you pass in SHOULD BE AN EVENT NAME (past tense)
-
-    // Example
-    logger.Debug("something_happened_event")
-
-    // If you want to pass a detailed message then use
-    logger.Debug("something_happed_event", log.Fields {
-        log.Message: "Something that I was expecting actually did happen!",
+    // now away you go!
+    logger.Debug("something_happened")
+    
+    // or use the default logger with transaction fields passed in
+    log.Debug(requestScopedFields, "something_happened", log.Fields{log.Message: "message"})
+    
+    // or use an more expressive syntax
+    logger.Event("something_happened").Debug("message")
+    
+    // or use an more expressive syntax
+    logger.Event("something_happened").Fields(log.Fields{"count": 1}).Debug("message")
+    
+    // Emit debug trace with types
+    // Fields can contain any type of variables
+    logger.Debug("something_else_happened", log.Fields{
+        "aString": "hello",
+        "aInt":    123,
+        "aFloat":  42.48,
+        log.Message: "message",
     })
+    logger.Event("something_else_happened").Fields(log.Fields{
+        "aString": "hello",
+        "aInt":    123,
+        "aFloat":  42.48,
+    }).Debug("message")
 
     // Fields can contain any type of variables, but here are some helpful predefined ones
     // (see constants.go for full list)
@@ -121,15 +135,14 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // TotalItemsRequestedLogField = "total_items_requested"
 
     d := time.Millisecond * 123
-    logger.Debug("something_happened", log.Fields{
-        log.Message: "The thing did what we expected it to do",
+    logger.Event("something_happened").Fields(log.Fields{
         log.TimeTaken : log.DurationAsISO8601(d), // returns "P0.123S" as per sensible default
         log.User: "MMLKSN443FN",
         "report":  "NVJKSJFJ34NBFN44",
         "aInt":    123,
         "aFloat":  42.48,
         "aString": "more info",
-     })
+     }).Debug("The thing did what we expected it to do")
 
     // Typically Info will be sent onto 3rd party aggregation tools (eg. Splunk)
     logger.Info("something_happened_event")
@@ -145,31 +158,31 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     })
 
     // Errors will always be sent onto 3rd party aggregation tools (eg. Splunk)
-    err = errors.New("Missing database connection string")
-    logger.Error(err)
+    err = errors.New("missing database connection string")
+    logger.Error("database_connection", err)
 
     // Fields can contain any type of variables
-    err = errors.New("Missing database connection string")
-    logger.Error(err, log.Fields{
+    err = errors.New("missing database connection string")
+    logger.Event("database_connection").Fields(log.Fields{
         "program-name": "helloworld.exe",
         "start-up-param":    123,
         log.User:  "admin",
         log.Message: "The thing did not do what we expected it to do",
-     })
+     }).Error(err)
 }
 
 ```
 Use `log.New()` for logging without a http request. Use `log.NewFromRequest()` when you do have a http request. This initializes a bunch of stuff for you (eg. JWT details are automatically logged for you). NewFromRequest always returns a valid Logger and an optional error (which usually describes problems decoding the JWT etc)
 
-Use `logger.Debug` for logging that will only be used when diving deep to uncover bugs. Typically `scope.Debug` messages will not automatically be sent to other 3rd party systems (eg. Splunk).
+Use `Debug` for logging that will only be used when diving deep to uncover bugs. Typically `scope.Debug` messages will not automatically be sent to other 3rd party systems (eg. Splunk).
 
-Use `logger.Print` for standard log messages that you want to see always. These will never be turned off and will likely be always sent to 3rd party systems for further analysis (eg. Spliunk).
+Use `Info` for standard log messages that you want to see always. These will never be turned off and will likely be always sent to 3rd party systems for further analysis (eg. Spliunk).
 
-Use `logger.Warnr` when you have encounter a warning that should be looked at by a human, but has been recovered. All warning messages will be forwarded to 3rd party systems for monitoring and further analysis.
+Use `Warn` when you have encounter a warning that should be looked at by a human, but has been recovered. All warning messages will be forwarded to 3rd party systems for monitoring and further analysis.
 
-Use `logger.Error` when you have encountered a GO error. This will NOT stop the program, it is assumed that the system has recovered. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
+Use `Error` when you have encountered a GO error. This will NOT stop the program, it is assumed that the system has recovered. All error messages will be forwarded to 3rd party systems for monitoring and further analysis.
 
-Use `logger.Fatal` when you have encountered a GO error that is not recoverable. This will stop the program by calling panic(). All fatal messages will be forwarded to 3rd party systems for monitoring and further analysis.
+Use `Fatal` when you have encountered a GO error that is not recoverable. This will stop the program by calling panic(). All fatal messages will be forwarded to 3rd party systems for monitoring and further analysis.
 
 ### Monitor
 
@@ -215,7 +228,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 
     txn, err := monitor.TxnFromRequest(w, r)
     if err != nil {
-        logger.Error(err)
+        logger.Error("monitor_transaction_failed", err)
         txn.AddAttributes(log.Fields{
             "aString": "hello world",
             "aInt":    123,
@@ -225,7 +238,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // Do more things
 
     if err != nil {
-        logger.Error(err)
+        logger.Error("program_error", err)
         txn.AddAttributes(log.Fields{
             "aString2": "goodbye",
             "aInt2":    456,
@@ -272,7 +285,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // Do things
     app, err := monitor.AppFromRequest(w, r)
     if err != nil {
-        logger.Error(err)
+        logger.Error("monitor_failed", err)
     }
 
     err = app.RecordEvent("mycustomEvent", log.Fields{
@@ -280,7 +293,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
         "aInt":    123,
     })
     if err != nil {
-        logger.Error(err)
+        logger.Error("monitor_record_failed", err)
     }
     // Do more things
 }
@@ -319,7 +332,7 @@ func handler(ctx context.Context) {
 
     txn, err := monitor.TxnFromContext(ctx)
     if err != nil {
-        logger.Error(err)
+        logger.Error("monitor_transaction_failed", err)
         txn.AddAttributes(log.Fields{
             "aString": "hello world",
             "aInt":    123,
@@ -329,7 +342,7 @@ func handler(ctx context.Context) {
     // Do more things
 
     if err != nil {
-        logger.Error(err)
+        logger.Error("program_failed", err)
         txn.AddAttributes(log.Fields{
             "aString2": "goodbye",
             "aInt2":    456,
@@ -371,7 +384,7 @@ func handler(ctx context.Context) {
 
     app, err := monitor.AppFromContext(ctx)
     if err != nil {
-        logger.Error(err)
+        logger.Error("monitor_transaction_failed", err)
         err = app.RecordEvent("mycustomEvent", log.Fields{
             "aString": "hello world",
             "aInt":    123,
@@ -420,7 +433,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
     if notifyErr != nil {
-        logger.Error(notifyErr)
+        logger.Error("notification_error", notifyErr)
     }
 
     // Do things
