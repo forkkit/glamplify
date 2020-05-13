@@ -18,7 +18,6 @@ func Test_RequestScope_AddGet(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", "*", nil)
-
 	req = log.AddRequestScopedFieldsRequest(req, rsFields)
 
 	resultFields, ok := log.GetRequestScopedFieldsFromRequest(req)
@@ -29,6 +28,28 @@ func Test_RequestScope_AddGet(t *testing.T) {
 }
 
 func Test_Request_Wrap(t *testing.T) {
+	rsFields := log.RequestScopedFields{
+		TraceID: "1-2-3",
+		RequestID: "7-8-9",
+		UserAggregateID: "a-b-c",
+		CustomerAggregateID: "xyz",
+	}
+
+	req, _ := http.NewRequest("GET", "*", nil)
+	req = log.AddRequestScopedFieldsRequest(req, rsFields)
+
+	req = log.WrapRequest(req)
+	id, ok := log.GetTraceID(req.Context())
+	assert.Assert(t, ok && id == "1-2-3", id)
+	id, ok = log.GetRequestID(req.Context())
+	assert.Assert(t, ok && id == "7-8-9", id)
+	id, ok = log.GetUser(req.Context())
+	assert.Assert(t, ok && id == "a-b-c", id)
+	id, ok = log.GetCustomer(req.Context())
+	assert.Assert(t, ok && id == "xyz", id)
+}
+
+func Test_Request_WrapWithDecoder(t *testing.T) {
 	jwt, err := jwt.NewDecoderFromPath("../jwt/jwt.rs256.key.development.pub")
 	assert.Assert(t, err == nil, err)
 
@@ -40,8 +61,6 @@ func Test_Request_Wrap(t *testing.T) {
 	req2 := log.WrapRequestWithDecoder(req, jwt)
 	id, ok := log.GetTraceID(req2.Context())
 	assert.Assert(t, ok && id != "", id)
-
-	// TODO: these fail at the moment because not sure best way to get the AUTH_PUBLIC_KEY
 	id, ok = log.GetCustomer(req2.Context())
 	assert.Assert(t, ok && id != "", id)
 	id, ok = log.GetUser(req2.Context())
