@@ -1,12 +1,13 @@
 package http
 
 import (
-	"github.com/cultureamp/glamplify/log"
-	"github.com/cultureamp/glamplify/monitor"
-	"github.com/cultureamp/glamplify/notify"
 	"gotest.tools/assert"
 	"net/http"
 	"testing"
+
+	"github.com/cultureamp/glamplify/log"
+	"github.com/cultureamp/glamplify/monitor"
+	"github.com/cultureamp/glamplify/notify"
 )
 
 func Test_Wrap(t *testing.T) {

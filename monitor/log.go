@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 	"errors"
+
 	"github.com/cultureamp/glamplify/log"
 )
 
@@ -27,7 +28,7 @@ func newMonitorLogger(ctx context.Context) *monitorLogger {
 
 func (logger monitorLogger) Error(msg string, context map[string]interface{}) {
 	err := errors.New(msg)
-	logger.logger.Error(err, context)
+	logger.logger.Error("monitor_error", err, context)
 }
 
 func (logger monitorLogger) Warn(msg string, context map[string]interface{}) {

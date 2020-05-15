@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	context2 "github.com/cultureamp/glamplify/context"
 	"gotest.tools/assert"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 
 var (
 	ctx      context.Context
-	rsFields RequestScopedFields
+	rsFields context2.RequestScopedFields
 )
 
 func TestMain(m *testing.M) {
@@ -28,12 +29,12 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	ctx = context.Background()
-	ctx = AddTraceID(ctx, "1-2-3")
-	ctx = AddRequestID(ctx, "7-8-9")
-	ctx = AddCustomer(ctx, "hooli")
-	ctx = AddUser(ctx, "UserAggregateID-123")
+	ctx = context2.AddTraceID(ctx, "1-2-3")
+	ctx = context2.AddRequestID(ctx, "7-8-9")
+	ctx = context2.AddCustomer(ctx, "hooli")
+	ctx = context2.AddUser(ctx, "UserAggregateID-123")
 
-	rsFields, _ = GetRequestScopedFieldsFromCtx(ctx)
+	rsFields, _ = context2.GetRequestScopedFieldsFromCtx(ctx)
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -59,7 +60,7 @@ func Test_NewWithContext(t *testing.T) {
 	logger := NewFromCtx(ctx)
 	assert.Assert(t, logger != nil, logger)
 
-	traceID1, ok1 := GetTraceID(ctx)
+	traceID1, ok1 := context2.GetTraceID(ctx)
 
 	assert.Assert(t, ok1, ok1)
 	assert.Assert(t, traceID1 == "1-2-3", traceID1)
@@ -72,7 +73,7 @@ func Test_NewWithRequest(t *testing.T) {
 	logger := NewFromRequest(req1)
 	assert.Assert(t, logger != nil, logger)
 
-	traceID1, ok1 := GetTraceID(req1.Context())
+	traceID1, ok1 := context2.GetTraceID(req1.Context())
 
 	assert.Assert(t, ok1, ok1)
 	assert.Assert(t, traceID1 == "1-2-3", traceID1)

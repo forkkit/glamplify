@@ -1,4 +1,4 @@
-package log
+package context
 
 import (
 	"github.com/cultureamp/glamplify/aws"

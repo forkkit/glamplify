@@ -2,13 +2,14 @@ package log
 
 import (
 	"context"
+	gcontext "github.com/cultureamp/glamplify/context"
 	"github.com/cultureamp/glamplify/helper"
 	"net/http"
 )
 
 // Logger
 type Logger struct {
-	rsFields  RequestScopedFields
+	rsFields  gcontext.RequestScopedFields
 	fields    Fields
 	sysValues *SystemValues
 	writer    *FieldWriter
@@ -16,16 +17,16 @@ type Logger struct {
 
 var (
 	internalWriter = NewWriter(func(conf *WriterConfig) {})
-	defaultLogger  = NewWitCustomWriter(RequestScopedFields{}, internalWriter)
+	defaultLogger  = NewWitCustomWriter(gcontext.RequestScopedFields{}, internalWriter)
 )
 
 // New creates a *Logger with optional fields. Useful for when you want to add a field to all subsequent logging calls eg. request_id, etc.
-func New(rsFields RequestScopedFields, fields ...Fields) *Logger {
+func New(rsFields gcontext.RequestScopedFields, fields ...Fields) *Logger {
 	return newLogger(rsFields, internalWriter, fields...)
 }
 
 // Useful for CLI applications that want to write to stderr or file etc.
-func NewWitCustomWriter(rsFields RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
+func NewWitCustomWriter(rsFields gcontext.RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
 	return newLogger(rsFields, writer, fields...)
 }
 
@@ -33,7 +34,7 @@ func NewWitCustomWriter(rsFields RequestScopedFields, writer *FieldWriter, field
 // If the context does not contain then, then this method will NOT add them in.
 func NewFromCtx(ctx context.Context, fields ...Fields) *Logger {
 
-	rsFields, _ := GetRequestScopedFieldsFromCtx(ctx)
+	rsFields, _ := gcontext.GetRequestScopedFieldsFromCtx(ctx)
 	logger := New(rsFields, fields...)
 	return logger
 }
@@ -45,7 +46,7 @@ func NewFromRequest(r *http.Request, fields ...Fields) *Logger {
 	return logger
 }
 
-func newLogger(rsFields RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
+func newLogger(rsFields gcontext.RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
 
 	df := newSystemValues()
 
@@ -64,7 +65,7 @@ func newLogger(rsFields RequestScopedFields, writer *FieldWriter, fields ...Fiel
 // Useful for adding detailed tracing that you don't normally want to appear, but turned on
 // when hunting down incorrect behaviour.
 // Use snake_case keys and lower case values if possible.
-func Debug(rsFields RequestScopedFields, event string, fields ...Fields) {
+func Debug(rsFields gcontext.RequestScopedFields, event string, fields ...Fields) {
 	defaultLogger.write(rsFields, event, nil, DebugSev, fields...)
 }
 
@@ -79,7 +80,7 @@ func (logger Logger) Debug(event string, fields ...Fields) {
 // Info writes a message with optional types to the underlying standard writer.
 // Useful for normal tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
-func Info(rsFields RequestScopedFields, event string, fields ...Fields) {
+func Info(rsFields gcontext.RequestScopedFields, event string, fields ...Fields) {
 	defaultLogger.write(rsFields, event, nil, InfoSev, fields...)
 }
 
@@ -93,7 +94,7 @@ func (logger Logger) Info(event string, fields ...Fields) {
 // Warn writes a message with optional types to the underlying standard writer.
 // Useful for unusual but recoverable tracing that should be captured during standard operating behaviour.
 // Use snake_case keys and lower case values if possible.
-func Warn(rsFields RequestScopedFields, event string, fields ...Fields) {
+func Warn(rsFields gcontext.RequestScopedFields, event string, fields ...Fields) {
 	defaultLogger.write(rsFields, event, nil, WarnSev, fields...)
 }
 
@@ -107,7 +108,7 @@ func (logger Logger) Warn(event string, fields ...Fields) {
 // Error writes a error message with optional types to the underlying standard writer.
 // Useful to trace errors that are usually not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
-func Error(rsFields RequestScopedFields, event string, err error, fields ...Fields) {
+func Error(rsFields gcontext.RequestScopedFields, event string, err error, fields ...Fields) {
 	defaultLogger.write(rsFields, event, err, ErrorSev, fields...)
 }
 
@@ -122,7 +123,7 @@ func (logger Logger) Error(event string, err error, fields ...Fields) {
 // Panic will terminate the current go routine.
 // Useful to trace catastrophic errors that are not recoverable. These should always be logged.
 // Use snake_case keys and lower case values if possible.
-func Fatal(rsFields RequestScopedFields, event string, err error, fields ...Fields) {
+func Fatal(rsFields gcontext.RequestScopedFields, event string, err error, fields ...Fields) {
 	event = defaultLogger.write(rsFields, event, err, FatalSev, fields...)
 
 	// time to panic!
@@ -150,7 +151,7 @@ func (logger Logger) Event(event string) *Segment {
 	}
 }
 
-func (logger Logger) write(rsFields RequestScopedFields, event string, err error, sev string, fields ...Fields) string {
+func (logger Logger) write(rsFields gcontext.RequestScopedFields, event string, err error, sev string, fields ...Fields) string {
 	event = helper.ToSnakeCase(event)
 
 	system := logger.sysValues.getSystemValues(rsFields, event, sev)

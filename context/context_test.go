@@ -1,8 +1,8 @@
-package log_test
+package context_test
 
 import (
 	"context"
-	"github.com/cultureamp/glamplify/log"
+	context2 "github.com/cultureamp/glamplify/context"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -11,18 +11,18 @@ func Test_Context_AddGet(t *testing.T) {
 
 	ctx := context.Background()
 
-	ctx = log.AddTraceID(ctx, "trace1")
-	ctx = log.AddRequestID(ctx, "request1")
-	ctx = log.AddCustomer(ctx, "cust1")
-	ctx = log.AddUser(ctx, "user1")
+	ctx = context2.AddTraceID(ctx, "trace1")
+	ctx = context2.AddRequestID(ctx, "request1")
+	ctx = context2.AddCustomer(ctx, "cust1")
+	ctx = context2.AddUser(ctx, "user1")
 
-	id, ok := log.GetTraceID(ctx)
+	id, ok := context2.GetTraceID(ctx)
 	assert.Assert(t, ok && id == "trace1", id)
-	id, ok = log.GetRequestID(ctx)
+	id, ok = context2.GetRequestID(ctx)
 	assert.Assert(t, ok && id == "request1", id)
-	id, ok = log.GetCustomer(ctx)
+	id, ok = context2.GetCustomer(ctx)
 	assert.Assert(t, ok && id == "cust1", id)
-	id, ok = log.GetUser(ctx)
+	id, ok = context2.GetUser(ctx)
 	assert.Assert(t, ok && id == "user1", id)
 }
 
@@ -30,24 +30,24 @@ func Test_Context_TraceID_AddGet_Empty(t *testing.T) {
 
 	ctx := context.Background()
 
-	ctx = log.AddTraceID(ctx, "")
-	ctx = log.AddRequestID(ctx, "")
-	ctx = log.AddCustomer(ctx, "")
-	ctx = log.AddUser(ctx, "")
+	ctx = context2.AddTraceID(ctx, "")
+	ctx = context2.AddRequestID(ctx, "")
+	ctx = context2.AddCustomer(ctx, "")
+	ctx = context2.AddUser(ctx, "")
 
-	id, ok := log.GetTraceID(ctx)
+	id, ok := context2.GetTraceID(ctx)
 	assert.Assert(t, !ok && id == "", id)
-	id, ok = log.GetRequestID(ctx)
+	id, ok = context2.GetRequestID(ctx)
 	assert.Assert(t, !ok && id == "", id)
-	id, ok = log.GetTraceID(ctx)
+	id, ok = context2.GetTraceID(ctx)
 	assert.Assert(t, !ok && id == "", id)
-	id, ok = log.GetTraceID(ctx)
+	id, ok = context2.GetTraceID(ctx)
 	assert.Assert(t, !ok && id == "", id)
 }
 
 func Test_Context_RequestScope_AddGet(t *testing.T) {
 
-	rsFields := log.RequestScopedFields{
+	rsFields := context2.RequestScopedFields{
 		TraceID: "1-2-3",
 		RequestID: "7-8-9",
 		UserAggregateID: "a-b-c",
@@ -55,9 +55,9 @@ func Test_Context_RequestScope_AddGet(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = log.AddRequestScopedFieldsToCtx(ctx, rsFields)
+	ctx = context2.AddRequestScopedFieldsToCtx(ctx, rsFields)
 
-	resultFields, ok := log.GetRequestScopedFieldsFromCtx(ctx)
+	resultFields, ok := context2.GetRequestScopedFieldsFromCtx(ctx)
 	assert.Assert(t, ok, ok)
 	assert.Assert(t, resultFields.TraceID == rsFields.TraceID, resultFields.TraceID)
 	assert.Assert(t, resultFields.RequestID == rsFields.RequestID, resultFields.RequestID)
@@ -69,7 +69,7 @@ func Test_Context_RequestScope_AddGet(t *testing.T) {
 func Test_Context_Wrap(t *testing.T) {
 	ctx := context.Background()
 
-	ctx = log.WrapCtx(ctx)
-	id, ok := log.GetTraceID(ctx)
+	ctx = context2.WrapCtx(ctx)
+	id, ok := context2.GetTraceID(ctx)
 	assert.Assert(t, ok && id != "", id)
 }

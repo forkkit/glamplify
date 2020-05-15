@@ -2,6 +2,7 @@ package errors
 
 import (
 	"context"
+	gcontext "github.com/cultureamp/glamplify/context"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"github.com/cultureamp/glamplify/notify"
@@ -10,8 +11,8 @@ import (
 func HandleError(err error, fields log.Fields) {
 
 	// call logger
-	logger := log.New(log.RequestScopedFields{})
-	logger.Error(err, log.Fields(fields))
+	logger := log.New(gcontext.RequestScopedFields{})
+	logger.Error("error", err, log.Fields(fields))
 
 	// call newrelic
 	// todo - how to call new relic without a context?
@@ -24,7 +25,7 @@ func HandleErrorWithContext(ctx context.Context, err error, fields log.Fields) {
 
 	// call logger
 	logger := log.NewFromCtx(ctx)
-	logger.Error(err, fields)
+	logger.Error("error", err, fields)
 
 	// call newrelic
 	txn, err := monitor.TxnFromContext(ctx)

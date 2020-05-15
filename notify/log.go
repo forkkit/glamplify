@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"fmt"
+
 	"github.com/cultureamp/glamplify/log"
 )
 

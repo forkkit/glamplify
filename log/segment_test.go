@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/cultureamp/glamplify/context"
 	"gotest.tools/assert"
 	"strings"
 	"testing"
@@ -109,7 +110,7 @@ func Test_Segment_WithNoFields(t *testing.T) {
 }
 
 func getTestLogger() (*bytes.Buffer, *log.Logger) {
-	rsFields := log.RequestScopedFields{
+	rsFields := context.RequestScopedFields{
 		TraceID:             "1-2-3",
 		RequestID:           "4-5-6",
 		CustomerAggregateID: "abc",

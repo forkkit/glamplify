@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	gcontext "github.com/cultureamp/glamplify/context"
 )
 
 // SystemValues
@@ -23,7 +25,7 @@ func newSystemValues() *SystemValues {
 	return &SystemValues{}
 }
 
-func (df SystemValues) getSystemValues(transactionFields RequestScopedFields, event string, sev string) Fields {
+func (df SystemValues) getSystemValues(transactionFields gcontext.RequestScopedFields, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -72,12 +74,12 @@ func (df SystemValues) getEnvFields(fields Fields) Fields {
 	return fields
 }
 
-func (df SystemValues) getMandatoryFields(transactionFields RequestScopedFields, fields Fields) Fields {
+func (df SystemValues) getMandatoryFields(rsFields gcontext.RequestScopedFields, fields Fields) Fields {
 
-	fields = df.addMandatoryFieldIfMissing(TraceID, transactionFields.TraceID, fields)
-	fields = df.addMandatoryFieldIfMissing(RequestID, transactionFields.RequestID, fields)
-	fields = df.addMandatoryFieldIfMissing(Customer, transactionFields.CustomerAggregateID, fields)
-	fields = df.addMandatoryFieldIfMissing(User, transactionFields.UserAggregateID, fields)
+	fields = df.addMandatoryFieldIfMissing(TraceID, rsFields.TraceID, fields)
+	fields = df.addMandatoryFieldIfMissing(RequestID, rsFields.RequestID, fields)
+	fields = df.addMandatoryFieldIfMissing(Customer, rsFields.CustomerAggregateID, fields)
+	fields = df.addMandatoryFieldIfMissing(User, rsFields.UserAggregateID, fields)
 
 	return fields
 }

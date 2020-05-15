@@ -3,9 +3,9 @@ package monitor
 import (
 	"context"
 	"errors"
-	"github.com/cultureamp/glamplify/log"
 	"net/http"
 
+	"github.com/cultureamp/glamplify/log"
 	newrelic "github.com/newrelic/go-agent"
 )
 

@@ -1,8 +1,8 @@
-package log_test
+package context_test
 
 import (
+	"github.com/cultureamp/glamplify/context"
 	"github.com/cultureamp/glamplify/jwt"
-	"github.com/cultureamp/glamplify/log"
 	"gotest.tools/assert"
 	"net/http"
 	"testing"
@@ -11,16 +11,16 @@ import (
 
 func Test_RequestScope_AddGet(t *testing.T) {
 
-	rsFields := log.RequestScopedFields{
+	rsFields := context.RequestScopedFields{
 		TraceID: "1-2-3",
 		UserAggregateID: "a-b-c",
 		CustomerAggregateID: "xyz",
 	}
 
 	req, _ := http.NewRequest("GET", "*", nil)
-	req = log.AddRequestScopedFieldsRequest(req, rsFields)
+	req = context.AddRequestScopedFieldsRequest(req, rsFields)
 
-	resultFields, ok := log.GetRequestScopedFieldsFromRequest(req)
+	resultFields, ok := context.GetRequestScopedFieldsFromRequest(req)
 	assert.Assert(t, ok, ok)
 	assert.Assert(t, resultFields.TraceID == rsFields.TraceID, resultFields.TraceID)
 	assert.Assert(t, resultFields.CustomerAggregateID == rsFields.CustomerAggregateID, resultFields.CustomerAggregateID)
@@ -28,7 +28,7 @@ func Test_RequestScope_AddGet(t *testing.T) {
 }
 
 func Test_Request_Wrap(t *testing.T) {
-	rsFields := log.RequestScopedFields{
+	rsFields := context.RequestScopedFields{
 		TraceID: "1-2-3",
 		RequestID: "7-8-9",
 		UserAggregateID: "a-b-c",
@@ -36,16 +36,16 @@ func Test_Request_Wrap(t *testing.T) {
 	}
 
 	req, _ := http.NewRequest("GET", "*", nil)
-	req = log.AddRequestScopedFieldsRequest(req, rsFields)
+	req = context.AddRequestScopedFieldsRequest(req, rsFields)
 
-	req = log.WrapRequest(req)
-	id, ok := log.GetTraceID(req.Context())
+	req = context.WrapRequest(req)
+	id, ok := context.GetTraceID(req.Context())
 	assert.Assert(t, ok && id == "1-2-3", id)
-	id, ok = log.GetRequestID(req.Context())
+	id, ok = context.GetRequestID(req.Context())
 	assert.Assert(t, ok && id == "7-8-9", id)
-	id, ok = log.GetUser(req.Context())
+	id, ok = context.GetUser(req.Context())
 	assert.Assert(t, ok && id == "a-b-c", id)
-	id, ok = log.GetCustomer(req.Context())
+	id, ok = context.GetCustomer(req.Context())
 	assert.Assert(t, ok && id == "xyz", id)
 }
 
@@ -58,11 +58,11 @@ func Test_Request_WrapWithDecoder(t *testing.T) {
 	req, _ := http.NewRequest("GET", "*", nil)
 	req.Header.Set("Authorization", "Bearer " + token)
 
-	req2 := log.WrapRequestWithDecoder(req, jwt)
-	id, ok := log.GetTraceID(req2.Context())
+	req2 := context.WrapRequestWithDecoder(req, jwt)
+	id, ok := context.GetTraceID(req2.Context())
 	assert.Assert(t, ok && id != "", id)
-	id, ok = log.GetCustomer(req2.Context())
+	id, ok = context.GetCustomer(req2.Context())
 	assert.Assert(t, ok && id != "", id)
-	id, ok = log.GetUser(req2.Context())
+	id, ok = context.GetUser(req2.Context())
 	assert.Assert(t, ok && id != "", id)
 }

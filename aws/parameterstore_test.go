@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -14,10 +13,9 @@ func Test_GetParam_MissingKey(t *testing.T) {
 	// Missing Key
 	val, err := ps.Get("/this/should/not/exist/secret_key")
 	assert.Assert(t, val == "", val)
+	assert.Assert(t, err != nil, val)
 
-	aerr, ok := err.(awserr.Error)
-	assert.Assert(t, ok, ok)
-	assert.Assert(t, aerr.Message() != "", aerr.Message())
+	// aerr, ok := err.(awserr.Error)
 }
 
 // TODO - what is a good key to use for unit tests?

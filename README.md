@@ -49,6 +49,8 @@ import (
     "context"
     "errors"
     "github.com/cultureamp/glamplify/aws"
+    "github.com/cultureamp/glamplify/constants"
+    gcontext "github.com/cultureamp/glamplify/context"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "net/http"
@@ -59,7 +61,7 @@ func main() {
 
     // Creating loggers is cheap. Create them on every request/run
     // DO NOT CACHE/REUSE THEM
-    transactionFields := log.RequestScopedFields{
+    transactionFields := gcontext.RequestScopedFields{
    		TraceID:                "abc", 		// Get TraceID from context or from wherever you have it stored
    		UserAggregateID :       "user1",	// Get User from context or from wherever you have it stored
    		CustomerAggregateID:    "cust1",	// Get Customer from context or from wherever you have it stored
@@ -85,7 +87,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     // Create the logging config for this request
     ctx := r.Context()
     traceID, _ := aws.GetTraceID(ctx)
-    requestScopedFields := log.RequestScopedFields{
+    requestScopedFields := gcontext.RequestScopedFields{
         TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
         UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
         CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
@@ -95,7 +97,7 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     logger := log.New(requestScopedFields)
 
     // OR, if you want a helper that does all of the above, use
-    r = log.WrapRequest(r)
+    r = gcontext.WrapRequest(r)
     logger = log.NewFromRequest(r)
 
     // now away you go!

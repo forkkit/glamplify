@@ -2,15 +2,17 @@ package main
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
+
 	"github.com/cultureamp/glamplify/aws"
 	"github.com/cultureamp/glamplify/config"
+	gcontext "github.com/cultureamp/glamplify/context"
 	http2 "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/jwt"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
 	"github.com/cultureamp/glamplify/notify"
-	"net/http"
-	"net/http/httptest"
 )
 
 func main() {
@@ -31,7 +33,7 @@ func main() {
 	/* LOGGING */
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
-	transactionFields := log.RequestScopedFields{
+	transactionFields := gcontext.RequestScopedFields{
 		TraceID:             "abc",   // Get TraceID from context or from wherever you have it stored
 		UserAggregateID:     "user1", // Get UserAggregateID from context or from wherever you have it stored
 		CustomerAggregateID: "cust1", // Get CustomerAggregateID from context or from wherever you have it stored
@@ -85,7 +87,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Create the logging config for this request
 	ctx := r.Context()
 	traceID, _ := aws.GetTraceID(ctx)
-	requestScopedFields := log.RequestScopedFields{
+	requestScopedFields := gcontext.RequestScopedFields{
 		TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
 		UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
 		CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
@@ -95,7 +97,7 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	logger := log.New(requestScopedFields)
 
 	// OR if you want a helper to do all of the above, use
-	r = log.WrapRequest(r)
+	r = gcontext.WrapRequest(r)
 	logger = log.NewFromRequest(r)
 
 	// now away you go!
@@ -113,9 +115,9 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Emit debug trace with types
 	// Fields can contain any type of variables
 	logger.Debug("something_else_happened", log.Fields{
-		"aString": "hello",
-		"aInt":    123,
-		"aFloat":  42.48,
+		"aString":       "hello",
+		"aInt":          123,
+		"aFloat":        42.48,
 		log.Message: "message",
 	})
 	logger.Event("something_else_happened").Fields(log.Fields{

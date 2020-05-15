@@ -1,7 +1,5 @@
 package log
 
-type EventCtxKey int
-
 const (
 	Unknown = "unknown"
 	Empty   = ""
@@ -49,10 +47,4 @@ const (
 	AppVerEnv      = "APP_VERSION"
 	AwsRegionEnv   = "AWS_REGION"
 	AwsAcountIDEnv = "AWS_ACCOUNT_ID"
-
-	// CONTEXT KEYS
-	TraceIDCtx   EventCtxKey = iota
-	RequestIDCtx EventCtxKey = iota
-	CustomerCtx  EventCtxKey = iota
-	UserCtx      EventCtxKey = iota
 )
