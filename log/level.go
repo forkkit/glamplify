@@ -21,7 +21,10 @@ func newSystemLogLevel() *systemLogLevel {
 	if !ok {
 		level = DebugSev
 	}
-	logLevel := table[level]
+	logLevel, found := table[level]
+	if !found {
+		logLevel = 0
+	}
 
 	return &systemLogLevel{
 		sysLogLevel: logLevel,

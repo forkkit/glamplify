@@ -48,3 +48,22 @@ func Test_Sev_Log_Unknown(t *testing.T) {
 	ok := sev.shouldLog("unknown")
 	assert.Assert(t, !ok, ok)
 }
+
+func Test_Sev_Log_Env_Unknown(t *testing.T) {
+
+	os.Setenv("LOG_LEVEL", "unknown")
+	defer os.Unsetenv("LOG_LEVEL")
+
+	sev := newSystemLogLevel()
+
+	ok := sev.shouldLog(DebugSev)
+	assert.Assert(t, ok, ok)
+	ok = sev.shouldLog(InfoSev)
+	assert.Assert(t, ok, ok)
+	ok = sev.shouldLog(WarnSev)
+	assert.Assert(t, ok, ok)
+	ok = sev.shouldLog(ErrorSev)
+	assert.Assert(t, ok, ok)
+	ok = sev.shouldLog(FatalSev)
+	assert.Assert(t, ok, ok)
+}
