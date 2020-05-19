@@ -16,6 +16,7 @@ type Logger struct {
 }
 
 var (
+	sevLevel = newSystemLogLevel()
 	internalWriter = NewWriter(func(conf *WriterConfig) {})
 	defaultLogger  = NewWitCustomWriter(gcontext.RequestScopedFields{}, internalWriter)
 )
@@ -154,13 +155,17 @@ func (logger Logger) Event(event string) *Segment {
 func (logger Logger) write(rsFields gcontext.RequestScopedFields, event string, err error, sev string, fields ...Fields) string {
 	event = helper.ToSnakeCase(event)
 
-	system := logger.sysValues.getSystemValues(rsFields, event, sev)
-	if err != nil {
-		system = logger.sysValues.getErrorValues(err, system)
-	}
+	if sevLevel.shouldLog(sev) {
+		system := logger.sysValues.getSystemValues(rsFields, event, sev)
+		if err != nil {
+			system = logger.sysValues.getErrorValues(err, system)
+		}
 
-	properties := logger.fields.Merge(fields...)
-	logger.writer.writeFields(system, properties)
+		properties := logger.fields.Merge(fields...)
+		logger.writer.writeFields(system, properties)
+	}
 
 	return event
 }
+
+
