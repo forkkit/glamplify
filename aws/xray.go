@@ -2,7 +2,6 @@ package aws
 
 import (
 	"context"
-	"github.com/aws/aws-xray-sdk-go/header"
 	"net/http"
 
 	"github.com/aws/aws-xray-sdk-go/awsplugins/ec2"
@@ -11,7 +10,7 @@ import (
 	"github.com/aws/aws-xray-sdk-go/xraylog"
 )
 
-// WriterConfig for setting initial values for Logger
+// TracerConfig for setting initial values for Tracer
 type TracerConfig struct {
 	Environment   string
 	AWSService    string
@@ -82,4 +81,14 @@ func (tracer Tracer) DynamicSegmentHandler(fallback string, wildcardHost string,
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		xray.Handler(sn, h)
 	})
+}
+
+// Capture wrapper around xray.Capture as per https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-go-subsegments.html
+func (tracer Tracer) Capture(ctx context.Context, name string, fn func(context.Context) error) (err error) {
+	return xray.Capture(ctx, name, fn)
+}
+
+// AddMetadata wrapper around xray.AddMetadata as per https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-go-subsegments.html
+func (tracer Tracer) AddMetadata(ctx context.Context,  key string, value interface{}) error {
+	return xray.AddMetadata(ctx, key, value)
 }

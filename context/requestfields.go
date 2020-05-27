@@ -5,11 +5,11 @@ import (
 )
 
 type RequestScopedFields struct {
-	TraceID             string `json:"trace_id"`
-	RequestID           string `json:"request_id"`
-	CorrelationID       string `json:"correlation_id"`
-	UserAggregateID     string `json:"user"`
-	CustomerAggregateID string `json:"customer"`
+	TraceID             string `json:"trace_id"`		// AWS XRAY trace id. Format of this is controlled by AWS. Do not rely on it, some services may not use XRAY.
+	RequestID           string `json:"request_id"`		// Client generated RANDOM string. Most of the time this will be empty. Clients can set this to help us diagnose issues.
+	CorrelationID       string `json:"correlation_id"`	// Set ALWAYS by the web-gateway as a UUID v4.
+	UserAggregateID     string `json:"user"`			// If JWT and correct key present, then this will be set to the Effective User UUID
+	CustomerAggregateID string `json:"customer"`		// If JWT and correct key present, then this will be set to the Customer UUID (aka Account)
 }
 
 func NewRequestScopeFields(traceID string, requestID string, correlationID string, customer string, user string) RequestScopedFields {

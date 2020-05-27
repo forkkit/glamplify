@@ -110,7 +110,8 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	logger := log.New(requestScopedFields) // Then create a logger that will use those transaction fields values when writing out logs
 
 	// OR if you want a helper to do all of the above, use
-	logger = log.NewFromRequest(gcontext.WrapRequest(r))
+	r = gcontext.WrapRequest(r)
+	logger = log.NewFromRequest(r)
 
 	// now away you go!
 	logger.Debug("something_happened")

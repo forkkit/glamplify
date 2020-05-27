@@ -28,7 +28,7 @@ func WrapRequest(r *http.Request) *http.Request {
 
 	jwt, err := jwt.NewDecoder() // reads AUTH_PUBLIC_KEY environment var - use PayloadFromRequest() if you want a custom decoder
 	if err != nil {
-		// log?
+		// TODO - how to log this error? Does it really matter?
 	}
 	return WrapRequestWithDecoder(r, jwt)
 }
