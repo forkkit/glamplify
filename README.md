@@ -62,9 +62,11 @@ func main() {
     // Creating loggers is cheap. Create them on every request/run
     // DO NOT CACHE/REUSE THEM
     transactionFields := gcontext.RequestScopedFields{
-   		TraceID:                "abc", 		// Get TraceID from context or from wherever you have it stored
-   		UserAggregateID :       "user1",	// Get User from context or from wherever you have it stored
-   		CustomerAggregateID:    "cust1",	// Get Customer from context or from wherever you have it stored
+        TraceID:                "abc",          // Get TraceID from AWS xray 
+        RequestID:              "random-string",// X-Request-ID, set optionally by clients
+        CorrelationID:          "uuid4",        // X-Correlation-ID set by web-gateway as UUID4
+        UserAggregateID :       "user1",        // Get User from context or from wherever you have it stored
+        CustomerAggregateID:    "cust1",        // Get Customer from context or from wherever you have it stored
    	}
     logger := log.New(transactionFields)
 
