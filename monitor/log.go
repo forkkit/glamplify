@@ -9,17 +9,14 @@ import (
 
 // Logger is the interface that is used for logging in the New Relic go-agent.  Assign the
 // config.Logger types to the Logger you wish to use.  Loggers must be safe for
-// use in multiple goroutines.  Two Logger implementations are included:
-// NewLogger, which logs at info level, and NewDebugLogger which logs at debug
-// level.  logrus and logxi are supported by the integration packages
-// https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogrus and
-// https://godoc.org/github.com/newrelic/go-agent/_integrations/nrlogxi/v1.
+// use in multiple goroutines.
 type monitorLogger struct {
 	logger *log.Logger
 }
 
 func newMonitorLogger(ctx context.Context) *monitorLogger {
-	logger := log.NewFromCtx(ctx)
+	writer := NewWriter()
+	logger := log.NewFromCtxWithCustomerWriter(ctx, writer)
 
 	return &monitorLogger{
 		logger: logger,

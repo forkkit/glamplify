@@ -17,12 +17,16 @@ type FieldWriter struct {
 	output     io.Writer
 }
 
+type Writer interface  {
+	WriteFields(system Fields, fields ...Fields)
+}
+
 // NewWriter creates a new FieldWriter. The optional configure func lets you set values on the underlying standard writer.
 // Useful for CLI apps that want to direct logging to a file or stderr
 // eg. SetOutput
 func NewWriter(configure ...func(*WriterConfig)) *FieldWriter { // https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
 
-	logger := &FieldWriter{}
+	writer := &FieldWriter{}
 	conf := WriterConfig{
 		Output: os.Stdout,
 	}
@@ -30,21 +34,21 @@ func NewWriter(configure ...func(*WriterConfig)) *FieldWriter { // https://dave.
 		config(&conf)
 	}
 
-	logger.mutex.Lock()
-	defer logger.mutex.Unlock()
+	writer.mutex.Lock()
+	defer writer.mutex.Unlock()
 
-	logger.output = conf.Output
+	writer.output = conf.Output
 
-	return logger
+	return writer
 }
 
-func (writer *FieldWriter) writeFields(system Fields, fields ...Fields) {
+func (writer *FieldWriter) WriteFields(system Fields, fields ...Fields) {
 	merged := Fields{}
 	properties := merged.Merge(fields...)
 	if len(properties) > 0 {
 		system[Properties] = properties
 	}
-	str := system.ToSnakeCase().serialize()
+	str := system.ToSnakeCase().ToJson()
 	writer.write(str)
 }
 

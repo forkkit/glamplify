@@ -12,7 +12,7 @@ type Logger struct {
 	rsFields  gcontext.RequestScopedFields
 	fields    Fields
 	sysValues *SystemValues
-	writer    *FieldWriter
+	writer    Writer
 }
 
 var (
@@ -27,27 +27,37 @@ func New(rsFields gcontext.RequestScopedFields, fields ...Fields) *Logger {
 }
 
 // Useful for CLI applications that want to write to stderr or file etc.
-func NewWitCustomWriter(rsFields gcontext.RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
+func NewWitCustomWriter(rsFields gcontext.RequestScopedFields, writer Writer, fields ...Fields) *Logger {
 	return newLogger(rsFields, writer, fields...)
 }
 
 // NewFromCtx creates a new logger from a context, which should contain RequestScopedFields.
 // If the context does not contain then, then this method will NOT add them in.
 func NewFromCtx(ctx context.Context, fields ...Fields) *Logger {
-
 	rsFields, _ := gcontext.GetRequestScopedFieldsFromCtx(ctx)
-	logger := New(rsFields, fields...)
-	return logger
+	return New(rsFields, fields...)
+}
+
+// NewFromCtxWithCustomerWriter creates a new logger from a context, which should contain RequestScopedFields.
+// If the context does not contain then, then this method will NOT add them in.
+func NewFromCtxWithCustomerWriter(ctx context.Context, writer Writer, fields ...Fields) *Logger {
+	rsFields, _ := gcontext.GetRequestScopedFieldsFromCtx(ctx)
+	return NewWitCustomWriter(rsFields, writer, fields...)
 }
 
 // NewFromRequest creates a new logger from a http.Request, which should contain RequestScopedFields.
 // If the context does not contain then, then this method will NOT add them in.
 func NewFromRequest(r *http.Request, fields ...Fields) *Logger {
-	logger := NewFromCtx(r.Context(), fields...)
-	return logger
+	return NewFromCtx(r.Context(), fields...)
 }
 
-func newLogger(rsFields gcontext.RequestScopedFields, writer *FieldWriter, fields ...Fields) *Logger {
+// NewFromRequest creates a new logger from a http.Request, which should contain RequestScopedFields.
+// If the context does not contain then, then this method will NOT add them in.
+func NewFromRequestWithCustomWriter(r *http.Request, writer Writer, fields ...Fields) *Logger {
+	return NewFromCtxWithCustomerWriter(r.Context(), writer, fields...)
+}
+
+func newLogger(rsFields gcontext.RequestScopedFields, writer Writer, fields ...Fields) *Logger {
 
 	df := newSystemValues()
 
@@ -162,7 +172,7 @@ func (logger Logger) write(rsFields gcontext.RequestScopedFields, event string, 
 		}
 
 		properties := logger.fields.Merge(fields...)
-		logger.writer.writeFields(system, properties)
+		logger.writer.WriteFields(system, properties)
 	}
 
 	return event

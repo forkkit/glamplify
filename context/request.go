@@ -6,12 +6,18 @@ import (
 	"net/http"
 )
 
+const (
+	TraceIDHeader = "X-Amzn-Trace-Id"
+	RequestIDHeader = "X-Request-ID"
+	CorrelationIDHeader = "X-Correlation-ID"
+)
+
 func GetRequestScopedFieldsFromRequest(r *http.Request) (RequestScopedFields, bool) {
 	return GetRequestScopedFieldsFromCtx(r.Context())
 }
 
 func AddRequestScopedFieldsRequest(r *http.Request, requestScopeFields RequestScopedFields) *http.Request {
-	ctx := AddRequestScopedFieldsToCtx(r.Context(), requestScopeFields)
+	ctx := AddRequestFields(r.Context(), requestScopeFields)
 	return r.WithContext(ctx)
 }
 
@@ -28,14 +34,17 @@ func WrapRequest(r *http.Request) *http.Request {
 	// need to create new RequestScopedFields
 	ctx := r.Context()
 	traceID, _ := aws.GetTraceID(ctx) // creates new TraceID if xray hasn't already added to the context
-	requestID := traceID
+	requestID := r.Header.Get(RequestIDHeader)
+	correlationID := r.Header.Get(CorrelationIDHeader)
+
 	payload, err := jwt.PayloadFromRequest(r)
 
 	if err == nil {
-		rsFields = NewRequestScopeFields(traceID, requestID, payload.Customer, payload.EffectiveUser)
+		rsFields = NewRequestScopeFields(traceID, requestID, correlationID, payload.Customer, payload.EffectiveUser)
 	} else {
-		rsFields = NewRequestScopeFields(traceID, requestID, "", "")
+		rsFields = NewRequestScopeFields(traceID, requestID, correlationID, "", "")
 	}
+
 	ctx = rsFields.AddToCtx(ctx)
 	return r.WithContext(ctx)
 }
@@ -53,14 +62,18 @@ func WrapRequestWithDecoder(r *http.Request, jwtDecoder jwt.DecodeJwtToken) *htt
 	// need to create new RequestScopedFields
 	ctx := r.Context()
 	traceID, _ := aws.GetTraceID(ctx) // creates new TraceID if xray hasn't already added to the context
-	requestID := traceID
+	requestID := r.Header.Get(RequestIDHeader)
+	correlationID := r.Header.Get(CorrelationIDHeader)
+
 	payload, err := jwt.PayloadFromRequestWithDecoder(r, jwtDecoder)
 
 	if err == nil {
-		rsFields = NewRequestScopeFields(traceID, requestID, payload.Customer, payload.EffectiveUser)
+		rsFields = NewRequestScopeFields(traceID, requestID, correlationID, payload.Customer, payload.EffectiveUser)
 	} else {
-		rsFields = NewRequestScopeFields(traceID, requestID,"", "")
+		rsFields = NewRequestScopeFields(traceID, requestID, correlationID, "", "")
 	}
+
 	ctx = rsFields.AddToCtx(ctx)
 	return r.WithContext(ctx)
 }
+

@@ -43,11 +43,11 @@ func (fields Fields) ToSnakeCase() Fields {
 	return snaked
 }
 
-func (fields Fields) serialize() string {
+func (fields Fields) ToJson() string {
 
 	bytes, err := json.Marshal(fields)
 	if err != nil {
-		systemLog.Printf("failed to serialize log fields to json. err: %s", err.Error())
+		systemLog.Printf("failed to serialize log fields to json string. err: %s", err.Error())
 		// REVISIT - panic?
 	}
 

@@ -11,42 +11,39 @@ import (
 
 func Test_RequestScope_AddGet(t *testing.T) {
 
-	rsFields := context.RequestScopedFields{
-		TraceID: "1-2-3",
-		UserAggregateID: "a-b-c",
-		CustomerAggregateID: "xyz",
-	}
 
 	req, _ := http.NewRequest("GET", "*", nil)
-	req = context.AddRequestScopedFieldsRequest(req, rsFields)
+	req = context.AddRequestScopedFieldsRequest(req, context.RequestScopedFields{
+		TraceID: "1-2-3",
+		RequestID: "7-8-9",
+		CorrelatonID: "1-5-9",
+		UserAggregateID: "a-b-c",
+		CustomerAggregateID: "xyz",
+	})
 
-	resultFields, ok := context.GetRequestScopedFieldsFromRequest(req)
+	rsFields, ok := context.GetRequestScopedFieldsFromRequest(req)
 	assert.Assert(t, ok, ok)
-	assert.Assert(t, resultFields.TraceID == rsFields.TraceID, resultFields.TraceID)
-	assert.Assert(t, resultFields.CustomerAggregateID == rsFields.CustomerAggregateID, resultFields.CustomerAggregateID)
-	assert.Assert(t, resultFields.UserAggregateID == rsFields.UserAggregateID, resultFields.UserAggregateID)
+	assert.Assert(t, rsFields.TraceID == "1-2-3", rsFields)
+	assert.Assert(t, rsFields.RequestID == "7-8-9", rsFields)
+	assert.Assert(t, rsFields.CorrelatonID == "1-5-9", rsFields)
+	assert.Assert(t, rsFields.UserAggregateID == "a-b-c", rsFields)
+	assert.Assert(t, rsFields.CustomerAggregateID == "xyz", rsFields)
 }
 
 func Test_Request_Wrap(t *testing.T) {
-	rsFields := context.RequestScopedFields{
-		TraceID: "1-2-3",
-		RequestID: "7-8-9",
-		UserAggregateID: "a-b-c",
-		CustomerAggregateID: "xyz",
-	}
 
 	req, _ := http.NewRequest("GET", "*", nil)
-	req = context.AddRequestScopedFieldsRequest(req, rsFields)
+	req.Header.Set(context.RequestIDHeader, "1-2-3")
+	req.Header.Set(context.CorrelationIDHeader, "5-6-7")
 
 	req = context.WrapRequest(req)
-	id, ok := context.GetTraceID(req.Context())
-	assert.Assert(t, ok && id == "1-2-3", id)
-	id, ok = context.GetRequestID(req.Context())
-	assert.Assert(t, ok && id == "7-8-9", id)
-	id, ok = context.GetUser(req.Context())
-	assert.Assert(t, ok && id == "a-b-c", id)
-	id, ok = context.GetCustomer(req.Context())
-	assert.Assert(t, ok && id == "xyz", id)
+	rsFields, ok := context.GetRequestScopedFieldsFromRequest(req)
+	assert.Assert(t, ok, ok)
+	assert.Assert(t, rsFields.TraceID != "", rsFields)
+	assert.Assert(t, rsFields.RequestID == "1-2-3", rsFields)
+	assert.Assert(t, rsFields.CorrelatonID == "5-6-7", rsFields)
+	assert.Assert(t, rsFields.UserAggregateID == "", rsFields)
+	assert.Assert(t, rsFields.CustomerAggregateID == "", rsFields)
 }
 
 func Test_Request_WrapWithDecoder(t *testing.T) {
@@ -57,12 +54,15 @@ func Test_Request_WrapWithDecoder(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "*", nil)
 	req.Header.Set("Authorization", "Bearer " + token)
+	req.Header.Set(context.RequestIDHeader, "1-2-3")
+	req.Header.Set(context.CorrelationIDHeader, "5-6-7")
 
 	req2 := context.WrapRequestWithDecoder(req, jwt)
-	id, ok := context.GetTraceID(req2.Context())
-	assert.Assert(t, ok && id != "", id)
-	id, ok = context.GetCustomer(req2.Context())
-	assert.Assert(t, ok && id != "", id)
-	id, ok = context.GetUser(req2.Context())
-	assert.Assert(t, ok && id != "", id)
+	rsFields, ok := context.GetRequestScopedFieldsFromRequest(req2)
+	assert.Assert(t, ok, ok)
+	assert.Assert(t, rsFields.TraceID != "", rsFields)
+	assert.Assert(t, rsFields.RequestID == "1-2-3", rsFields)
+	assert.Assert(t, rsFields.CorrelatonID == "5-6-7", rsFields)
+	assert.Assert(t, rsFields.UserAggregateID != "", rsFields)
+	assert.Assert(t, rsFields.CustomerAggregateID != "", rsFields)
 }

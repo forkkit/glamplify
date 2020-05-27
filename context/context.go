@@ -5,86 +5,13 @@ import (
 	"github.com/cultureamp/glamplify/aws"
 )
 
-func AddTraceID(ctx context.Context, traceID string) context.Context {
-	if len(traceID) > 0 {
-		return context.WithValue(ctx, TraceIDCtx, traceID)
-	}
-	return ctx
-}
-
-func AddRequestID(ctx context.Context, requestID string) context.Context {
-	if len(requestID) > 0 {
-		return context.WithValue(ctx, RequestIDCtx, requestID)
-	}
-	return ctx
-}
-
-func AddCustomer(ctx context.Context, customer string) context.Context {
-	if len(customer) > 0 {
-		return context.WithValue(ctx, CustomerCtx, customer)
-	}
-	return ctx
-}
-
-func AddUser(ctx context.Context, user string) context.Context {
-	if len(user) > 0 {
-		return context.WithValue(ctx, UserCtx, user)
-	}
-	return ctx
-}
-
-func GetTraceID(ctx context.Context) (string, bool) {
-	traceID, ok := ctx.Value(TraceIDCtx).(string)
-	return traceID, ok
-}
-
-func GetRequestID(ctx context.Context) (string, bool) {
-	requestID, ok := ctx.Value(RequestIDCtx).(string)
-	return requestID, ok
-}
-
-func GetUser(ctx context.Context) (string, bool) {
-	user, ok := ctx.Value(UserCtx).(string)
-	return user, ok
-}
-
-func GetCustomer(ctx context.Context) (string, bool) {
-	customer, ok := ctx.Value(CustomerCtx).(string)
-	return customer, ok
+func AddRequestFields(ctx context.Context, rsFields RequestScopedFields) context.Context {
+	return context.WithValue(ctx, RequestFieldsCtx, rsFields)
 }
 
 func GetRequestScopedFieldsFromCtx(ctx context.Context) (RequestScopedFields, bool) {
-	rsFields := RequestScopedFields{}
-
-	val, ok := GetTraceID(ctx)
-	if ok {
-		rsFields.TraceID = val
-	}
-	val, ok = GetRequestID(ctx)
-	if ok {
-		rsFields.RequestID = val
-	}
-	val, ok = GetUser(ctx)
-	if ok {
-		rsFields.UserAggregateID = val
-	}
-	val, ok = GetCustomer(ctx)
-	if ok {
-		rsFields.CustomerAggregateID = val
-	}
-
-	// if there is a traceID, then we assume the context has RequestScopedFields
-	if len(rsFields.TraceID) > 0 {
-		return rsFields, true
-	}
-	return rsFields, false
-}
-
-func AddRequestScopedFieldsToCtx(ctx context.Context, requestScopeFields RequestScopedFields) context.Context {
-	ctx = AddTraceID(ctx, requestScopeFields.TraceID)
-	ctx = AddRequestID(ctx, requestScopeFields.RequestID)
-	ctx = AddUser(ctx, requestScopeFields.UserAggregateID)
-	return AddCustomer(ctx, requestScopeFields.CustomerAggregateID)
+	rsFields, ok := ctx.Value(RequestFieldsCtx).(RequestScopedFields)
+	return rsFields, ok
 }
 
 // WrapCtx returns modified context IF TraceID was added
@@ -96,8 +23,9 @@ func WrapCtx(ctx context.Context) context.Context {
 	}
 
 	// need to create new RequestScopedFields
-	traceID, _ := aws.GetTraceID(ctx)	// creates new TraceID if xray hasn't already added to the context
-	rsFields = NewRequestScopeFields(traceID, traceID, "","")
-	return rsFields.AddToCtx(ctx)
+	traceID, _ := aws.GetTraceID(ctx) // creates new TraceID if xray hasn't already added to the context
+	rsFields = RequestScopedFields{
+		TraceID: traceID,
+	}
+	return AddRequestFields(ctx, rsFields)
 }
-
