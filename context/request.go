@@ -1,19 +1,19 @@
 package context
 
 import (
-	"github.com/cultureamp/glamplify/aws"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/cultureamp/glamplify/jwt"
 	"net/http"
 )
 
 const (
-	TraceIDHeader = "X-Amzn-Trace-Id"
+	TraceIDHeader = xray.TraceIDHeaderKey // "x-amzn-trace-id"
 	RequestIDHeader = "X-Request-ID"
 	CorrelationIDHeader = "X-Correlation-ID"
 )
 
 func GetRequestScopedFieldsFromRequest(r *http.Request) (RequestScopedFields, bool) {
-	return GetRequestScopedFieldsFromCtx(r.Context())
+	return GetRequestScopedFields(r.Context())
 }
 
 func AddRequestScopedFieldsRequest(r *http.Request, requestScopeFields RequestScopedFields) *http.Request {
@@ -21,38 +21,21 @@ func AddRequestScopedFieldsRequest(r *http.Request, requestScopeFields RequestSc
 	return r.WithContext(ctx)
 }
 
-// WrapRequest returns the same *http.Request if TraceID was already present in the context.
-// If TraceID was missing, then it checks xray and if present, adds that TraceID, or if missing creates a new TraceID.
-// If a TraceID was added (from xray or new) to the context, then this method also tries to decode the JWT payload and
-// adds CustomerAggregateID and UserAggregateID if successful.
+// WrapRequest returns the same *http.Request if RequestScopedFields is already present in the context.
+// If missing, then it checks http.Request Headers for TraceID, RequestID, and CorrelationID.
+// Then this method also tries to decode the JWT payload and adds CustomerAggregateID and UserAggregateID if successful.
 func WrapRequest(r *http.Request) *http.Request {
-	rsFields, ok := GetRequestScopedFieldsFromRequest(r)
-	if ok {
-		return r
+
+	jwt, err := jwt.NewDecoder() // reads AUTH_PUBLIC_KEY environment var - use PayloadFromRequest() if you want a custom decoder
+	if err != nil {
+		// log?
 	}
-
-	// need to create new RequestScopedFields
-	ctx := r.Context()
-	traceID, _ := aws.GetTraceID(ctx) // creates new TraceID if xray hasn't already added to the context
-	requestID := r.Header.Get(RequestIDHeader)
-	correlationID := r.Header.Get(CorrelationIDHeader)
-
-	payload, err := jwt.PayloadFromRequest(r)
-
-	if err == nil {
-		rsFields = NewRequestScopeFields(traceID, requestID, correlationID, payload.Customer, payload.EffectiveUser)
-	} else {
-		rsFields = NewRequestScopeFields(traceID, requestID, correlationID, "", "")
-	}
-
-	ctx = rsFields.AddToCtx(ctx)
-	return r.WithContext(ctx)
+	return WrapRequestWithDecoder(r, jwt)
 }
 
-// WrapRequestWithDecoder returns the same *http.Request if TraceID was already present in the context.
-// If TraceID was missing, then it checks xray and if present, adds that TraceID, or if missing creates a new TraceID.
-// If a TraceID was added (from xray or new) to the context, then this method also tries to decode the JWT payload and
-// adds CustomerAggregateID and UserAggregateID if successful.
+// WrapRequestWithDecoder returns the same *http.Request if RequestScopedFields is already present in the context.
+// If missing, then it checks http.Request Headers for TraceID, RequestID, and CorrelationID.
+// Then this method also tries to decode the JWT payload and adds CustomerAggregateID and UserAggregateID if successful.
 func WrapRequestWithDecoder(r *http.Request, jwtDecoder jwt.DecodeJwtToken) *http.Request {
 	rsFields, ok := GetRequestScopedFieldsFromRequest(r)
 	if ok {
@@ -61,11 +44,11 @@ func WrapRequestWithDecoder(r *http.Request, jwtDecoder jwt.DecodeJwtToken) *htt
 
 	// need to create new RequestScopedFields
 	ctx := r.Context()
-	traceID, _ := aws.GetTraceID(ctx) // creates new TraceID if xray hasn't already added to the context
+	traceID := r.Header.Get(TraceIDHeader)
 	requestID := r.Header.Get(RequestIDHeader)
 	correlationID := r.Header.Get(CorrelationIDHeader)
 
-	payload, err := jwt.PayloadFromRequestWithDecoder(r, jwtDecoder)
+	payload, err := jwt.PayloadFromRequest(r, jwtDecoder)
 
 	if err == nil {
 		rsFields = NewRequestScopeFields(traceID, requestID, correlationID, payload.Customer, payload.EffectiveUser)

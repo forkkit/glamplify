@@ -7,7 +7,7 @@ import (
 type RequestScopedFields struct {
 	TraceID             string `json:"trace_id"`
 	RequestID           string `json:"request_id"`
-	CorrelatonID        string `json:"correlation_id"`
+	CorrelationID       string `json:"correlation_id"`
 	UserAggregateID     string `json:"user"`
 	CustomerAggregateID string `json:"customer"`
 }
@@ -16,7 +16,7 @@ func NewRequestScopeFields(traceID string, requestID string, correlationID strin
 	return RequestScopedFields{
 		TraceID:             traceID,
 		RequestID:           requestID,
-		CorrelatonID:        correlationID,
+		CorrelationID:       correlationID,
 		CustomerAggregateID: customer,
 		UserAggregateID:     user,
 	}

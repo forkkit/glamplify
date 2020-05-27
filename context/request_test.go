@@ -14,10 +14,10 @@ func Test_RequestScope_AddGet(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "*", nil)
 	req = context.AddRequestScopedFieldsRequest(req, context.RequestScopedFields{
-		TraceID: "1-2-3",
-		RequestID: "7-8-9",
-		CorrelatonID: "1-5-9",
-		UserAggregateID: "a-b-c",
+		TraceID:             "1-2-3",
+		RequestID:           "7-8-9",
+		CorrelationID:       "1-5-9",
+		UserAggregateID:     "a-b-c",
 		CustomerAggregateID: "xyz",
 	})
 
@@ -25,7 +25,7 @@ func Test_RequestScope_AddGet(t *testing.T) {
 	assert.Assert(t, ok, ok)
 	assert.Assert(t, rsFields.TraceID == "1-2-3", rsFields)
 	assert.Assert(t, rsFields.RequestID == "7-8-9", rsFields)
-	assert.Assert(t, rsFields.CorrelatonID == "1-5-9", rsFields)
+	assert.Assert(t, rsFields.CorrelationID == "1-5-9", rsFields)
 	assert.Assert(t, rsFields.UserAggregateID == "a-b-c", rsFields)
 	assert.Assert(t, rsFields.CustomerAggregateID == "xyz", rsFields)
 }
@@ -33,15 +33,16 @@ func Test_RequestScope_AddGet(t *testing.T) {
 func Test_Request_Wrap(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "*", nil)
+	req.Header.Set(context.TraceIDHeader, "a-b-c")
 	req.Header.Set(context.RequestIDHeader, "1-2-3")
 	req.Header.Set(context.CorrelationIDHeader, "5-6-7")
 
 	req = context.WrapRequest(req)
 	rsFields, ok := context.GetRequestScopedFieldsFromRequest(req)
 	assert.Assert(t, ok, ok)
-	assert.Assert(t, rsFields.TraceID != "", rsFields)
+	assert.Assert(t, rsFields.TraceID == "a-b-c", rsFields)
 	assert.Assert(t, rsFields.RequestID == "1-2-3", rsFields)
-	assert.Assert(t, rsFields.CorrelatonID == "5-6-7", rsFields)
+	assert.Assert(t, rsFields.CorrelationID == "5-6-7", rsFields)
 	assert.Assert(t, rsFields.UserAggregateID == "", rsFields)
 	assert.Assert(t, rsFields.CustomerAggregateID == "", rsFields)
 }
@@ -54,15 +55,16 @@ func Test_Request_WrapWithDecoder(t *testing.T) {
 
 	req, _ := http.NewRequest("GET", "*", nil)
 	req.Header.Set("Authorization", "Bearer " + token)
+	req.Header.Set(context.TraceIDHeader, "a-b-c")
 	req.Header.Set(context.RequestIDHeader, "1-2-3")
 	req.Header.Set(context.CorrelationIDHeader, "5-6-7")
 
 	req2 := context.WrapRequestWithDecoder(req, jwt)
 	rsFields, ok := context.GetRequestScopedFieldsFromRequest(req2)
 	assert.Assert(t, ok, ok)
-	assert.Assert(t, rsFields.TraceID != "", rsFields)
+	assert.Assert(t, rsFields.TraceID == "a-b-c", rsFields)
 	assert.Assert(t, rsFields.RequestID == "1-2-3", rsFields)
-	assert.Assert(t, rsFields.CorrelatonID == "5-6-7", rsFields)
+	assert.Assert(t, rsFields.CorrelationID == "5-6-7", rsFields)
 	assert.Assert(t, rsFields.UserAggregateID != "", rsFields)
 	assert.Assert(t, rsFields.CustomerAggregateID != "", rsFields)
 }

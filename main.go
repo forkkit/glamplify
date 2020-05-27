@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 
 	"github.com/cultureamp/glamplify/aws"
 	"github.com/cultureamp/glamplify/config"
 	gcontext "github.com/cultureamp/glamplify/context"
-	http2 "github.com/cultureamp/glamplify/http"
+	ghttp "github.com/cultureamp/glamplify/http"
 	"github.com/cultureamp/glamplify/jwt"
 	"github.com/cultureamp/glamplify/log"
 	"github.com/cultureamp/glamplify/monitor"
@@ -16,8 +18,9 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 
-	/* CONFIG */
+	/****** CONFIG ******/
 
 	// settings will contain configuration data as read in from the config file.
 	settings := config.Load()
@@ -30,7 +33,16 @@ func main() {
 		// to do
 	}
 
-	/* LOGGING */
+	/****** XRAY ******/
+	xrayTracer := aws.NewTracer(ctx, func(conf *aws.TracerConfig) {
+		conf.Environment = "production" // or "development"
+		conf.AWSService = "ECS"         // or "EC2" or "LAMBDA"
+		conf.EnableLogging = true
+		conf.Version = os.Getenv("APP_VERSION")
+	})
+
+	/****** LOGGING ******/
+
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
 	transactionFields := gcontext.RequestScopedFields{
@@ -59,7 +71,7 @@ func main() {
 		logger.Fatal("monitoring_failed", appErr)
 	}
 
-	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func (conf *notify.Config) {
+	notifier, notifyErr := notify.NewNotifier("GlamplifyUnitTests", func(conf *notify.Config) {
 		conf.Enabled = true
 		conf.Logging = true
 		conf.AppVersion = "1.0.0"
@@ -68,8 +80,8 @@ func main() {
 		logger.Fatal("notification_failed", notifyErr)
 	}
 
-	pattern, handler := http2.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)
-	h := http.HandlerFunc(handler)
+	pattern, handler := ghttp.WrapHTTPHandler(app, notifier, "/", rootRequestHandler)
+	h := xrayTracer.SegmentHandler("MyApp", http.HandlerFunc(handler))
 
 	rr := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", pattern, nil)
@@ -81,24 +93,24 @@ func main() {
 func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	// get JWT payload from http header
-	decoder, err := jwt.NewDecoder()	// assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
-	payload, err := jwt.PayloadFromRequestWithDecoder(r, decoder)
+	decoder, err := jwt.NewDecoder() // assumes AUTH_PUBLIC_KEY set, check other New methods for overloads
+	payload, err := jwt.PayloadFromRequest(r, decoder)
 
 	// Create the logging config for this request
-	ctx := r.Context()
-	traceID, _ := aws.GetTraceID(ctx)
+	traceID := r.Header.Get(gcontext.TraceIDHeader)
+	requestID := r.Header.Get(gcontext.RequestIDHeader)
+	correlationID := r.Header.Get(gcontext.CorrelationIDHeader)
 	requestScopedFields := gcontext.RequestScopedFields{
-		TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
-		UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
-		CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
+		TraceID:             traceID,
+		RequestID:           requestID,
+		CorrelationID:       correlationID,
+		UserAggregateID:     payload.EffectiveUser,
+		CustomerAggregateID: payload.Customer,
 	}
-
-	// Then create a logger that will use those transaction fields values when writing out logs
-	logger := log.New(requestScopedFields)
+	logger := log.New(requestScopedFields) // Then create a logger that will use those transaction fields values when writing out logs
 
 	// OR if you want a helper to do all of the above, use
-	r = gcontext.WrapRequest(r)
-	logger = log.NewFromRequest(r)
+	logger = log.NewFromRequest(gcontext.WrapRequest(r))
 
 	// now away you go!
 	logger.Debug("something_happened")
@@ -115,9 +127,9 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	// Emit debug trace with types
 	// Fields can contain any type of variables
 	logger.Debug("something_else_happened", log.Fields{
-		"aString":       "hello",
-		"aInt":          123,
-		"aFloat":        42.48,
+		"aString":   "hello",
+		"aInt":      123,
+		"aFloat":    42.48,
 		log.Message: "message",
 	})
 	logger.Event("something_else_happened").Fields(log.Fields{
@@ -125,7 +137,6 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 		"aInt":    123,
 		"aFloat":  42.48,
 	}).Debug("message")
-
 
 	// Emit normal logging (can add optional types if required)
 	// Typically Print will be sent onto 3rd party aggregation tools (eg. Splunk)

@@ -30,14 +30,14 @@ func TestMain(m *testing.M) {
 func setup() {
 	ctx = context.Background()
 	ctx = gcontext.AddRequestFields(ctx, gcontext.RequestScopedFields{
-		TraceID: "1-2-3",
-		RequestID: "7-8-9",
-		CorrelatonID: "1-5-9",
+		TraceID:             "1-2-3",
+		RequestID:           "7-8-9",
+		CorrelationID:       "1-5-9",
 		CustomerAggregateID: "hooli",
-		UserAggregateID: "UserAggregateID-123",
+		UserAggregateID:     "UserAggregateID-123",
 	})
 
-	rsFields, _ = gcontext.GetRequestScopedFieldsFromCtx(ctx)
+	rsFields, _ = gcontext.GetRequestScopedFields(ctx)
 
 	os.Setenv("PRODUCT", "engagement")
 	os.Setenv("APP", "murmur")
@@ -63,7 +63,7 @@ func Test_NewWithContext(t *testing.T) {
 	logger := NewFromCtx(ctx)
 	assert.Assert(t, logger != nil, logger)
 
-	rsFields, ok1 := gcontext.GetRequestScopedFieldsFromCtx(ctx)
+	rsFields, ok1 := gcontext.GetRequestScopedFields(ctx)
 
 	assert.Assert(t, ok1, ok1)
 	assert.Assert(t, rsFields.TraceID == "1-2-3", rsFields)
@@ -76,7 +76,7 @@ func Test_NewWithRequest(t *testing.T) {
 	logger := NewFromRequest(req1)
 	assert.Assert(t, logger != nil, logger)
 
-	rsFields, ok1 := gcontext.GetRequestScopedFieldsFromCtx(req1.Context())
+	rsFields, ok1 := gcontext.GetRequestScopedFields(req1.Context())
 
 	assert.Assert(t, ok1, ok1)
 	assert.Assert(t, rsFields.TraceID == "1-2-3", rsFields)

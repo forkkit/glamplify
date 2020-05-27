@@ -16,17 +16,7 @@ type DecodeJwtToken interface {
 	Decode(tokenString string) (Payload, error)
 }
 
-func PayloadFromRequest(r *http.Request) (Payload, error) {
-	// reads AUTH_PUBLIC_KEY environment var - use PayloadFromRequestWithDecoder() if you want a custom decoder
-	jwt, err := NewDecoder()
-	if err != nil {
-		return Payload{}, err
-	}
-
-	return PayloadFromRequestWithDecoder(r, jwt)
-}
-
-func PayloadFromRequestWithDecoder(r *http.Request, jwtDecoder DecodeJwtToken) (Payload, error) {
+func PayloadFromRequest(r *http.Request, jwtDecoder DecodeJwtToken) (Payload, error) {
 	auth := r.Header.Get("Authorization") // "Authorization: Bearer xxxxx.yyyyy.zzzzz"
 	if len(auth) == 0 {
 		return Payload{}, errors.New("missing authorization header")

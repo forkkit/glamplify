@@ -34,14 +34,14 @@ func NewWitCustomWriter(rsFields gcontext.RequestScopedFields, writer Writer, fi
 // NewFromCtx creates a new logger from a context, which should contain RequestScopedFields.
 // If the context does not contain then, then this method will NOT add them in.
 func NewFromCtx(ctx context.Context, fields ...Fields) *Logger {
-	rsFields, _ := gcontext.GetRequestScopedFieldsFromCtx(ctx)
+	rsFields, _ := gcontext.GetRequestScopedFields(ctx)
 	return New(rsFields, fields...)
 }
 
 // NewFromCtxWithCustomerWriter creates a new logger from a context, which should contain RequestScopedFields.
 // If the context does not contain then, then this method will NOT add them in.
 func NewFromCtxWithCustomerWriter(ctx context.Context, writer Writer, fields ...Fields) *Logger {
-	rsFields, _ := gcontext.GetRequestScopedFieldsFromCtx(ctx)
+	rsFields, _ := gcontext.GetRequestScopedFields(ctx)
 	return NewWitCustomWriter(rsFields, writer, fields...)
 }
 
