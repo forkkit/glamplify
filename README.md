@@ -70,8 +70,7 @@ func main() {
 		conf.Version = os.Getenv("APP_VERSION")
 	})
 	
-    h := http.HandlerFunc(requestHandler)
-    h = xrayTracer.SegmentHandler("MyApp", h)
+    h := xrayTracer.SegmentHandler("MyApp", http.HandlerFunc(requestHandler))
 
     if err := http.ListenAndServe(":8080", h); err != nil {
         panic(err)
@@ -144,22 +143,22 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 
     // get JWT payload from http header
     decoder, err := jwt.NewDecoder()
-    payload, err := jwt.PayloadFromRequestWithDecoder(r, decoder)
+    payload, err := jwt.PayloadFromRequest(r, decoder)
     
     // Create the logging config for this request
-    ctx := r.Context()
-    traceID, _ := aws.GetTraceID(ctx)
     requestScopedFields := gcontext.RequestScopedFields{
-        TraceID:             traceID,				// Get TraceID from context or from wherever you have it stored
-        UserAggregateID:     payload.EffectiveUser, // Get UserAggregateID from context or from wherever you have it stored
-        CustomerAggregateID: payload.Customer,      // Get CustomerAggregateID from context or from wherever you have it stored
+        TraceID: r.Header.Get(gcontext.TraceIDHeader),				
+        RequestID: r.Header.Get(gcontext.RequestIDHeader),
+        CorrelationID: r.Header.Get(gcontext.CorrelationIDHeader),      
+        UserAggregateID: payload.EffectiveUser,     
+        CustomerAggregateID: payload.Customer,      
     }
     
     // Then create a logger that will use those transaction fields values when writing out logs
     logger := log.New(requestScopedFields)
 
     // OR, if you want a helper that does all of the above, use
-    r = gcontext.WrapRequest(r)
+    r = gcontext.WrapRequest(r)  // Reads and Sets TraceID, RequestID, CorrelationID, User and Customer
     logger = log.NewFromRequest(r)
 
     // now away you go!
@@ -260,6 +259,7 @@ package main
 import (
     "github.com/aws/aws-xray-sdk-go/xray"
     "github.com/cultureamp/glamplify/aws"
+    gcontext "github.com/cultureamp/glamplify/context"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
@@ -285,7 +285,7 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    r = log.WrapRequest(r)
+    r = gcontext.WrapRequest(r) // Reads and Sets TraceID, RequestID, CorrelationID, User and Customer
     logger := log.NewFromRequest(r)
 
     // Do things
@@ -316,12 +316,14 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 package main
 
 import (
+     "net/http"
+
     "github.com/aws/aws-xray-sdk-go/xray"
     "github.com/cultureamp/glamplify/aws"
+    gcontext "github.com/cultureamp/glamplify/context"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
-    "net/http"
 )
 
 func main() {
@@ -343,7 +345,7 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    r = log.WrapRequest(r)
+    r = gcontext.WrapRequest(r) // Reads and Sets TraceID, RequestID, CorrelationID, User and Customer
     logger := log.NewFromRequest(r)
  
     // Do things
@@ -371,6 +373,7 @@ import (
     "context"
     "github.com/aws/aws-xray-sdk-go/xray"
     "github.com/cultureamp/glamplify/aws"
+    gcontext "github.com/cultureamp/glamplify/context"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
@@ -389,7 +392,7 @@ func main() {
 }
 
 func handler(ctx context.Context) {
-    ctx = log.WrapCtx(ctx)
+    ctx = gcontext.WrapCtx(ctx) // reads and sets TraceID and CorrelationID
     logger := log.NewFromCtx(ctx)
 
     // Do things
@@ -423,6 +426,7 @@ import (
     "context"
     "github.com/aws/aws-xray-sdk-go/xray"
     "github.com/cultureamp/glamplify/aws"
+    gcontext "github.com/cultureamp/glamplify/context"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/monitor"
@@ -441,7 +445,7 @@ func main() {
 }
 
 func handler(ctx context.Context) {
-    ctx = log.WrapCtx(ctx)
+    ctx = gcontext.WrapCtx(ctx)  // reads and sets TraceID and CorrelationID
     logger := log.NewFromCtx(ctx)
 
     // Do things
@@ -493,7 +497,7 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    r = gcontext.WrapRequest(r)
+    r = gcontext.WrapRequest(r)  // Reads and Sets TraceID, RequestID, CorrelationID, User and Customer
     logger := log.NewFromRequest(r)
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
