@@ -68,19 +68,13 @@ func (tracer Tracer) RoundTripper(rt http.RoundTripper) http.RoundTripper {
 }
 
 func (tracer Tracer) SegmentHandler(name string, h http.Handler) http.Handler {
-
 	sn := xray.NewFixedSegmentNamer(name)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		xray.Handler(sn, h)
-	})
+	return xray.Handler(sn, h)
 }
 
 func (tracer Tracer) DynamicSegmentHandler(fallback string, wildcardHost string, h http.Handler) http.Handler {
-
 	sn := xray.NewDynamicSegmentNamer(fallback, wildcardHost)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		xray.Handler(sn, h)
-	})
+	return xray.Handler(sn, h)
 }
 
 // Capture wrapper around xray.Capture as per https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-go-subsegments.html

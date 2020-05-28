@@ -37,6 +37,66 @@ If no config.yml or config.json can be found, or if it is corrupted, then a conf
 - CONFIG_APPNAME (default: "service-name")
 - CONFIG_VERSION (default: 1.0)
 
+### TRACER (AWS XRAY)
+
+```GO
+package main
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+
+    "github.com/aws/aws-xray-sdk-go/xray"
+	"github.com/cultureamp/glamplify/aws"
+	"github.com/cultureamp/glamplify/config"
+	gcontext "github.com/cultureamp/glamplify/context"
+	ghttp "github.com/cultureamp/glamplify/http"
+	"github.com/cultureamp/glamplify/jwt"
+	"github.com/cultureamp/glamplify/log"
+	"github.com/cultureamp/glamplify/monitor"
+	"github.com/cultureamp/glamplify/notify"
+)
+
+func main() {
+	ctx := context.Background()
+
+	xrayTracer := aws.NewTracer(ctx, func(conf *aws.TracerConfig) {
+		conf.Environment = "production" // or "development"
+		conf.AWSService = "ECS"         // or "EC2" or "LAMBDA"
+		conf.EnableLogging = true
+		conf.Version = os.Getenv("APP_VERSION")
+	})
+	
+    h := http.HandlerFunc(requestHandler)
+    h = xrayTracer.SegmentHandler("MyApp", h)
+
+    if err := http.ListenAndServe(":8080", h); err != nil {
+        panic(err)
+    }
+}
+
+func requestHandler(w http.ResponseWriter, r *http.Request) {
+    // DO STUFF
+    ctx := r.Context()
+    
+    // If you want to trace a critical section of cod, use
+     xray.Capture(ctx, "segment-name", func(ctx1 context.Context) error {
+    
+       // DO THE THINGS
+        var result interface{}
+    
+        return xray.AddMetadata(ctx1, "ResourceResult", result)
+      })
+
+    // DO MORE STUFF
+
+}
+
+```
+
 ### Logging
 
 Logging in GO supports the Culture Amp [sensible default](https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging)
@@ -65,8 +125,8 @@ func main() {
         TraceID:                "abc",          // Get TraceID from AWS xray 
         RequestID:              "random-string",// X-Request-ID, set optionally by clients
         CorrelationID:          "uuid4",        // X-Correlation-ID set by web-gateway as UUID4
-        UserAggregateID :       "user1",        // Get User from context or from wherever you have it stored
-        CustomerAggregateID:    "cust1",        // Get Customer from context or from wherever you have it stored
+        UserAggregateID :       "user1",        // Get User from JWT 
+        CustomerAggregateID:    "cust1",        // Get Customer from JWT
    	}
     logger := log.New(transactionFields)
 
@@ -408,6 +468,7 @@ package main
 
 import (
     "errors"
+    gcontext "github.com/cultureamp/glamplify/context"
     "github.com/cultureamp/glamplify/jwt"
     "github.com/cultureamp/glamplify/log"
     "github.com/cultureamp/glamplify/notify"
@@ -432,7 +493,7 @@ func main() {
 }
 
 func requestHandler(w http.ResponseWriter, r *http.Request) {
-    r = log.WrapRequest(r)
+    r = gcontext.WrapRequest(r)
     logger := log.NewFromRequest(r)
 
     notifier, notifyErr := notify.NotifyFromRequest(w, r)
