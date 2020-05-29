@@ -11,6 +11,7 @@ const (
 	// List of standard keys used for logging as per https://cultureamp.atlassian.net/wiki/spaces/TV/pages/959939199/Logging
 	TraceID             = "trace_id"
 	RequestID           = "request_id"
+	CorrelationID		= "correlation_id"
 	Time                = "time"
 	Event               = "event"
 	Product             = "product"

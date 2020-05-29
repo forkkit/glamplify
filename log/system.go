@@ -25,7 +25,7 @@ func newSystemValues() *SystemValues {
 	return &SystemValues{}
 }
 
-func (df SystemValues) getSystemValues(transactionFields gcontext.RequestScopedFields, event string, sev string) Fields {
+func (df SystemValues) getSystemValues(rsFields gcontext.RequestScopedFields, event string, sev string) Fields {
 	fields := Fields{
 		Time:     df.timeNow(RFC3339Milli),
 		Event:    event,
@@ -34,7 +34,7 @@ func (df SystemValues) getSystemValues(transactionFields gcontext.RequestScopedF
 		Severity: sev,
 	}
 
-	fields = df.getMandatoryFields(transactionFields, fields)
+	fields = df.getMandatoryFields(rsFields, fields)
 	fields = df.getEnvFields(fields)
 
 	return fields
@@ -78,6 +78,7 @@ func (df SystemValues) getMandatoryFields(rsFields gcontext.RequestScopedFields,
 
 	fields = df.addMandatoryFieldIfMissing(TraceID, rsFields.TraceID, fields)
 	fields = df.addMandatoryFieldIfMissing(RequestID, rsFields.RequestID, fields)
+	fields = df.addMandatoryFieldIfMissing(CorrelationID, rsFields.CorrelationID, fields)
 	fields = df.addMandatoryFieldIfMissing(Customer, rsFields.CustomerAggregateID, fields)
 	fields = df.addMandatoryFieldIfMissing(User, rsFields.UserAggregateID, fields)
 
