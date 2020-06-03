@@ -15,37 +15,36 @@ type monitorLogger struct {
 }
 
 func newMonitorLogger(ctx context.Context) *monitorLogger {
-	writer := NewWriter()
-	logger := log.NewFromCtxWithCustomerWriter(ctx, writer)
+	logger := log.NewFromCtx(ctx)
 
 	return &monitorLogger{
 		logger: logger,
 	}
 }
 
-func (logger monitorLogger) Error(msg string, context map[string]interface{}) {
+func (app monitorLogger) Error(msg string, context map[string]interface{}) {
 	err := errors.New(msg)
-	logger.logger.Error("monitor_error", err, context)
+	app.logger.Error("monitor_error", err, context)
 }
 
-func (logger monitorLogger) Warn(msg string, context map[string]interface{}) {
-	logger.logger.Warn("monitor_warn", context, log.Fields{
+func (app monitorLogger) Warn(msg string, context map[string]interface{}) {
+	app.logger.Warn("monitor_warn", context, log.Fields{
 		log.Message: msg,
 	})
 }
 
-func (logger monitorLogger) Info(msg string, context map[string]interface{}) {
-	logger.logger.Info("monitor_info", context, context, log.Fields{
+func (app monitorLogger) Info(msg string, context map[string]interface{}) {
+	app.logger.Info("monitor_info", context, context, log.Fields{
 		log.Message: msg,
 	})
 }
 
-func (logger monitorLogger) Debug(msg string, context map[string]interface{}) {
-	logger.logger.Debug("monitor_debug", context, context, log.Fields{
+func (app monitorLogger) Debug(msg string, context map[string]interface{}) {
+	app.logger.Debug("monitor_debug", context, context, log.Fields{
 		log.Message: msg,
 	})
 }
 
-func (logger monitorLogger) DebugEnabled() bool {
+func (app monitorLogger) DebugEnabled() bool {
 	return false
 }
