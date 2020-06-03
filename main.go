@@ -46,7 +46,9 @@ func main() {
 	// Creating loggers is cheap. Create them on every request/run
 	// DO NOT CACHE/REUSE THEM
 	transactionFields := gcontext.RequestScopedFields{
-		TraceID:             "abc",   // Get TraceID from context or from wherever you have it stored
+		TraceID:             "abc",   // Get TraceID from AWS Xray
+		RequestID:			 "req1", // Get RequestID from X-Request-ID header
+		CorrelationID:		 "uuid4", // Get CorrelationID from X-Correlation-ID header (web-gateway will add this in)
 		UserAggregateID:     "user1", // Get UserAggregateID from context or from wherever you have it stored
 		CustomerAggregateID: "cust1", // Get CustomerAggregateID from context or from wherever you have it stored
 	}
@@ -97,13 +99,10 @@ func rootRequestHandler(w http.ResponseWriter, r *http.Request) {
 	payload, err := jwt.PayloadFromRequest(r, decoder)
 
 	// Create the logging config for this request
-	traceID := r.Header.Get(gcontext.TraceIDHeader)
-	requestID := r.Header.Get(gcontext.RequestIDHeader)
-	correlationID := r.Header.Get(gcontext.CorrelationIDHeader)
 	requestScopedFields := gcontext.RequestScopedFields{
-		TraceID:             traceID,
-		RequestID:           requestID,
-		CorrelationID:       correlationID,
+		TraceID:             r.Header.Get(gcontext.TraceIDHeader),
+		RequestID:           r.Header.Get(gcontext.RequestIDHeader),
+		CorrelationID:       r.Header.Get(gcontext.CorrelationIDHeader),
 		UserAggregateID:     payload.EffectiveUser,
 		CustomerAggregateID: payload.Customer,
 	}
