@@ -2,9 +2,10 @@ package log
 
 import (
 	"context"
+	"net/http"
+
 	gcontext "github.com/cultureamp/glamplify/context"
 	"github.com/cultureamp/glamplify/helper"
-	"net/http"
 )
 
 // Logger

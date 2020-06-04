@@ -15,7 +15,7 @@ const (
 	waitFORNR = 4 * time.Second
 )
 
-// Labels are key value pairs used to roll up applications into specific categoriess
+// Labels are key value pairs used to roll up applications into specific categories
 type Labels map[string]string
 
 // config contains Application and Transaction behavior settings.
@@ -91,7 +91,7 @@ func NewApplication(name string, configure ...func(*Config)) (*Application, erro
 	if conf.Logging {
 		//cfg.Logger = newrelic.NewDebugLogger(os.Stdout) <- this writes JSON to Stdout :(
 		// So we have our own implementation that wraps our standard logger
-
+		// TODO - the context here is missing traceID, correlationID, etc
 		conf.logger = newMonitorLogger(context.Background())
 		cfg.Logger = conf.logger
 
