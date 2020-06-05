@@ -27,7 +27,7 @@ type Config struct {
 	// testing and staging situations.
 	Enabled bool `yaml:"enabled"`
 
-	// License is your New Relic license key.
+	// license is your New Relic license key.
 	//
 	// https://docs.newrelic.com/docs/accounts/install-new-relic/account-setup/license-key
 	License string `yaml:"license"`
@@ -46,7 +46,7 @@ type Config struct {
 	// https://docs.newrelic.com/docs/serverless-function-monitoring/aws-lambda-monitoring/get-started/introduction-new-relic-monitoring-aws-lambda
 	ServerlessMode bool `yaml:"serverless_mode"`
 
-	// internal logger
+	// coreLogger logger
 	logger *monitorLogger
 }
 
@@ -158,7 +158,7 @@ func (app *Application) WrapHTTPHandler(pattern string, handler func(http.Respon
 func (app Application) Shutdown() {
 
 	if !app.conf.ServerlessMode {
-		// if conf.ServerlessMode = false (server mode) then newrelic.Shutdown can exit its internal go routines
+		// if conf.ServerlessMode = false (server mode) then newrelic.Shutdown can exit its coreLogger go routines
 		// before it has sent all pending data!
 		// Waiting here so that everything is sent before we start closing down...
 		time.Sleep(waitFORNR)
