@@ -3,12 +3,12 @@ package log
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cultureamp/glamplify/helper"
+	"runtime/debug"
 	systemLog "log"
 	"reflect"
 	"time"
+	"github.com/cultureamp/glamplify/helper"
 )
-
 
 // Fields type, used to pass to Debug, Print and Error.
 type Fields map[string]interface{}
@@ -58,7 +58,8 @@ func (fields Fields) ToJson() string {
 	filtered := fields.filterNonSerializableValues()
 	bytes, err := json.Marshal(filtered)
 	if err != nil {
-		systemLog.Printf("failed to serialize log fields to json string. err: %s", err.Error())
+		buf := debug.Stack()
+		systemLog.Printf("failed to serialize log fields to json string. err: %s, stacktrack: %s", err.Error(), string(buf))
 		// REVISIT - panic?
 	}
 
