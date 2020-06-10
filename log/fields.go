@@ -5,11 +5,20 @@ import (
 	"fmt"
 	"github.com/cultureamp/glamplify/helper"
 	systemLog "log"
+	"reflect"
+	"time"
 )
 
 
 // Fields type, used to pass to Debug, Print and Error.
 type Fields map[string]interface{}
+
+func NewDurationFields(duration time.Duration) Fields {
+	return Fields{
+		TimeTaken: DurationAsISO8601(duration),
+		TimeTakenMS: duration.Milliseconds(),
+	}
+}
 
 func (fields Fields) Merge(other ...Fields) Fields {
 	merged := Fields{}
@@ -31,6 +40,7 @@ func (fields Fields) ToSnakeCase() Fields {
 	snaked := Fields{}
 
 	for k, v := range fields {
+
 		switch f := v.(type) {
 		case Fields:
 			v = f.ToSnakeCase()
@@ -45,7 +55,8 @@ func (fields Fields) ToSnakeCase() Fields {
 
 func (fields Fields) ToJson() string {
 
-	bytes, err := json.Marshal(fields)
+	filtered := fields.filterNonSerializableValues()
+	bytes, err := json.Marshal(filtered)
 	if err != nil {
 		systemLog.Printf("failed to serialize log fields to json string. err: %s", err.Error())
 		// REVISIT - panic?
@@ -76,3 +87,19 @@ func (fields Fields) ValidateNewRelic() (bool, error) {
 
 	return true, nil
 }
+
+func (fields Fields) filterNonSerializableValues() Fields {
+	filtered := Fields{}
+
+	for k, v := range fields {
+		vt := reflect.TypeOf(v).Kind()
+		switch vt {
+		case reflect.Func, reflect.Chan : // add other types we don't want to log here
+			continue
+		default:
+			filtered[k] = v
+		}
+	}
+	return filtered
+}
+

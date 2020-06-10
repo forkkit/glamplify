@@ -28,6 +28,7 @@ const (
 	Message             = "message"
 	Properties          = "properties"
 	TimeTaken           = "time_taken"
+	TimeTakenMS         = "time_taken_ms"
 	MemoryUsed          = "memory_used"
 	MemoryAvail         = "memory_available"
 	ItemsProcessed      = "items_processed"

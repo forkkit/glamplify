@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gotest.tools/assert"
 	"testing"
+	"time"
 )
 
 func Test_HostName(t *testing.T) {
@@ -56,4 +57,15 @@ func Test_ErrorDefault(t *testing.T) {
 
 	_, ok := fields[Exception]
 	assert.Assert(t, ok, "missing 'exception' in default fields")
+}
+
+func Test_DurationAsIso8601(t *testing.T) {
+
+	d := time.Millisecond * 456
+	s := DurationAsISO8601(d)
+	assert.Assert(t, s == "P0.456S", "was: %s", s)
+
+	d = time.Millisecond * 1456
+	s = DurationAsISO8601(d)
+	assert.Assert(t, s == "P1.456S", "was: %s", s)
 }

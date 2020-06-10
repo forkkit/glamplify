@@ -408,7 +408,8 @@ func Test_Log_Namespace(t *testing.T) {
 		"reports_shared": Fields{
 			"report":   "report1",
 			"user":     "userid",
-			"duration": fmt.Sprintf("P%gS", d.Seconds()),
+			TimeTaken: fmt.Sprintf("P%gS", d.Seconds()),
+			TimeTakenMS: d.Milliseconds(),
 		},
 	})
 
@@ -782,15 +783,27 @@ func Test_RealWorld_Scope(t *testing.T) {
 	})
 }
 
-func Test_DurationAsIso8601(t *testing.T) {
+func Test_RealWorld_Durations(t *testing.T) {
+
+	memBuffer := &bytes.Buffer{}
+	writer := NewWriter(func(conf *WriterConfig) {
+		conf.Output = memBuffer
+	})
+	logger := NewWitCustomWriter(rsFields, writer)
 
 	d := time.Millisecond * 456
-	s := DurationAsISO8601(d)
-	assert.Assert(t, s == "P0.456S", "was: %s", s)
+	logger.Debug( "detail_event", Fields{
+		"string":        "hello",
+		"int":           123,
+		"float":         42.48,
+		"string2":       "hello world",
+		"string3 space": "world",
+	}.Merge(NewDurationFields(d)))
 
-	d = time.Millisecond * 1456
-	s = DurationAsISO8601(d)
-	assert.Assert(t, s == "P1.456S", "was: %s", s)
+	msg := memBuffer.String()
+	assertContainsString(t, msg, "event", "detail_event")
+	assertContainsString(t, msg, "time_taken", "P0.456S")
+	assertContainsInt(t, msg, "time_taken_ms", 456)
 }
 
 func BenchmarkLogging(b *testing.B) {
