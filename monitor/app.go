@@ -148,6 +148,17 @@ func (app Application) RecordEvent(eventType string, fields log.Fields) error {
 	return err
 }
 
+// Adds a new NR transaction when used as middleware
+func (app *Application) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		txn := app.startTransaction(r.URL.Path, w, r)
+		defer txn.End()
+
+		r = txn.addToHTTPContext(r)
+		next.ServeHTTP(txn, r)
+	})
+}
+
 // WrapHTTPHandler adds a Transaction within the current request
 func (app *Application) WrapHTTPHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
 	p, h := app.wrapHTTPHandler(pattern, http.HandlerFunc(handler))

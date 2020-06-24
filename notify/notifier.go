@@ -75,6 +75,14 @@ func (notify Notifier) Shutdown() {
 	time.Sleep(waitFORBugsnag)
 }
 
+// Adds a Bugsnag when used as middleware
+func (notify *Notifier) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r = notify.addToHTTPContext(r)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (notify *Notifier) WrapHTTPHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) (string, func(http.ResponseWriter, *http.Request)) {
 	p, h := notify.wrapHTTPHandler(pattern, http.HandlerFunc(handler))
 	return p, func(w http.ResponseWriter, r *http.Request) {
